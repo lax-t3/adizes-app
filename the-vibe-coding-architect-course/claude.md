@@ -280,12 +280,29 @@ The project uses strict TypeScript settings:
 
 ---
 
+## Git Repository & Version Control
+
+**Repository URL:** https://github.com/vrlnarayana/vibe-code-architect.git
+
+- **Remote Origin:** `https://github.com/vrlnarayana/vibe-code-architect.git`
+- **Default Branch:** `master`
+- **Initial Commit:** Project documentation (claude.md)
+- **Initialized:** February 4, 2026
+
+### Git Workflow
+- Clone: `git clone https://github.com/vrlnarayana/vibe-code-architect.git`
+- Pull latest: `git pull origin master`
+- Create feature branch: `git checkout -b feature/your-feature`
+- Push changes: `git push origin your-branch-name`
+
+---
+
 ## Contact & Support
 
 - **Course Admin:** vrl.narayana@gmail.com
-- **Repository:** Git-managed project
+- **Repository:** https://github.com/vrlnarayana/vibe-code-architect
 - **Status:** Active development
 
 ---
 
-*Last Updated: February 4, 2026*
+*Last Updated: February 4, 2026 (Git initialized & pushed to GitHub)*
