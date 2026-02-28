@@ -23,13 +23,14 @@ with st.sidebar:
     st.markdown("---")
     st.markdown(f"**Document:** `{PDF_PATH}`")
 
-    with st.spinner("Checking index..."):
-        vectorstore = build_index(PDF_PATH, CHROMA_DIR)
+    if "vectorstore" not in st.session_state:
+        with st.spinner("Checking index..."):
+            st.session_state.vectorstore = build_index(PDF_PATH, CHROMA_DIR)
     st.success("✅ Document indexed")
 
-    st.markdown(f"**Model:** GPT-4o")
-    st.markdown(f"**Embeddings:** text-embedding-3-small")
-    st.markdown(f"**Vector Store:** ChromaDB (local)")
+    st.markdown("**Model:** GPT-4o")
+    st.markdown("**Embeddings:** text-embedding-3-small")
+    st.markdown("**Vector Store:** ChromaDB (local)")
 
 # --- Session State ---
 if "chain" not in st.session_state:
@@ -57,6 +58,8 @@ if prompt := st.chat_input("Ask a question about the HR policy..."):
         st.markdown(prompt)
 
     with st.chat_message("assistant"):
+        answer = ""
+        sources = []
         with st.spinner("Thinking..."):
             try:
                 result = get_answer(prompt, st.session_state.chain)
@@ -64,7 +67,6 @@ if prompt := st.chat_input("Ask a question about the HR policy..."):
                 sources = result["sources"]
             except Exception as e:
                 answer = f"Error: {str(e)}"
-                sources = []
 
         st.markdown(answer)
         if sources:
