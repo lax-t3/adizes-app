@@ -186,7 +186,7 @@ def get_cohort(cohort_id: str, admin: dict = Depends(require_admin)):
 
 @router.post("/cohorts/{cohort_id}/members", status_code=status.HTTP_201_CREATED)
 def enroll_user(cohort_id: str, body: EnrollUserRequest, admin: dict = Depends(require_admin)):
-    """Enroll an existing user into a cohort by email."""
+    """Enroll a user into a cohort by email. If they have no account, invite them first."""
     cohort = (
         supabase_admin.table("cohorts")
         .select("id")
@@ -199,8 +199,19 @@ def enroll_user(cohort_id: str, body: EnrollUserRequest, admin: dict = Depends(r
 
     all_users = supabase_admin.auth.admin.list_users()
     target = next((u for u in all_users if u.email == body.email), None)
+    invited_new = False
+
     if not target:
-        raise HTTPException(status_code=404, detail=f"No user found with email {body.email}")
+        # User doesn't exist — invite them so they can register and take the assessment
+        try:
+            resp = supabase_admin.auth.admin.invite_user_by_email(
+                body.email,
+                options={"redirect_to": f"{settings.frontend_url}/set-password"},
+            )
+            target = resp.user
+            invited_new = True
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Could not invite user: {e}")
 
     existing = (
         supabase_admin.table("cohort_members")
@@ -217,7 +228,12 @@ def enroll_user(cohort_id: str, body: EnrollUserRequest, admin: dict = Depends(r
         "user_id": str(target.id),
     }).execute()
 
-    return {"message": f"{body.email} enrolled successfully", "user_id": str(target.id)}
+    msg = (
+        f"{body.email} enrolled and invite email sent — they must set a password before logging in."
+        if invited_new
+        else f"{body.email} enrolled successfully"
+    )
+    return {"message": msg, "user_id": str(target.id), "invited": invited_new}
 
 
 @router.delete("/cohorts/{cohort_id}/members/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
