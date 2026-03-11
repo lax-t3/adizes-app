@@ -13,6 +13,8 @@ import { AdminDashboard } from "./pages/AdminDashboard";
 import { AdminCohorts } from "./pages/AdminCohorts";
 import { AdminCohortDetail } from "./pages/AdminCohortDetail";
 import { AdminRespondent } from "./pages/AdminRespondent";
+import { AdminUsers } from "./pages/AdminUsers";
+import { SetPassword } from "./pages/SetPassword";
 import { Navbar } from "./components/layout/Navbar";
 import { AdminSidebar } from "./components/layout/AdminSidebar";
 import { AuthGuard } from "./components/layout/AuthGuard";
@@ -42,7 +44,7 @@ function AdminLayout() {
           <Route path="/cohorts" element={<AdminCohorts />} />
           <Route path="/cohorts/:id" element={<AdminCohortDetail />} />
           <Route path="/respondents/:id" element={<AdminRespondent />} />
-          {/* Add more admin routes here */}
+          <Route path="/users" element={<AdminUsers />} />
         </Routes>
       </main>
     </div>
@@ -55,6 +57,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Landing />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/set-password" element={<SetPassword />} />
         <Route path="/admin" element={<Landing />} />
         
         <Route element={<AuthGuard allowedRole="user" />}>

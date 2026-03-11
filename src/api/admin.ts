@@ -36,9 +36,35 @@ export async function removeMember(cohortId: string, userId: string) {
   await apiClient.delete(`/admin/cohorts/${cohortId}/members/${userId}`);
 }
 
-export async function inviteAdmin(name: string, email: string, password: string) {
-  const { data } = await apiClient.post("/admin/users/invite", { name, email, password });
+export async function listAdminUsers() {
+  const { data } = await apiClient.get("/admin/users");
+  return data as {
+    id: string;
+    name: string;
+    email: string;
+    status: "active" | "invited";
+    last_sign_in: string | null;
+    created_at: string;
+  }[];
+}
+
+export async function inviteAdmin(name: string, email: string) {
+  const { data } = await apiClient.post("/admin/users/invite", { name, email });
   return data;
+}
+
+export async function resendInvite(userId: string) {
+  const { data } = await apiClient.post(`/admin/users/${userId}/resend-invite`);
+  return data;
+}
+
+export async function changeAdminPassword(userId: string, password: string) {
+  const { data } = await apiClient.put(`/admin/users/${userId}/password`, { password });
+  return data;
+}
+
+export async function deleteAdminUser(userId: string) {
+  await apiClient.delete(`/admin/users/${userId}`);
 }
 
 export async function getRespondent(userId: string) {
