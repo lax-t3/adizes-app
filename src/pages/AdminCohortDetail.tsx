@@ -31,15 +31,21 @@ function EnrollUserModal({
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [successMsg, setSuccessMsg] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setLoading(true);
     try {
-      await enrollUser(cohortId, email.trim());
+      const result = await enrollUser(cohortId, email.trim());
       onEnrolled();
-      onClose();
+      if (result?.invited) {
+        setSuccessMsg(result.message);
+        setTimeout(onClose, 3500);
+      } else {
+        onClose();
+      }
     } catch (err: any) {
       setError(err?.response?.data?.detail ?? "Failed to enroll user.");
     } finally {
@@ -56,29 +62,36 @@ function EnrollUserModal({
             <X className="h-5 w-5" />
           </button>
         </div>
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          <p className="text-sm text-gray-500">
-            Enter the email address of a registered user to add them to this cohort.
-          </p>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              className="w-full h-10 rounded-md border border-gray-300 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-              placeholder="user@company.com"
-            />
+        {successMsg ? (
+          <div className="p-6 text-center">
+            <div className="text-4xl mb-3">📧</div>
+            <p className="text-sm text-green-700 font-medium">{successMsg}</p>
           </div>
-          {error && <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded px-3 py-2">{error}</p>}
-          <div className="flex gap-3 pt-2">
-            <Button type="button" variant="outline" className="flex-1" onClick={onClose}>Cancel</Button>
-            <Button type="submit" disabled={loading} className="flex-1">
-              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Enroll User"}
-            </Button>
-          </div>
-        </form>
+        ) : (
+          <form onSubmit={handleSubmit} className="p-6 space-y-4">
+            <p className="text-sm text-gray-500">
+              Enter any email address. Existing users are added immediately; new users receive an invite email to set up their account.
+            </p>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+              <input
+                type="email"
+                required
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                className="w-full h-10 rounded-md border border-gray-300 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                placeholder="user@company.com"
+              />
+            </div>
+            {error && <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded px-3 py-2">{error}</p>}
+            <div className="flex gap-3 pt-2">
+              <Button type="button" variant="outline" className="flex-1" onClick={onClose}>Cancel</Button>
+              <Button type="submit" disabled={loading} className="flex-1">
+                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Enroll User"}
+              </Button>
+            </div>
+          </form>
+        )}
       </div>
     </div>
   );
