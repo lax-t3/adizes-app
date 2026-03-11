@@ -14,7 +14,19 @@ class EnrollUserRequest(BaseModel):
 class InviteAdminRequest(BaseModel):
     name: str
     email: EmailStr
+
+
+class ChangePasswordRequest(BaseModel):
     password: str
+
+
+class AdminUserSummary(BaseModel):
+    id: str
+    name: str
+    email: str
+    status: str           # 'active' | 'invited'
+    last_sign_in: Optional[str] = None
+    created_at: str
 
 
 class AdminStats(BaseModel):

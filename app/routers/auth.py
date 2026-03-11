@@ -1,6 +1,8 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Depends
 from app.schemas.auth import LoginRequest, RegisterRequest, AuthResponse
-from app.database import supabase
+from app.database import supabase, supabase_admin
+from app.auth import get_current_user
+from pydantic import BaseModel
 
 router = APIRouter()
 
@@ -55,3 +57,18 @@ def register(body: RegisterRequest):
         name=body.name,
         role="user",
     )
+
+
+class SetPasswordRequest(BaseModel):
+    password: str
+
+
+@router.post("/set-password", status_code=status.HTTP_200_OK)
+def set_password(body: SetPasswordRequest, current_user: dict = Depends(get_current_user)):
+    """Set a new password for the currently authenticated user (used during invite acceptance)."""
+    user_id = current_user["sub"]
+    try:
+        supabase_admin.auth.admin.update_user_by_id(user_id, {"password": body.password})
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return {"message": "Password set successfully"}

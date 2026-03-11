@@ -4,8 +4,10 @@ from app.auth import require_admin
 from app.database import supabase_admin
 from app.schemas.admin import (
     CreateCohortRequest, CohortSummary, CohortDetailResponse,
-    RespondentSummary, TeamScores, EnrollUserRequest, InviteAdminRequest, AdminStats,
+    RespondentSummary, TeamScores, EnrollUserRequest, InviteAdminRequest,
+    AdminStats, AdminUserSummary, ChangePasswordRequest,
 )
+from app.config import settings
 from app.services.export_service import generate_cohort_csv
 import uuid
 import io
@@ -225,24 +227,106 @@ def remove_member(cohort_id: str, user_id: str, admin: dict = Depends(require_ad
         .eq("cohort_id", cohort_id).eq("user_id", user_id).execute()
 
 
+@router.get("/users", response_model=list[AdminUserSummary])
+def list_admin_users(admin: dict = Depends(require_admin)):
+    """List all administrator accounts."""
+    try:
+        all_users = supabase_admin.auth.admin.list_users()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+    admins = []
+    for u in all_users:
+        app_meta = getattr(u, "app_metadata", None) or {}
+        if app_meta.get("role") != "admin":
+            continue
+        meta = getattr(u, "user_metadata", None) or {}
+        last_sign_in = getattr(u, "last_sign_in_at", None)
+        # Determine status: if user has never signed in, treat as invited
+        status_label = "invited" if not last_sign_in else "active"
+        admins.append(AdminUserSummary(
+            id=str(u.id),
+            name=meta.get("name", ""),
+            email=u.email or "",
+            status=status_label,
+            last_sign_in=str(last_sign_in) if last_sign_in else None,
+            created_at=str(u.created_at),
+        ))
+
+    return admins
+
+
 @router.post("/users/invite", status_code=status.HTTP_201_CREATED)
 def invite_admin(body: InviteAdminRequest, admin: dict = Depends(require_admin)):
-    """Create a new admin user."""
+    """Send an email invite to a new administrator."""
     try:
-        resp = supabase_admin.auth.admin.create_user({
-            "email": body.email,
-            "password": body.password,
-            "email_confirm": True,
-            "user_metadata": {"name": body.name},
-            "app_metadata": {"role": "admin"},
-        })
+        resp = supabase_admin.auth.admin.invite_user_by_email(
+            body.email,
+            options={
+                "data": {"name": body.name},
+                "redirect_to": f"{settings.frontend_url}/set-password",
+            },
+        )
+        user_id = str(resp.user.id)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+    # Set admin role on the newly-invited user
+    try:
+        supabase_admin.auth.admin.update_user_by_id(
+            user_id, {"app_metadata": {"role": "admin"}}
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Invite sent but could not set admin role: {e}")
+
     return {
-        "message": f"Admin user {body.email} created successfully",
-        "user_id": str(resp.user.id),
+        "message": f"Invite email sent to {body.email}",
+        "user_id": user_id,
     }
+
+
+@router.post("/users/{user_id}/resend-invite", status_code=status.HTTP_200_OK)
+def resend_invite(user_id: str, admin: dict = Depends(require_admin)):
+    """Resend the invite email for a pending administrator."""
+    try:
+        auth_resp = supabase_admin.auth.admin.get_user_by_id(user_id)
+        email = auth_resp.user.email
+    except Exception:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    try:
+        supabase_admin.auth.admin.invite_user_by_email(
+            email,
+            options={"redirect_to": f"{settings.frontend_url}/set-password"},
+        )
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    return {"message": f"Invite resent to {email}"}
+
+
+@router.put("/users/{user_id}/password", status_code=status.HTTP_200_OK)
+def change_admin_password(user_id: str, body: ChangePasswordRequest, admin: dict = Depends(require_admin)):
+    """Set a new password for an administrator account."""
+    try:
+        supabase_admin.auth.admin.update_user_by_id(
+            user_id, {"password": body.password}
+        )
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return {"message": "Password updated successfully"}
+
+
+@router.delete("/users/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_admin_user(user_id: str, admin: dict = Depends(require_admin)):
+    """Remove an administrator account."""
+    # Prevent self-deletion
+    if user_id == admin["sub"]:
+        raise HTTPException(status_code=400, detail="You cannot delete your own account")
+    try:
+        supabase_admin.auth.admin.delete_user(user_id)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.get("/respondents/{user_id}")
