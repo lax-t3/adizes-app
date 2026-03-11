@@ -100,10 +100,13 @@ def submit_assessment(body: SubmitRequest, user: dict = Depends(get_current_user
     now = datetime.now(timezone.utc).isoformat()
     user_id = user["sub"]
 
+    user_name = (user.get("user_metadata") or {}).get("name", "")
+
     # Persist assessment
     supabase_admin.table("assessments").insert({
         "id": result_id,
         "user_id": user_id,
+        "user_name": user_name,
         "completed_at": now,
         "raw_scores": scores["raw"],
         "scaled_scores": scores["scaled"],

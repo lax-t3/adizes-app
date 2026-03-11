@@ -12,7 +12,7 @@ router = APIRouter()
 def _fetch_result(result_id: str, user_id: str, is_admin: bool = False) -> dict:
     row = (
         supabase_admin.table("assessments")
-        .select("*, users(name, email)")
+        .select("*")
         .eq("id", result_id)
         .single()
         .execute()
@@ -35,7 +35,7 @@ def get_result(result_id: str, user: dict = Depends(get_current_user)):
 
     return ResultResponse(
         result_id=data["id"],
-        user_name=data.get("users", {}).get("name", ""),
+        user_name=data.get("user_name", ""),
         completed_at=data["completed_at"],
         profile=data["profile"],
         scaled_scores=data["scaled_scores"],
