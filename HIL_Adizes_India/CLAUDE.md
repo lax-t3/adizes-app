@@ -75,18 +75,46 @@ I role:        #2A9D8F  (teal)
 | Supabase DB | postgresql://postgres:postgres@127.0.0.1:54322/postgres | Direct DB access |
 
 ## Local Dev Quick Start
+
 ```bash
 # 1. Start Supabase (from adizes-backend dir)
 cd /Users/vrln/adizes-backend && supabase start
 
-# 2. Start backend Docker container
-docker run -d --name adizes-backend \
-  --env-file /tmp/adizes-backend.env \
-  -p 8000:8000 adizes-backend
+# 2. Refresh .env with current Supabase keys (REQUIRED after every supabase start)
+#    Keys rotate each time Supabase starts — copy ANON_KEY and SERVICE_ROLE_KEY:
+supabase status -o env   # copy ANON_KEY + SERVICE_ROLE_KEY into .env
 
-# 3. Start frontend
+# 3. Apply DB migrations (REQUIRED after every supabase start — DB resets)
+docker exec -i supabase_db_adizes-backend psql -U postgres -d postgres \
+  < migrations/001_initial_schema.sql
+docker exec -i supabase_db_adizes-backend psql -U postgres -d postgres \
+  < migrations/002_seed_questions.sql
+
+# 4. Create test users (REQUIRED after every supabase start — users reset)
+SK="<SUPABASE_SERVICE_ROLE_KEY from .env>"
+curl -s -X POST "http://127.0.0.1:54321/auth/v1/admin/users" \
+  -H "apikey: $SK" -H "Authorization: Bearer $SK" \
+  -H "Content-Type: application/json" \
+  -d '{"email":"admin@adizes.com","password":"Admin@1234","email_confirm":true,"app_metadata":{"role":"admin"}}'
+curl -s -X POST "http://127.0.0.1:54321/auth/v1/admin/users" \
+  -H "apikey: $SK" -H "Authorization: Bearer $SK" \
+  -H "Content-Type: application/json" \
+  -d '{"email":"user@adizes.com","password":"User@1234","email_confirm":true}'
+
+# 5. Build and start backend (rebuild if any Python file changed)
+cd /Users/vrln/adizes-backend && docker compose up --build -d
+
+# 6. Start frontend
 cd /Users/vrln/adizes-frontend && npm run dev
 ```
+
+## Test Credentials (local only)
+| Role | Email | Password |
+|------|-------|----------|
+| Admin | admin@adizes.com | Admin@1234 |
+| User | user@adizes.com | User@1234 |
+
+> These must be recreated after every `supabase start` (local DB resets).
 
 ## Production Architecture
 ```
@@ -141,4 +169,37 @@ cd /Users/vrln/adizes-frontend && npm run dev
 - Local Supabase uses ES256 JWT; cloud Supabase uses HS256 — auth.py handles both
 - PDF generated server-side via WeasyPrint, streamed directly (no Storage in v1)
 - Admin role set via Supabase custom JWT claim `app_metadata.role: admin`
-- Docker container uses `host.docker.internal` to reach local Supabase on Mac
+- `docker-compose.yml` overrides `SUPABASE_URL` to `http://host.docker.internal:54321`
+  so the container can reach local Supabase (127.0.0.1 in .env is host-only)
+
+## Known Gotchas (Local Dev)
+
+### Supabase keys reset on every restart
+`supabase start` regenerates `ANON_KEY` and `SERVICE_ROLE_KEY` each time.
+Always run `supabase status -o env` after starting and update `.env`.
+Symptom: backend returns `{"detail": "[Errno 111] Connection refused"}` on login.
+
+### DB and users reset on every restart
+Local Supabase is ephemeral. After `supabase stop` + `supabase start`:
+- All tables are dropped → re-apply both migrations
+- All auth users are deleted → recreate via admin API (see Quick Start above)
+
+### Docker image must be rebuilt after code changes
+`docker-compose.yml` only mounts `./templates`. All Python source files are
+baked in at build time. After editing any `.py` file:
+```bash
+docker compose up --build -d
+```
+Symptom: code fix works in isolation but API still returns old behavior.
+
+### JWT algorithm: python-jose JWKError ≠ JWTError
+Local Supabase signs tokens with ES256. `python-jose` raises `JWKError` (not
+`JWTError`) when you try to verify ES256 with an HS256 secret. These are
+separate exception classes — `JWKError` does NOT inherit from `JWTError`.
+`auth.py` uses a nested try/except to fall back to `verify_signature=False`.
+
+### Supabase CLI new key formats (v2.72+)
+`supabase status` now shows both:
+- `sb_publishable_*` / `sb_secret_*` — new SDK keys (use for admin API calls)
+- JWT-format `ANON_KEY` / `SERVICE_ROLE_KEY` — still needed for `.env`
+Both key formats work for the admin API (`/auth/v1/admin/users`).
