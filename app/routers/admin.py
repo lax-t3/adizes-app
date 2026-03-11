@@ -9,6 +9,7 @@ from app.schemas.admin import (
 )
 from app.config import settings
 from app.services.export_service import generate_cohort_csv
+from app.services.email_service import send_template_email, smtp_configured
 import uuid
 import io
 
@@ -228,6 +229,36 @@ def enroll_user(cohort_id: str, body: EnrollUserRequest, admin: dict = Depends(r
         "user_id": str(target.id),
     }).execute()
 
+    # Fire-and-forget enrollment email
+    try:
+        cohort_name_val = (
+            supabase_admin.table("cohorts").select("name").eq("id", cohort_id).single().execute()
+        ).data.get("name", "") if cohort.data else ""
+        meta = getattr(target, "user_metadata", None) or {}
+        user_name_val = meta.get("name", "") or body.email
+        # Try to generate an invite link for the email
+        invite_link_val = settings.frontend_url
+        if invited_new:
+            try:
+                lr = supabase_admin.auth.admin.generate_link({
+                    "type": "invite",
+                    "email": body.email,
+                    "options": {"redirect_to": f"{settings.frontend_url}/set-password"},
+                })
+                invite_link_val = getattr(lr.properties, "action_link", settings.frontend_url)
+            except Exception:
+                pass
+        send_template_email("user_enrolled", body.email, {
+            "user_name": user_name_val,
+            "user_email": body.email,
+            "cohort_name": cohort_name_val,
+            "invite_link": invite_link_val,
+            "platform_name": "Adizes PAEI Platform",
+            "platform_url": settings.frontend_url,
+        })
+    except Exception:
+        pass  # Non-fatal — enrollment succeeded regardless
+
     msg = (
         f"{body.email} enrolled and invite email sent — they must set a password before logging in."
         if invited_new
@@ -291,6 +322,34 @@ def bulk_enroll(cohort_id: str, body: BulkEnrollRequest, admin: dict = Depends(r
             }).execute()
             existing_ids.add(uid)
             enrolled.append({"email": email, "invited": invited_new})
+
+            # Fire-and-forget enrollment email
+            try:
+                cohort_resp = supabase_admin.table("cohorts").select("name").eq("id", cohort_id).single().execute()
+                cohort_name_val = cohort_resp.data.get("name", "") if cohort_resp.data else ""
+                meta = getattr(user, "user_metadata", None) or {}
+                user_name_val = (entry.name or meta.get("name", "")) or email
+                invite_link_val = settings.frontend_url
+                if invited_new:
+                    try:
+                        lr = supabase_admin.auth.admin.generate_link({
+                            "type": "invite",
+                            "email": email,
+                            "options": {"redirect_to": f"{settings.frontend_url}/set-password"},
+                        })
+                        invite_link_val = getattr(lr.properties, "action_link", settings.frontend_url)
+                    except Exception:
+                        pass
+                send_template_email("user_enrolled", email, {
+                    "user_name": user_name_val,
+                    "user_email": email,
+                    "cohort_name": cohort_name_val,
+                    "invite_link": invite_link_val,
+                    "platform_name": "Adizes PAEI Platform",
+                    "platform_url": settings.frontend_url,
+                })
+            except Exception:
+                pass  # Non-fatal
 
         except Exception as e:
             failed.append({"email": email, "reason": str(e)})
@@ -357,6 +416,17 @@ def invite_admin(body: InviteAdminRequest, admin: dict = Depends(require_admin))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Invite sent but could not set admin role: {e}")
 
+    # Fire-and-forget admin invite email via SMTP
+    try:
+        send_template_email("admin_invite", body.email, {
+            "admin_name": body.name or body.email,
+            "admin_email": body.email,
+            "invite_link": settings.frontend_url,
+            "platform_name": "Adizes PAEI Platform",
+        })
+    except Exception:
+        pass  # Non-fatal
+
     return {
         "message": f"Invite email sent to {body.email}",
         "user_id": user_id,
@@ -379,6 +449,20 @@ def resend_invite(user_id: str, admin: dict = Depends(require_admin)):
         )
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+    # Fire-and-forget resend via SMTP
+    try:
+        auth_user = supabase_admin.auth.admin.get_user_by_id(user_id).user
+        meta = getattr(auth_user, "user_metadata", None) or {}
+        admin_name = meta.get("name", "") or email
+        send_template_email("admin_invite", email, {
+            "admin_name": admin_name,
+            "admin_email": email,
+            "invite_link": settings.frontend_url,
+            "platform_name": "Adizes PAEI Platform",
+        })
+    except Exception:
+        pass  # Non-fatal
 
     return {"message": f"Invite resent to {email}"}
 

@@ -5,6 +5,7 @@ from app.schemas.assessment import QuestionsResponse, SubmitRequest, SubmitRespo
 from app.services.scoring import score_answers
 from app.services.gap_analysis import compute_gaps
 from app.services.interpretation import interpret
+from app.config import settings
 import uuid
 from datetime import datetime, timezone
 
@@ -125,5 +126,55 @@ def submit_assessment(body: SubmitRequest, user: dict = Depends(get_current_user
         for a in answers_dicts
     ]
     supabase_admin.table("answers").insert(answer_rows).execute()
+
+    # Send completion email with PDF attachment (non-fatal if it fails)
+    try:
+        from app.services.email_service import send_template_email, smtp_configured
+        from app.services.pdf_service import generate_pdf
+        if smtp_configured():
+            user_email = (user.get("email") or
+                          (supabase_admin.auth.admin.get_user_by_id(user_id).user.email) or "")
+            # Find cohort for this user
+            cohort_row = (
+                supabase_admin.table("cohort_members")
+                .select("cohort_id, cohorts(name)")
+                .eq("user_id", user_id)
+                .limit(1)
+                .execute()
+            )
+            cohort_name_for_email = ""
+            if cohort_row.data:
+                c = cohort_row.data[0].get("cohorts")
+                cohort_name_for_email = c.get("name", "") if c else ""
+
+            dominant = "".join(interp.get("dominant_roles", []))
+
+            # Build assessment data dict for PDF
+            assessment_data = {
+                "id": result_id,
+                "user_id": user_id,
+                "user_name": user_name,
+                "completed_at": now,
+                "raw_scores": scores["raw"],
+                "scaled_scores": scores["scaled"],
+                "profile": scores["profile"],
+                "gaps": [g for g in gaps],
+                "interpretation": interp,
+            }
+            pdf_bytes = generate_pdf(assessment_data)
+
+            send_template_email("assessment_complete", user_email, {
+                "user_name": user_name or user_email,
+                "user_email": user_email,
+                "cohort_name": cohort_name_for_email or "your cohort",
+                "dominant_style": dominant,
+                "platform_name": "Adizes PAEI Platform",
+                "platform_url": settings.frontend_url,
+            }, attachments=[{
+                "filename": f"PAEI_Report_{result_id[:8]}.pdf",
+                "data": pdf_bytes,
+            }])
+    except Exception as e:
+        print(f"[assessment] Completion email failed (non-fatal): {e}")
 
     return SubmitResponse(result_id=result_id)

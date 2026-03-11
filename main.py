@@ -5,6 +5,7 @@ from postgrest.exceptions import APIError
 
 from app.config import settings
 from app.routers import auth, assessment, results, admin
+from app.routers import settings as settings_router
 
 app = FastAPI(
     title="Adizes PAEI Assessment API",
@@ -24,6 +25,7 @@ app.include_router(auth.router, prefix="/auth", tags=["auth"])
 app.include_router(assessment.router, prefix="/assessment", tags=["assessment"])
 app.include_router(results.router, prefix="/results", tags=["results"])
 app.include_router(admin.router, prefix="/admin", tags=["admin"])
+app.include_router(settings_router.router, prefix="/admin/settings", tags=["settings"])
 
 
 @app.exception_handler(APIError)
