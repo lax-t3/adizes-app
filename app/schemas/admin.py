@@ -1,6 +1,5 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
 from typing import List, Optional
-from datetime import datetime
 
 
 class CreateCohortRequest(BaseModel):
@@ -8,10 +7,28 @@ class CreateCohortRequest(BaseModel):
     description: Optional[str] = None
 
 
+class EnrollUserRequest(BaseModel):
+    email: EmailStr
+
+
+class InviteAdminRequest(BaseModel):
+    name: str
+    email: EmailStr
+    password: str
+
+
+class AdminStats(BaseModel):
+    total_cohorts: int
+    total_assessments: int
+    completed_assessments: int
+    completion_pct: int
+    recent_completions: List[dict]
+
+
 class CohortSummary(BaseModel):
     id: str
     name: str
-    description: Optional[str]
+    description: Optional[str] = None
     member_count: int
     completed_count: int
     completion_pct: float
@@ -22,9 +39,9 @@ class RespondentSummary(BaseModel):
     user_id: str
     name: str
     email: str
-    status: str           # 'pending' | 'in_progress' | 'completed'
-    dominant_style: Optional[str]
-    completed_at: Optional[str]
+    status: str           # 'pending' | 'completed'
+    dominant_style: Optional[str] = None
+    completed_at: Optional[str] = None
 
 
 class TeamScores(BaseModel):
@@ -35,6 +52,6 @@ class TeamScores(BaseModel):
 class CohortDetailResponse(BaseModel):
     id: str
     name: str
-    description: Optional[str]
+    description: Optional[str] = None
     respondents: List[RespondentSummary]
-    team_scores: Optional[TeamScores]
+    team_scores: Optional[TeamScores] = None
