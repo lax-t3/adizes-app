@@ -16,7 +16,9 @@ import { AdminRespondent } from "./pages/AdminRespondent";
 import { AdminUsers } from "./pages/AdminUsers";
 import { AdminSettings } from "./pages/AdminSettings";
 import { SetPassword } from "./pages/SetPassword";
+import { PolicyPage } from "./pages/PolicyPage";
 import { Navbar } from "./components/layout/Navbar";
+import { Footer } from "./components/layout/Footer";
 import { AdminSidebar } from "./components/layout/AdminSidebar";
 import { AuthGuard } from "./components/layout/AuthGuard";
 
@@ -31,6 +33,7 @@ function UserLayout() {
           <Route path="/results" element={<Results />} />
         </Routes>
       </main>
+      <Footer />
     </div>
   );
 }
@@ -60,6 +63,9 @@ export default function App() {
         <Route path="/" element={<Landing />} />
         <Route path="/register" element={<Register />} />
         <Route path="/set-password" element={<SetPassword />} />
+        <Route path="/terms" element={<PolicyPage slug="terms" />} />
+        <Route path="/privacy" element={<PolicyPage slug="privacy" />} />
+        <Route path="/refund" element={<PolicyPage slug="refund" />} />
         <Route path="/admin" element={<Landing />} />
         
         <Route element={<AuthGuard allowedRole="user" />}>

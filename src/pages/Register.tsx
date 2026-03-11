@@ -5,11 +5,13 @@ import { Button } from "@/components/ui/Button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import { motion } from "motion/react";
 import { register as apiRegister } from "@/api/auth";
+import { Footer } from "@/components/layout/Footer";
 
 export function Register() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [termsAccepted, setTermsAccepted] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -35,7 +37,7 @@ export function Register() {
   };
 
   return (
-    <div className="flex min-h-screen bg-gray-50 items-center justify-center p-4">
+    <div className="flex min-h-screen flex-col bg-gray-50 items-center justify-center p-4">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -102,12 +104,34 @@ export function Register() {
                   placeholder="••••••••"
                 />
               </div>
+              {/* Terms acceptance */}
+              <div className="flex items-start gap-3 pt-1">
+                <input
+                  id="terms"
+                  type="checkbox"
+                  required
+                  checked={termsAccepted}
+                  onChange={e => setTermsAccepted(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary flex-shrink-0"
+                />
+                <label htmlFor="terms" className="text-sm text-gray-500 leading-relaxed">
+                  I agree to the{" "}
+                  <Link to="/terms" target="_blank" className="text-primary hover:underline font-medium">
+                    Terms of Service
+                  </Link>{" "}
+                  and{" "}
+                  <Link to="/privacy" target="_blank" className="text-primary hover:underline font-medium">
+                    Privacy Policy
+                  </Link>
+                </label>
+              </div>
+
               {error && (
                 <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2">
                   {error}
                 </p>
               )}
-              <Button type="submit" disabled={loading} className="w-full h-11 text-base mt-2">
+              <Button type="submit" disabled={loading || !termsAccepted} className="w-full h-11 text-base mt-2">
                 {loading ? "Creating account…" : "Register"}
               </Button>
             </form>
@@ -121,6 +145,11 @@ export function Register() {
           </CardContent>
         </Card>
       </motion.div>
+
+      {/* Footer */}
+      <div className="w-full mt-8">
+        <Footer />
+      </div>
     </div>
   );
 }

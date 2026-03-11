@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate, Link, useLocation } from "react-router-dom";
+import { Footer } from "@/components/layout/Footer";
 import { useAuthStore } from "@/store/authStore";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
@@ -53,10 +54,10 @@ export function Landing() {
         
         <div className="relative z-10">
           <div className="flex items-center gap-3 mb-16">
-            <img 
-              src="/logo.png" 
-              alt="Adizes Institute" 
-              className="h-10 w-auto brightness-0 invert" 
+            <img
+              src="/logo.png"
+              alt="Adizes Institute"
+              className="h-14 w-auto brightness-0 invert"
               referrerPolicy="no-referrer"
             />
           </div>
@@ -101,8 +102,15 @@ export function Landing() {
           </motion.div>
         </div>
         
-        <div className="relative z-10 text-sm text-gray-400">
-          &copy; {new Date().getFullYear()} Adizes Institute. All rights reserved.
+        <div className="relative z-10 space-y-2">
+          <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500">
+            <Link to="/terms" className="hover:text-gray-300 transition-colors">Terms of Service</Link>
+            <Link to="/privacy" className="hover:text-gray-300 transition-colors">Privacy Policy</Link>
+            <Link to="/refund" className="hover:text-gray-300 transition-colors">Refund Policy</Link>
+          </div>
+          <p className="text-xs text-gray-500">
+            &copy; {new Date().getFullYear()} Adizes Institute &middot; Powered by <span className="text-gray-400 font-medium">Turiyaskills</span>
+          </p>
         </div>
       </div>
 
@@ -110,10 +118,10 @@ export function Landing() {
       <div className="flex w-full lg:w-[45%] flex-col items-center justify-center p-8 sm:p-12 lg:p-16">
         <div className="w-full max-w-md">
           <div className="lg:hidden flex items-center gap-3 mb-12 justify-center">
-            <img 
-              src="/logo.png" 
-              alt="Adizes Institute" 
-              className="h-10 w-auto" 
+            <img
+              src="/logo.png"
+              alt="Adizes Institute"
+              className="h-14 w-auto"
               referrerPolicy="no-referrer"
             />
           </div>
@@ -189,7 +197,7 @@ export function Landing() {
             </Card>
           </motion.div>
 
-          <div className="mt-16 text-center">
+          <div className="mt-10 text-center">
             {isAdminRoute ? (
               <Link to="/" className="text-sm text-gray-400 hover:text-gray-600 transition-colors">
                 &larr; Back to User Login
@@ -200,6 +208,20 @@ export function Landing() {
               </Link>
             )}
           </div>
+        </div>
+
+        {/* Footer on right panel */}
+        <div className="w-full max-w-md mt-10">
+          <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 text-xs text-gray-400 mb-2">
+            <Link to="/terms" className="hover:text-gray-600 transition-colors">Terms of Service</Link>
+            <span className="text-gray-200">·</span>
+            <Link to="/privacy" className="hover:text-gray-600 transition-colors">Privacy Policy</Link>
+            <span className="text-gray-200">·</span>
+            <Link to="/refund" className="hover:text-gray-600 transition-colors">Refund Policy</Link>
+          </div>
+          <p className="text-center text-xs text-gray-400">
+            &copy; {new Date().getFullYear()} Adizes Institute &middot; Powered by <span className="font-medium text-gray-500">Turiyaskills</span>
+          </p>
         </div>
       </div>
     </div>

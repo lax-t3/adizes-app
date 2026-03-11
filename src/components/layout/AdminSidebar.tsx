@@ -64,7 +64,7 @@ export function AdminSidebar() {
         </nav>
       </div>
 
-      <div className="border-t border-gray-200 p-4">
+      <div className="border-t border-gray-200 p-4 space-y-1">
         <button
           onClick={handleLogout}
           className="group flex w-full items-center rounded-md px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 hover:text-gray-900 transition-colors"
@@ -72,6 +72,10 @@ export function AdminSidebar() {
           <LogOut className="mr-3 h-5 w-5 text-gray-400 group-hover:text-gray-500" />
           Log out
         </button>
+        <div className="px-3 pt-2 pb-1 space-y-0.5">
+          <p className="text-[10px] text-gray-400 leading-snug">&copy; {new Date().getFullYear()} Adizes Institute</p>
+          <p className="text-[10px] text-gray-400 leading-snug">Powered by <span className="font-medium text-gray-500">Turiyaskills</span></p>
+        </div>
       </div>
     </div>
   );
