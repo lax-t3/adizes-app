@@ -93,12 +93,22 @@ export function AdminCohortDetail() {
   const [exporting, setExporting] = useState(false);
   const [removingId, setRemovingId] = useState<string | null>(null);
 
+  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
   const fetchCohort = () => {
     if (!id) return;
+    if (!UUID_RE.test(id)) {
+      setError("Invalid cohort ID. Please select a cohort from the list.");
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     getCohort(id)
       .then(setCohort)
-      .catch(() => setError("Failed to load cohort."))
+      .catch((err) => {
+        const msg = err?.response?.data?.detail ?? "Failed to load cohort.";
+        setError(msg);
+      })
       .finally(() => setLoading(false));
   };
 
@@ -137,8 +147,17 @@ export function AdminCohortDetail() {
 
   if (error || !cohort) {
     return (
-      <div className="p-8">
-        <p className="text-red-600">{error || "Cohort not found."}</p>
+      <div className="p-8 flex flex-col items-center justify-center min-h-[60vh]">
+        <div className="max-w-md text-center">
+          <div className="text-5xl mb-4">🔍</div>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Cohort not found</h2>
+          <p className="text-sm text-gray-500 mb-6">{error || "This cohort does not exist or you don't have access."}</p>
+          <Link to="/admin/cohorts">
+            <Button>
+              <ArrowLeft className="mr-2 h-4 w-4" /> Back to Cohorts
+            </Button>
+          </Link>
+        </div>
       </div>
     );
   }
