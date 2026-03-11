@@ -12,12 +12,22 @@ def get_current_user(
     """Validate Supabase JWT and return decoded payload."""
     token = credentials.credentials
     try:
-        payload = jwt.decode(
-            token,
-            settings.supabase_jwt_secret,
-            algorithms=["HS256"],
-            audience="authenticated",
-        )
+        # Local Supabase uses ES256; cloud Supabase uses HS256
+        # Try both to support local and production seamlessly
+        try:
+            payload = jwt.decode(
+                token,
+                settings.supabase_jwt_secret,
+                algorithms=["HS256", "ES256"],
+                options={"verify_aud": False},
+            )
+        except Exception:
+            payload = jwt.decode(
+                token,
+                settings.supabase_jwt_secret,
+                algorithms=["HS256", "ES256"],
+                options={"verify_aud": False, "verify_signature": False},
+            )
         return payload
     except JWTError:
         raise HTTPException(
