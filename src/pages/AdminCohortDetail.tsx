@@ -3,14 +3,14 @@ import { useParams, Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
-import { Download, ArrowLeft, Users, FileText, UserPlus, X, Loader2, Trash2, Upload, CheckCircle2, AlertCircle, MinusCircle } from "lucide-react";
+import { Download, ArrowLeft, Users, FileText, UserPlus, X, Loader2, Trash2, Upload, CheckCircle2, AlertCircle, MinusCircle, MailCheck } from "lucide-react";
 import { motion } from "motion/react";
 import {
   Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
 } from "recharts";
 import * as XLSX from "xlsx";
-import { getCohort, enrollUser, removeMember, exportCohortCsv, bulkEnroll } from "@/api/admin";
+import { getCohort, enrollUser, removeMember, exportCohortCsv, bulkEnroll, resendEnrollmentInvite } from "@/api/admin";
 import type { BulkEnrollEntry, BulkEnrollResult } from "@/api/admin";
 import type { CohortDetailResponse } from "@/types/api";
 
@@ -404,6 +404,8 @@ export function AdminCohortDetail() {
   const [showBulkEnroll, setShowBulkEnroll] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [removingId, setRemovingId] = useState<string | null>(null);
+  const [resendingId, setResendingId] = useState<string | null>(null);
+  const [resendMsg, setResendMsg] = useState<{ userId: string; ok: boolean; text: string } | null>(null);
 
   const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -446,6 +448,21 @@ export function AdminCohortDetail() {
       await exportCohortCsv(id, cohort.name);
     } finally {
       setExporting(false);
+    }
+  };
+
+  const handleResendInvite = async (userId: string) => {
+    if (!id) return;
+    setResendingId(userId);
+    setResendMsg(null);
+    try {
+      const res = await resendEnrollmentInvite(id, userId);
+      setResendMsg({ userId, ok: true, text: res.message });
+    } catch (err: any) {
+      setResendMsg({ userId, ok: false, text: err?.response?.data?.detail ?? "Failed to resend invite." });
+    } finally {
+      setResendingId(null);
+      setTimeout(() => setResendMsg(null), 4000);
     }
   };
 
@@ -646,23 +663,48 @@ export function AdminCohortDetail() {
                         <td className="px-6 py-4">
                           {r.completed_at ? new Date(r.completed_at).toLocaleDateString() : "—"}
                         </td>
-                        <td className="px-6 py-4 text-right flex items-center justify-end gap-3">
-                          {r.status === "completed" && (
-                            <Link to={`/admin/respondents/${r.user_id}`} className="font-medium text-primary hover:text-primary-dark text-sm">
-                              View Results
-                            </Link>
-                          )}
-                          <button
-                            onClick={() => handleRemoveMember(r.user_id)}
-                            disabled={removingId === r.user_id}
-                            className="text-gray-300 hover:text-red-500 transition-colors"
-                            title="Remove from cohort"
-                          >
-                            {removingId === r.user_id
-                              ? <Loader2 className="h-4 w-4 animate-spin" />
-                              : <Trash2 className="h-4 w-4" />
-                            }
-                          </button>
+                        <td className="px-6 py-4 text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            {r.status === "completed" && (
+                              <Link to={`/admin/respondents/${r.user_id}`} className="font-medium text-primary hover:text-primary-dark text-sm">
+                                View Results
+                              </Link>
+                            )}
+                            {r.status === "pending" && (
+                              <div className="relative flex items-center">
+                                <button
+                                  onClick={() => handleResendInvite(r.user_id)}
+                                  disabled={resendingId === r.user_id}
+                                  title="Resend enrollment invite"
+                                  className="inline-flex items-center gap-1.5 text-xs font-medium text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded px-2.5 py-1 transition-colors disabled:opacity-50"
+                                >
+                                  {resendingId === r.user_id
+                                    ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                    : <MailCheck className="h-3.5 w-3.5" />
+                                  }
+                                  Resend Invite
+                                </button>
+                                {resendMsg?.userId === r.user_id && (
+                                  <span className={`absolute right-full mr-2 whitespace-nowrap text-xs px-2 py-1 rounded shadow-sm ${
+                                    resendMsg.ok ? "bg-green-50 text-green-700 border border-green-200" : "bg-red-50 text-red-700 border border-red-200"
+                                  }`}>
+                                    {resendMsg.text}
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                            <button
+                              onClick={() => handleRemoveMember(r.user_id)}
+                              disabled={removingId === r.user_id}
+                              className="text-gray-300 hover:text-red-500 transition-colors"
+                              title="Remove from cohort"
+                            >
+                              {removingId === r.user_id
+                                ? <Loader2 className="h-4 w-4 animate-spin" />
+                                : <Trash2 className="h-4 w-4" />
+                              }
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}

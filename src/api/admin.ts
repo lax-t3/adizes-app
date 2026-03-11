@@ -36,6 +36,11 @@ export async function removeMember(cohortId: string, userId: string) {
   await apiClient.delete(`/admin/cohorts/${cohortId}/members/${userId}`);
 }
 
+export async function resendEnrollmentInvite(cohortId: string, userId: string) {
+  const { data } = await apiClient.post(`/admin/cohorts/${cohortId}/members/${userId}/resend-invite`);
+  return data as { message: string };
+}
+
 export type BulkEnrollEntry = { email: string; name?: string };
 export type BulkEnrollResult = {
   enrolled: { email: string; invited: boolean }[];

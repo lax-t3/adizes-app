@@ -21,12 +21,12 @@ export function AdminSidebar() {
 
   return (
     <div className="flex h-screen w-64 flex-col border-r border-gray-200 bg-white">
-      <div className="flex h-16 items-center border-b border-gray-200 px-6">
+      <div className="flex h-20 items-center border-b border-gray-200 px-6">
         <div className="flex items-center gap-2">
-          <img 
-            src="/logo.png" 
-            alt="Adizes Admin" 
-            className="h-8 w-auto" 
+          <img
+            src="/logo.png"
+            alt="Adizes Admin"
+            className="h-14 w-auto"
             referrerPolicy="no-referrer"
           />
         </div>

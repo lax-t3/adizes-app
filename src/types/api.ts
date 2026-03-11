@@ -81,6 +81,17 @@ export interface ResultResponse {
   interpretation: Interpretation;
 }
 
+// ── My Assessments ────────────────────────────────────────────────────────────
+export interface MyAssessmentItem {
+  cohort_id: string;
+  cohort_name: string;
+  enrolled_at: string | null;
+  status: "pending" | "completed";
+  result_id: string | null;
+  completed_at: string | null;
+  dominant_style: string | null;
+}
+
 // ── Admin ─────────────────────────────────────────────────────────────────────
 export interface CohortSummary {
   id: string;
