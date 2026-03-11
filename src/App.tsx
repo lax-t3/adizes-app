@@ -9,6 +9,7 @@ import { Register } from "./pages/Register";
 import { Dashboard } from "./pages/Dashboard";
 import { Assessment } from "./pages/Assessment";
 import { Results } from "./pages/Results";
+import { Profile } from "./pages/Profile";
 import { AdminDashboard } from "./pages/AdminDashboard";
 import { AdminCohorts } from "./pages/AdminCohorts";
 import { AdminCohortDetail } from "./pages/AdminCohortDetail";
@@ -31,6 +32,7 @@ function UserLayout() {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/assessment" element={<Assessment />} />
           <Route path="/results" element={<Results />} />
+          <Route path="/profile" element={<Profile />} />
         </Routes>
       </main>
       <Footer />
