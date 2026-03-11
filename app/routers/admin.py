@@ -4,8 +4,8 @@ from app.auth import require_admin
 from app.database import supabase_admin
 from app.schemas.admin import (
     CreateCohortRequest, CohortSummary, CohortDetailResponse,
-    RespondentSummary, TeamScores, EnrollUserRequest, InviteAdminRequest,
-    AdminStats, AdminUserSummary, ChangePasswordRequest,
+    RespondentSummary, TeamScores, EnrollUserRequest, BulkEnrollRequest,
+    InviteAdminRequest, AdminStats, AdminUserSummary, ChangePasswordRequest,
 )
 from app.config import settings
 from app.services.export_service import generate_cohort_csv
@@ -234,6 +234,68 @@ def enroll_user(cohort_id: str, body: EnrollUserRequest, admin: dict = Depends(r
         else f"{body.email} enrolled successfully"
     )
     return {"message": msg, "user_id": str(target.id), "invited": invited_new}
+
+
+@router.post("/cohorts/{cohort_id}/members/bulk")
+def bulk_enroll(cohort_id: str, body: BulkEnrollRequest, admin: dict = Depends(require_admin)):
+    """Bulk enroll users by email. New users are auto-invited."""
+    cohort = (
+        supabase_admin.table("cohorts")
+        .select("id")
+        .eq("id", cohort_id)
+        .single()
+        .execute()
+    )
+    if not cohort.data:
+        raise HTTPException(status_code=404, detail="Cohort not found")
+
+    # Build email→user map from existing auth users
+    all_users = supabase_admin.auth.admin.list_users()
+    email_to_user = {u.email: u for u in all_users if u.email}
+
+    # Fetch existing cohort members to detect duplicates
+    existing_rows = (
+        supabase_admin.table("cohort_members")
+        .select("user_id")
+        .eq("cohort_id", cohort_id)
+        .execute()
+    )
+    existing_ids = {r["user_id"] for r in (existing_rows.data or [])}
+
+    enrolled, already_member, failed = [], [], []
+
+    for entry in body.users:
+        email = entry.email
+        try:
+            user = email_to_user.get(email)
+            invited_new = False
+
+            if not user:
+                # Invite new user
+                data: dict = {"redirect_to": f"{settings.frontend_url}/set-password"}
+                if entry.name:
+                    data["data"] = {"name": entry.name}
+                resp = supabase_admin.auth.admin.invite_user_by_email(email, options=data)
+                user = resp.user
+                email_to_user[email] = user   # cache so duplicates in the sheet are caught
+                invited_new = True
+
+            uid = str(user.id)
+            if uid in existing_ids:
+                already_member.append({"email": email, "reason": "Already a member"})
+                continue
+
+            supabase_admin.table("cohort_members").insert({
+                "cohort_id": cohort_id,
+                "user_id": uid,
+            }).execute()
+            existing_ids.add(uid)
+            enrolled.append({"email": email, "invited": invited_new})
+
+        except Exception as e:
+            failed.append({"email": email, "reason": str(e)})
+
+    return {"enrolled": enrolled, "already_member": already_member, "failed": failed}
 
 
 @router.delete("/cohorts/{cohort_id}/members/{user_id}", status_code=status.HTTP_204_NO_CONTENT)

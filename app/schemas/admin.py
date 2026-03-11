@@ -11,6 +11,15 @@ class EnrollUserRequest(BaseModel):
     email: EmailStr
 
 
+class BulkEnrollEntry(BaseModel):
+    email: EmailStr
+    name: Optional[str] = None
+
+
+class BulkEnrollRequest(BaseModel):
+    users: List[BulkEnrollEntry]
+
+
 class InviteAdminRequest(BaseModel):
     name: str
     email: EmailStr
