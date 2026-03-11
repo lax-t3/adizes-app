@@ -36,6 +36,18 @@ export async function removeMember(cohortId: string, userId: string) {
   await apiClient.delete(`/admin/cohorts/${cohortId}/members/${userId}`);
 }
 
+export type BulkEnrollEntry = { email: string; name?: string };
+export type BulkEnrollResult = {
+  enrolled: { email: string; invited: boolean }[];
+  already_member: { email: string; reason: string }[];
+  failed: { email: string; reason: string }[];
+};
+
+export async function bulkEnroll(cohortId: string, users: BulkEnrollEntry[]): Promise<BulkEnrollResult> {
+  const { data } = await apiClient.post(`/admin/cohorts/${cohortId}/members/bulk`, { users });
+  return data;
+}
+
 export async function listAdminUsers() {
   const { data } = await apiClient.get("/admin/users");
   return data as {

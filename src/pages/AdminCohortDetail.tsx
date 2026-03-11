@@ -3,13 +3,15 @@ import { useParams, Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
-import { Download, ArrowLeft, Users, FileText, UserPlus, X, Loader2, Trash2 } from "lucide-react";
+import { Download, ArrowLeft, Users, FileText, UserPlus, X, Loader2, Trash2, Upload, CheckCircle2, AlertCircle, MinusCircle } from "lucide-react";
 import { motion } from "motion/react";
 import {
   Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
 } from "recharts";
-import { getCohort, enrollUser, removeMember, exportCohortCsv } from "@/api/admin";
+import * as XLSX from "xlsx";
+import { getCohort, enrollUser, removeMember, exportCohortCsv, bulkEnroll } from "@/api/admin";
+import type { BulkEnrollEntry, BulkEnrollResult } from "@/api/admin";
 import type { CohortDetailResponse } from "@/types/api";
 
 const ROLE_COLORS: Record<string, string> = {
@@ -97,12 +99,281 @@ function EnrollUserModal({
   );
 }
 
+// ─── Bulk Enroll Modal ───────────────────────────────────────────────────────
+
+type ParsedRow = BulkEnrollEntry & { _row: number };
+
+function downloadTemplate() {
+  const ws = XLSX.utils.aoa_to_sheet([
+    ["email", "name"],
+    ["alice@example.com", "Alice Smith"],
+    ["bob@example.com", "Bob Jones"],
+  ]);
+  ws["!cols"] = [{ wch: 32 }, { wch: 24 }];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Enroll");
+  XLSX.writeFile(wb, "bulk_enroll_template.xlsx");
+}
+
+function BulkEnrollModal({
+  cohortId,
+  onClose,
+  onEnrolled,
+}: {
+  cohortId: string;
+  onClose: () => void;
+  onEnrolled: () => void;
+}) {
+  const [step, setStep] = useState<"upload" | "preview" | "result">("upload");
+  const [rows, setRows] = useState<ParsedRow[]>([]);
+  const [parseError, setParseError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState<BulkEnrollResult | null>(null);
+
+  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setParseError("");
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const data = new Uint8Array(ev.target!.result as ArrayBuffer);
+        const wb = XLSX.read(data, { type: "array" });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const json = XLSX.utils.sheet_to_json<Record<string, string>>(ws, { defval: "" });
+
+        if (!json.length) { setParseError("The sheet is empty."); return; }
+
+        // Accept any column named "email" (case-insensitive)
+        const emailKey = Object.keys(json[0]).find(k => k.toLowerCase() === "email");
+        const nameKey = Object.keys(json[0]).find(k => k.toLowerCase() === "name");
+        if (!emailKey) { setParseError('Could not find an "email" column. Please use the template.'); return; }
+
+        const parsed: ParsedRow[] = [];
+        const seen = new Set<string>();
+        json.forEach((row, i) => {
+          const email = (row[emailKey] ?? "").trim().toLowerCase();
+          if (!email || seen.has(email)) return;
+          if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return;  // skip invalid
+          seen.add(email);
+          parsed.push({ email, name: nameKey ? (row[nameKey] ?? "").trim() : undefined, _row: i + 2 });
+        });
+
+        if (!parsed.length) { setParseError("No valid email addresses found in the file."); return; }
+        setRows(parsed);
+        setStep("preview");
+      } catch {
+        setParseError("Could not read the file. Please upload a valid .xlsx or .csv file.");
+      }
+    };
+    reader.readAsArrayBuffer(file);
+    // reset input so same file can be re-uploaded
+    e.target.value = "";
+  };
+
+  const handleEnroll = async () => {
+    setLoading(true);
+    try {
+      const res = await bulkEnroll(cohortId, rows.map(r => ({ email: r.email, name: r.name })));
+      setResult(res);
+      setStep("result");
+      if (res.enrolled.length > 0) onEnrolled();
+    } catch (err: any) {
+      setParseError(err?.response?.data?.detail ?? "Bulk enrollment failed.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const removeRow = (email: string) => {
+    setRows(prev => prev.filter(r => r.email !== email));
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+        {/* Header */}
+        <div className="flex items-center justify-between p-6 border-b flex-shrink-0">
+          <div>
+            <h2 className="text-lg font-semibold text-gray-900">Bulk Enroll</h2>
+            <p className="text-xs text-gray-400 mt-0.5">
+              {step === "upload" && "Step 1 of 2 — Upload file"}
+              {step === "preview" && `Step 2 of 2 — Review ${rows.length} user${rows.length !== 1 ? "s" : ""}`}
+              {step === "result" && "Enrollment complete"}
+            </p>
+          </div>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X className="h-5 w-5" /></button>
+        </div>
+
+        {/* Body */}
+        <div className="flex-1 overflow-y-auto p-6">
+
+          {/* ── Step 1: Upload ── */}
+          {step === "upload" && (
+            <div className="space-y-5">
+              <p className="text-sm text-gray-500">
+                Upload an Excel (.xlsx) or CSV file with an <strong>email</strong> column and an optional <strong>name</strong> column. New users will receive an invite email automatically.
+              </p>
+              <button
+                onClick={downloadTemplate}
+                className="text-sm text-primary hover:underline font-medium"
+              >
+                Download template ↓
+              </button>
+              <label className="flex flex-col items-center justify-center w-full h-36 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-primary hover:bg-gray-50 transition-colors">
+                <Upload className="h-8 w-8 text-gray-300 mb-2" />
+                <span className="text-sm text-gray-500">Click to upload .xlsx or .csv</span>
+                <input type="file" accept=".xlsx,.xls,.csv" className="hidden" onChange={handleFile} />
+              </label>
+              {parseError && (
+                <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded px-3 py-2">{parseError}</p>
+              )}
+            </div>
+          )}
+
+          {/* ── Step 2: Preview ── */}
+          {step === "preview" && (
+            <div className="space-y-4">
+              <p className="text-sm text-gray-500">
+                Review the list below. Remove any rows you don't want to enroll, then click <strong>Enroll All</strong>.
+              </p>
+              <div className="overflow-x-auto rounded-lg border border-gray-200">
+                <table className="w-full text-sm text-left">
+                  <thead className="bg-gray-50 text-xs text-gray-500 uppercase border-b border-gray-200">
+                    <tr>
+                      <th className="px-4 py-2">Email</th>
+                      <th className="px-4 py-2">Name</th>
+                      <th className="px-4 py-2 w-10"></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {rows.map((r) => (
+                      <tr key={r.email} className="border-b border-gray-100 last:border-0 hover:bg-gray-50">
+                        <td className="px-4 py-2 text-gray-800">{r.email}</td>
+                        <td className="px-4 py-2 text-gray-500">{r.name || "—"}</td>
+                        <td className="px-4 py-2">
+                          <button
+                            onClick={() => removeRow(r.email)}
+                            className="text-gray-300 hover:text-red-500 transition-colors"
+                            title="Remove row"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              {parseError && (
+                <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded px-3 py-2">{parseError}</p>
+              )}
+            </div>
+          )}
+
+          {/* ── Step 3: Result ── */}
+          {step === "result" && result && (
+            <div className="space-y-4">
+              {/* Summary pills */}
+              <div className="flex flex-wrap gap-3">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-green-50 px-3 py-1 text-xs font-medium text-green-700">
+                  <CheckCircle2 className="h-3.5 w-3.5" /> {result.enrolled.length} enrolled
+                </span>
+                {result.already_member.length > 0 && (
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-600">
+                    <MinusCircle className="h-3.5 w-3.5" /> {result.already_member.length} already member
+                  </span>
+                )}
+                {result.failed.length > 0 && (
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-red-50 px-3 py-1 text-xs font-medium text-red-700">
+                    <AlertCircle className="h-3.5 w-3.5" /> {result.failed.length} failed
+                  </span>
+                )}
+              </div>
+
+              {/* Detail table */}
+              <div className="overflow-x-auto rounded-lg border border-gray-200">
+                <table className="w-full text-sm text-left">
+                  <thead className="bg-gray-50 text-xs text-gray-500 uppercase border-b border-gray-200">
+                    <tr>
+                      <th className="px-4 py-2">Email</th>
+                      <th className="px-4 py-2">Result</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {result.enrolled.map(r => (
+                      <tr key={r.email} className="border-b border-gray-100 last:border-0">
+                        <td className="px-4 py-2 text-gray-800">{r.email}</td>
+                        <td className="px-4 py-2">
+                          <span className="inline-flex items-center gap-1 text-green-700 text-xs font-medium">
+                            <CheckCircle2 className="h-3.5 w-3.5" />
+                            {r.invited ? "Enrolled + invite sent" : "Enrolled"}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                    {result.already_member.map(r => (
+                      <tr key={r.email} className="border-b border-gray-100 last:border-0 bg-gray-50/50">
+                        <td className="px-4 py-2 text-gray-500">{r.email}</td>
+                        <td className="px-4 py-2 text-xs text-gray-400">Already a member</td>
+                      </tr>
+                    ))}
+                    {result.failed.map(r => (
+                      <tr key={r.email} className="border-b border-gray-100 last:border-0">
+                        <td className="px-4 py-2 text-gray-800">{r.email}</td>
+                        <td className="px-4 py-2">
+                          <span className="inline-flex items-center gap-1 text-red-600 text-xs">
+                            <AlertCircle className="h-3.5 w-3.5" /> {r.reason}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="flex gap-3 p-6 border-t flex-shrink-0">
+          {step === "upload" && (
+            <Button variant="outline" className="ml-auto" onClick={onClose}>Cancel</Button>
+          )}
+          {step === "preview" && (
+            <>
+              <Button variant="outline" onClick={() => setStep("upload")}>Back</Button>
+              <Button
+                className="ml-auto"
+                disabled={loading || rows.length === 0}
+                onClick={handleEnroll}
+              >
+                {loading
+                  ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Enrolling…</>
+                  : <>Enroll {rows.length} user{rows.length !== 1 ? "s" : ""}</>
+                }
+              </Button>
+            </>
+          )}
+          {step === "result" && (
+            <Button className="ml-auto" onClick={onClose}>Done</Button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Main page ───────────────────────────────────────────────────────────────
+
 export function AdminCohortDetail() {
   const { id } = useParams<{ id: string }>();
   const [cohort, setCohort] = useState<CohortDetailResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [showEnroll, setShowEnroll] = useState(false);
+  const [showBulkEnroll, setShowBulkEnroll] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [removingId, setRemovingId] = useState<string | null>(null);
 
@@ -205,6 +476,13 @@ export function AdminCohortDetail() {
           onEnrolled={fetchCohort}
         />
       )}
+      {showBulkEnroll && id && (
+        <BulkEnrollModal
+          cohortId={id}
+          onClose={() => setShowBulkEnroll(false)}
+          onEnrolled={fetchCohort}
+        />
+      )}
 
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
         <div className="mb-6">
@@ -222,6 +500,9 @@ export function AdminCohortDetail() {
             <div className="flex gap-3">
               <Button variant="outline" onClick={() => setShowEnroll(true)}>
                 <UserPlus className="mr-2 h-4 w-4" /> Enroll User
+              </Button>
+              <Button variant="outline" onClick={() => setShowBulkEnroll(true)}>
+                <Upload className="mr-2 h-4 w-4" /> Bulk Enroll
               </Button>
               <Button variant="outline" onClick={handleExport} disabled={exporting}>
                 {exporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
