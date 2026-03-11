@@ -6,6 +6,10 @@ services:
       - "8000:8000"
     env_file:
       - .env
+    environment:
+      # Override SUPABASE_URL so the container can reach local Supabase
+      # (127.0.0.1 in .env refers to the host, not reachable inside Docker)
+      SUPABASE_URL: http://host.docker.internal:54321
     volumes:
       - ./templates:/app/templates
     restart: unless-stopped
