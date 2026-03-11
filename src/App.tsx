@@ -14,6 +14,7 @@ import { AdminCohorts } from "./pages/AdminCohorts";
 import { AdminCohortDetail } from "./pages/AdminCohortDetail";
 import { AdminRespondent } from "./pages/AdminRespondent";
 import { AdminUsers } from "./pages/AdminUsers";
+import { AdminSettings } from "./pages/AdminSettings";
 import { SetPassword } from "./pages/SetPassword";
 import { Navbar } from "./components/layout/Navbar";
 import { AdminSidebar } from "./components/layout/AdminSidebar";
@@ -45,6 +46,7 @@ function AdminLayout() {
           <Route path="/cohorts/:id" element={<AdminCohortDetail />} />
           <Route path="/respondents/:id" element={<AdminRespondent />} />
           <Route path="/users" element={<AdminUsers />} />
+          <Route path="/settings" element={<AdminSettings />} />
         </Routes>
       </main>
     </div>

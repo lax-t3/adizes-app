@@ -1,6 +1,6 @@
 import { NavLink, useNavigate } from "react-router-dom";
 import { useAuthStore } from "@/store/authStore";
-import { LayoutDashboard, Users, Download, LogOut, ShieldCheck } from "lucide-react";
+import { LayoutDashboard, Users, Download, LogOut, ShieldCheck, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export function AdminSidebar() {
@@ -16,7 +16,7 @@ export function AdminSidebar() {
     { name: "Dashboard", to: "/admin/dashboard", icon: LayoutDashboard },
     { name: "Cohorts", to: "/admin/cohorts", icon: Users },
     { name: "Administrators", to: "/admin/users", icon: ShieldCheck },
-    { name: "Export", to: "/admin/export", icon: Download },
+    { name: "Settings", to: "/admin/settings", icon: Settings },
   ];
 
   return (

@@ -129,12 +129,10 @@ function BulkEnrollModal({
   const [parseError, setParseError] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<BulkEnrollResult | null>(null);
+  const [dragging, setDragging] = useState(false);
 
-  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const parseFile = (file: File) => {
     setParseError("");
-    const file = e.target.files?.[0];
-    if (!file) return;
-
     const reader = new FileReader();
     reader.onload = (ev) => {
       try {
@@ -145,7 +143,6 @@ function BulkEnrollModal({
 
         if (!json.length) { setParseError("The sheet is empty."); return; }
 
-        // Accept any column named "email" (case-insensitive)
         const emailKey = Object.keys(json[0]).find(k => k.toLowerCase() === "email");
         const nameKey = Object.keys(json[0]).find(k => k.toLowerCase() === "name");
         if (!emailKey) { setParseError('Could not find an "email" column. Please use the template.'); return; }
@@ -155,7 +152,7 @@ function BulkEnrollModal({
         json.forEach((row, i) => {
           const email = (row[emailKey] ?? "").trim().toLowerCase();
           if (!email || seen.has(email)) return;
-          if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return;  // skip invalid
+          if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return;
           seen.add(email);
           parsed.push({ email, name: nameKey ? (row[nameKey] ?? "").trim() : undefined, _row: i + 2 });
         });
@@ -168,9 +165,28 @@ function BulkEnrollModal({
       }
     };
     reader.readAsArrayBuffer(file);
-    // reset input so same file can be re-uploaded
+  };
+
+  const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) parseFile(file);
     e.target.value = "";
   };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (!file) return;
+    if (!/\.(xlsx|xls|csv)$/i.test(file.name)) {
+      setParseError("Please drop an .xlsx or .csv file.");
+      return;
+    }
+    parseFile(file);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => { e.preventDefault(); setDragging(true); };
+  const handleDragLeave = () => setDragging(false);
 
   const handleEnroll = async () => {
     setLoading(true);
@@ -221,10 +237,22 @@ function BulkEnrollModal({
               >
                 Download template ↓
               </button>
-              <label className="flex flex-col items-center justify-center w-full h-36 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-primary hover:bg-gray-50 transition-colors">
-                <Upload className="h-8 w-8 text-gray-300 mb-2" />
-                <span className="text-sm text-gray-500">Click to upload .xlsx or .csv</span>
-                <input type="file" accept=".xlsx,.xls,.csv" className="hidden" onChange={handleFile} />
+              <label
+                className={`flex flex-col items-center justify-center w-full h-44 border-2 border-dashed rounded-xl cursor-pointer transition-colors ${
+                  dragging
+                    ? "border-primary bg-primary-light scale-[1.01]"
+                    : "border-gray-300 hover:border-primary hover:bg-gray-50"
+                }`}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+              >
+                <Upload className={`h-10 w-10 mb-3 transition-colors ${dragging ? "text-primary" : "text-gray-300"}`} />
+                <span className="text-sm font-medium text-gray-600">
+                  {dragging ? "Drop file here" : "Drag & drop or click to upload"}
+                </span>
+                <span className="text-xs text-gray-400 mt-1">.xlsx, .xls, or .csv</span>
+                <input type="file" accept=".xlsx,.xls,.csv" className="hidden" onChange={handleFileInput} />
               </label>
               {parseError && (
                 <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded px-3 py-2">{parseError}</p>
