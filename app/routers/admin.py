@@ -364,6 +364,71 @@ def remove_member(cohort_id: str, user_id: str, admin: dict = Depends(require_ad
         .eq("cohort_id", cohort_id).eq("user_id", user_id).execute()
 
 
+@router.post("/cohorts/{cohort_id}/members/{user_id}/resend-invite")
+def resend_enrollment_invite(cohort_id: str, user_id: str, admin: dict = Depends(require_admin)):
+    """Resend enrollment invite email to a pending cohort member."""
+    # Verify membership
+    member = (
+        supabase_admin.table("cohort_members")
+        .select("user_id")
+        .eq("cohort_id", cohort_id)
+        .eq("user_id", user_id)
+        .execute()
+    )
+    if not member.data:
+        raise HTTPException(status_code=404, detail="Member not found in this cohort")
+
+    cohort_row = (
+        supabase_admin.table("cohorts")
+        .select("name")
+        .eq("id", cohort_id)
+        .single()
+        .execute()
+    )
+    cohort_name_val = cohort_row.data.get("name", "") if cohort_row.data else ""
+
+    try:
+        auth_user = supabase_admin.auth.admin.get_user_by_id(user_id).user
+    except Exception:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    email = auth_user.email or ""
+    meta = getattr(auth_user, "user_metadata", None) or {}
+    user_name_val = meta.get("name", "") or email
+
+    # Determine if user has confirmed their email (i.e. set a password via invite)
+    email_confirmed = getattr(auth_user, "email_confirmed_at", None)
+    invite_link_val = settings.frontend_url
+    if not email_confirmed:
+        # Still needs to accept invite — generate a fresh invite link
+        try:
+            lr = supabase_admin.auth.admin.generate_link({
+                "type": "invite",
+                "email": email,
+                "options": {"redirect_to": f"{settings.frontend_url}/set-password"},
+            })
+            invite_link_val = getattr(lr.properties, "action_link", settings.frontend_url)
+        except Exception:
+            pass
+
+    if not smtp_configured():
+        raise HTTPException(status_code=400, detail="SMTP is not configured. Please set up SMTP in Settings first.")
+
+    try:
+        send_template_email("user_enrolled", email, {
+            "user_name": user_name_val,
+            "user_email": email,
+            "cohort_name": cohort_name_val,
+            "invite_link": invite_link_val,
+            "platform_name": "Adizes PAEI Platform",
+            "platform_url": settings.frontend_url,
+        })
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to send email: {e}")
+
+    return {"message": f"Enrollment invite resent to {email}"}
+
+
 @router.get("/users", response_model=list[AdminUserSummary])
 def list_admin_users(admin: dict = Depends(require_admin)):
     """List all administrator accounts."""

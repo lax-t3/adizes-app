@@ -38,3 +38,13 @@ class UpdateProfileRequest(BaseModel):
 class ChangePasswordRequest(BaseModel):
     current_password: str
     new_password: str
+
+
+class MyAssessmentItem(BaseModel):
+    cohort_id: str
+    cohort_name: str
+    enrolled_at: Optional[str] = None
+    status: str  # "pending" | "completed"
+    result_id: Optional[str] = None
+    completed_at: Optional[str] = None
+    dominant_style: Optional[str] = None
