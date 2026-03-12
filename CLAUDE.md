@@ -1,60 +1,45 @@
-# CLAUDE.md — adizes-frontend
+# CLAUDE.md — adizes-backend
 
 ## What This Is
-React + Vite frontend for the Adizes PAEI Management Style Assessment platform.
-Scaffolded via Google AI Studio, wired to `adizes-backend` FastAPI.
+FastAPI backend for the Adizes PAEI Management Style Assessment platform.
+Provides REST API for auth, assessment, results, admin, and email functionality.
 
 ## Related Repos
-- Backend API: `/Users/vrln/adizes-backend` → branch `adizes-backend`
+- Frontend UI: `/Users/vrln/adizes-frontend` → branch `adizes-frontend`
 - Source docs: `/Users/vrln/HIL_Adizes_India` → branch `main`
 - GitHub: `https://github.com/lax-t3/adizes-app`
 
 ## Tech Stack
-- React 19 + Vite + TypeScript
-- Tailwind CSS v4
-- Zustand (auth + assessment state)
-- Recharts (PAEI radar + gap bar charts)
-- Axios (API client with JWT interceptor)
-- Motion/Framer Motion (animations)
-- Lucide React (icons)
+- Python 3.11+ / FastAPI
+- Supabase PostgreSQL + Auth (JWT)
+- WeasyPrint + Jinja2 (PDF generation)
+- Python smtplib (email via SMTP)
+- Docker (containerized deployment)
 
-## Key Files
-| File | Purpose |
-|------|---------|
-| `src/api/client.ts` | Axios instance — reads JWT from localStorage, attaches as Bearer token |
-| `src/api/auth.ts` | `login()`, `register()` → POST /auth/* |
-| `src/api/assessment.ts` | `getQuestions()`, `submitAssessment()` |
-| `src/api/results.ts` | `getResult()`, `downloadPdf()` |
-| `src/api/admin.ts` | `listCohorts()`, `getCohort()`, `exportCohortCsv()` |
-| `src/store/authStore.ts` | Persisted Zustand — `{ user, role, token }` |
-| `src/store/assessmentStore.ts` | In-memory — sections, answers (question_index→option_key), resultId |
-| `src/types/api.ts` | TypeScript interfaces matching FastAPI Pydantic schemas |
+## Local Dev Quick Start
 
-## Answer Format
-Assessment answers are stored as `Record<number, string>`:
-- Key = `question_index` (0-based, 0–35)
-- Value = `option_key` ('a' | 'b' | 'c' | 'd')
-
-Submitted to backend as: `[{ question_index: 0, option_key: 'b' }, ...]`
-
-## Environment
-```
-VITE_API_URL=http://localhost:8000   # FastAPI backend URL
-```
-
-## Running Locally
 ```bash
-npm install
-cp .env.example .env.local
-# set VITE_API_URL
-npm run dev   # runs on port 3000
+# 1. Start local Supabase
+supabase start
+
+# 2. Refresh .env with current Supabase keys (keys rotate on each start)
+supabase status -o env   # copy ANON_KEY + SERVICE_ROLE_KEY into .env
+
+# 3. Apply DB migrations
+docker exec -i supabase_db_adizes-backend psql -U postgres -d postgres \
+  < migrations/001_initial_schema.sql
+docker exec -i supabase_db_adizes-backend psql -U postgres -d postgres \
+  < migrations/002_seed_questions.sql
+
+# 4. Build and start backend
+docker compose up --build -d
 ```
 
-## Brand Colors
-```
-Primary Red:  #C8102E
-P role:       #C8102E  Administrator: #1D3557  Entrepreneur: #E87722  Integrator: #2A9D8F
-```
+API runs at: http://localhost:8000
+Swagger docs: http://localhost:8000/docs
 
-## Design Spec
-Full spec: `/Users/vrln/HIL_Adizes_India/docs/plans/2026-03-10-adizes-paei-app-design.md`
+## Key Gotchas
+- Supabase keys reset on every `supabase start` — always update `.env`
+- DB and users reset on every `supabase start` — re-apply migrations + recreate users
+- Python source files are baked into Docker image at build time — rebuild after every `.py` change
+- `SUPABASE_URL` in `.env` uses `127.0.0.1`; `docker-compose.yml` overrides to `host.docker.internal`
