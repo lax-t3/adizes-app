@@ -233,6 +233,18 @@ def enroll_user(cohort_id: str, body: EnrollUserRequest, admin: dict = Depends(r
         "user_id": str(target.id),
     }).execute()
 
+    # For existing users who haven't confirmed yet, generate a recovery link
+    if not invited_new and not getattr(target, "email_confirmed_at", None):
+        try:
+            lr = supabase_admin.auth.admin.generate_link({
+                "type": "recovery",
+                "email": body.email,
+                "options": {"redirect_to": f"{settings.frontend_url}/register"},
+            })
+            invite_link_val = lr.properties.action_link
+        except Exception:
+            pass
+
     # Fire-and-forget enrollment email
     try:
         cohort_name_val = (
@@ -309,6 +321,18 @@ def bulk_enroll(cohort_id: str, body: BulkEnrollRequest, admin: dict = Depends(r
                 invite_link_val = lr.properties.action_link
                 email_to_user[email] = user   # cache so duplicates in the sheet are caught
                 invited_new = True
+
+            # For existing users who haven't confirmed yet, generate a recovery link
+            if not invited_new and not getattr(user, "email_confirmed_at", None):
+                try:
+                    lr = supabase_admin.auth.admin.generate_link({
+                        "type": "recovery",
+                        "email": email,
+                        "options": {"redirect_to": f"{settings.frontend_url}/register"},
+                    })
+                    invite_link_val = lr.properties.action_link
+                except Exception:
+                    pass
 
             uid = str(user.id)
             if uid in existing_ids:
