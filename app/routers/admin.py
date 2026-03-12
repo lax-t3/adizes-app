@@ -309,18 +309,22 @@ def bulk_enroll(cohort_id: str, body: BulkEnrollRequest, admin: dict = Depends(r
 
             if not user:
                 # Use generate_link: creates the user AND returns the invite link in one call
-                link_data: dict = {
-                    "type": "invite",
-                    "email": email,
-                    "options": {"redirect_to": f"{settings.frontend_url}/register"},
-                }
-                if entry.name:
-                    link_data["options"]["data"] = {"name": entry.name}
-                lr = supabase_admin.auth.admin.generate_link(link_data)
-                user = lr.user
-                invite_link_val = lr.properties.action_link
-                email_to_user[email] = user   # cache so duplicates in the sheet are caught
-                invited_new = True
+                try:
+                    link_data: dict = {
+                        "type": "invite",
+                        "email": email,
+                        "options": {"redirect_to": f"{settings.frontend_url}/register"},
+                    }
+                    if entry.name:
+                        link_data["options"]["data"] = {"name": entry.name}
+                    lr = supabase_admin.auth.admin.generate_link(link_data)
+                    user = lr.user
+                    invite_link_val = lr.properties.action_link
+                    email_to_user[email] = user   # cache so duplicates in the sheet are caught
+                    invited_new = True
+                except Exception as e:
+                    failed.append({"email": email, "reason": f"Could not invite user: {e}"})
+                    continue
 
             # For existing users who haven't confirmed yet, generate a recovery link
             if not invited_new and not getattr(user, "email_confirmed_at", None):
