@@ -41,11 +41,15 @@ def get_result(result_id: str, user: dict = Depends(get_current_user)):
         scaled_scores=data["scaled_scores"],
         gaps=[GapDetail(**g) for g in data["gaps"]],
         interpretation=Interpretation(**data["interpretation"]),
+        pdf_url=data.get("pdf_url"),
     )
 
 
 @router.get("/{result_id}/pdf")
 def download_pdf(result_id: str, user: dict = Depends(get_current_user)):
+    # NOTE: This WeasyPrint/Jinja2 route is a synchronous server-side fallback.
+    # The primary PDF path is the Lambda-generated report stored in S3 (pdf_url field).
+    # This endpoint is also used by the email service for attachment generation.
     is_admin = user.get("app_metadata", {}).get("role") == "admin"
     data = _fetch_result(result_id, user["sub"], is_admin)
 

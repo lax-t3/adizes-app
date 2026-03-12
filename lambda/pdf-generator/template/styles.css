@@ -1,0 +1,362 @@
+/* ── Reset & page setup ─────────────────────────────────────── */
+@page {
+  size: A4;
+  margin: 18mm 15mm 22mm 15mm;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-size: 10pt;
+  color: #1a1a1a;
+  line-height: 1.5;
+}
+
+/* ── Page breaks ────────────────────────────────────────────── */
+.page {
+  width: 100%;
+  min-height: 257mm;
+  position: relative;
+  padding-bottom: 8mm;
+}
+
+.page-break {
+  page-break-after: always;
+  break-after: page;
+}
+
+/* ── Header ─────────────────────────────────────────────────── */
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 2px solid #C8102E;
+  padding-bottom: 6pt;
+  margin-bottom: 18pt;
+}
+
+.page-header img.logo {
+  height: 36pt;
+  object-fit: contain;
+}
+
+.page-header .header-tagline {
+  font-size: 8pt;
+  color: #6b7280;
+  text-align: right;
+}
+
+/* ── Footer ─────────────────────────────────────────────────── */
+.page-footer {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  border-top: 1px solid #e5e7eb;
+  padding-top: 5pt;
+  font-size: 7.5pt;
+  color: #6b7280;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* ── Cover page ─────────────────────────────────────────────── */
+.cover {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  min-height: 240mm;
+  padding: 24pt 0;
+}
+
+.cover img.logo-large {
+  height: 60pt;
+  margin-bottom: 36pt;
+  object-fit: contain;
+}
+
+.cover .report-title {
+  font-size: 24pt;
+  font-weight: 700;
+  color: #1a1a1a;
+  letter-spacing: -0.5pt;
+  margin-bottom: 8pt;
+}
+
+.cover .report-subtitle {
+  font-size: 14pt;
+  font-weight: 400;
+  color: #4b5563;
+  margin-bottom: 32pt;
+}
+
+.cover .cover-band {
+  background: #C8102E;
+  color: white;
+  width: 100%;
+  padding: 14pt 0;
+  margin: 20pt 0;
+}
+
+.cover .cover-name {
+  font-size: 20pt;
+  font-weight: 700;
+  letter-spacing: 0.5pt;
+}
+
+.cover .cover-date {
+  font-size: 10pt;
+  color: rgba(255,255,255,0.8);
+  margin-top: 4pt;
+}
+
+.cover .confidential {
+  font-size: 8pt;
+  color: #6b7280;
+  margin-top: 32pt;
+}
+
+/* ── Section headings ───────────────────────────────────────── */
+h1 {
+  font-size: 18pt;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin-bottom: 12pt;
+}
+
+h2 {
+  font-size: 13pt;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin-bottom: 8pt;
+}
+
+h3 {
+  font-size: 11pt;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 6pt;
+}
+
+/* ── Role pages (P/A/E/I) ────────────────────────────────────── */
+.role-page-header {
+  display: flex;
+  align-items: center;
+  gap: 16pt;
+  margin-bottom: 14pt;
+}
+
+.role-badge {
+  width: 48pt;
+  height: 48pt;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22pt;
+  font-weight: 800;
+  color: white;
+  flex-shrink: 0;
+}
+
+.role-badge.P { background: #C8102E; }
+.role-badge.A { background: #1D3557; }
+.role-badge.E { background: #E87722; }
+.role-badge.I { background: #2A9D8F; }
+
+.role-title h2 { margin: 0 0 3pt 0; }
+.role-title .role-tagline { font-size: 9.5pt; color: #6b7280; }
+
+.role-content {
+  display: grid;
+  grid-template-columns: 1fr 160pt;
+  gap: 16pt;
+  align-items: start;
+}
+
+.role-description p {
+  font-size: 9.5pt;
+  color: #374151;
+  margin-bottom: 8pt;
+  line-height: 1.55;
+}
+
+.role-quadrant img {
+  width: 160pt;
+  height: 160pt;
+}
+
+.role-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 12pt;
+  font-size: 9pt;
+}
+
+.role-table th {
+  background: #f3f4f6;
+  padding: 5pt 8pt;
+  text-align: left;
+  font-weight: 600;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.role-table td {
+  padding: 5pt 8pt;
+  border-bottom: 1px solid #f3f4f6;
+  vertical-align: top;
+}
+
+/* ── Personal Results ───────────────────────────────────────── */
+.results-header-band {
+  background: #1a1a1a;
+  color: white;
+  padding: 14pt 16pt;
+  border-radius: 6pt;
+  margin-bottom: 16pt;
+}
+
+.results-header-band h2 {
+  color: white;
+  margin-bottom: 4pt;
+}
+
+.results-header-band .profile-string {
+  font-size: 24pt;
+  font-weight: 800;
+  letter-spacing: 4pt;
+  margin: 8pt 0;
+}
+
+.style-section {
+  background: #f9fafb;
+  border-left: 3pt solid #C8102E;
+  padding: 10pt 12pt;
+  border-radius: 0 4pt 4pt 0;
+  margin-bottom: 12pt;
+}
+
+.style-section h3 { color: #C8102E; margin-bottom: 6pt; }
+.style-section p { font-size: 9.5pt; line-height: 1.55; color: #374151; }
+
+.profile-badges {
+  display: flex;
+  gap: 6pt;
+  margin: 8pt 0;
+}
+
+.profile-badge {
+  width: 32pt;
+  height: 32pt;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15pt;
+  font-weight: 800;
+  color: white;
+}
+
+.profile-badge.P { background: #C8102E; }
+.profile-badge.A { background: #1D3557; }
+.profile-badge.E { background: #E87722; }
+.profile-badge.I { background: #2A9D8F; }
+.profile-badge.non-dominant {
+  background: #e5e7eb;
+  color: #6b7280;
+}
+
+/* ── Charts ─────────────────────────────────────────────────── */
+.chart-container {
+  position: relative;
+  width: 100%;
+}
+
+.chart-container canvas {
+  max-width: 100%;
+}
+
+/* ── Gap table ──────────────────────────────────────────────── */
+.gap-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 14pt;
+  font-size: 9pt;
+}
+
+.gap-table th {
+  background: #1a1a1a;
+  color: white;
+  padding: 6pt 8pt;
+  text-align: left;
+  font-weight: 600;
+}
+
+.gap-table td {
+  padding: 6pt 8pt;
+  border-bottom: 1px solid #f3f4f6;
+  vertical-align: top;
+}
+
+.gap-table tr:nth-child(even) td { background: #f9fafb; }
+
+.severity-badge {
+  display: inline-block;
+  padding: 1.5pt 6pt;
+  border-radius: 10pt;
+  font-size: 8pt;
+  font-weight: 600;
+}
+
+.severity-badge.aligned { background: #dcfce7; color: #166534; }
+.severity-badge.watch   { background: #fef9c3; color: #854d0e; }
+.severity-badge.tension { background: #fee2e2; color: #991b1b; }
+
+/* ── Interpretation ─────────────────────────────────────────── */
+.interp-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 12pt;
+  margin-bottom: 14pt;
+}
+
+.interp-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 6pt;
+  padding: 10pt;
+}
+
+.interp-card h3 {
+  font-size: 9pt;
+  text-transform: uppercase;
+  letter-spacing: 0.5pt;
+  margin-bottom: 6pt;
+}
+
+.interp-card p {
+  font-size: 8.5pt;
+  line-height: 1.55;
+  color: #374151;
+}
+
+.interp-card.strengths h3 { color: #166534; }
+.interp-card.blind-spots h3 { color: #92400e; }
+.interp-card.working-with h3 { color: #1e40af; }
+
+.risk-item {
+  background: #fff1f2;
+  border-left: 3pt solid #f43f5e;
+  padding: 6pt 10pt;
+  border-radius: 0 4pt 4pt 0;
+  font-size: 8.5pt;
+  color: #374151;
+  margin-bottom: 5pt;
+}

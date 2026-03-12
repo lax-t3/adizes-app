@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AMSI Report — <%= user_name %></title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+
+<!-- PAGE 1: Cover Page -->
+<div class="page page-break">
+  <div class="cover">
+    <img class="logo-large" src="./assets/logo.png" alt="Adizes India Logo">
+    <div class="report-title">Adizes Management Style Indicator</div>
+    <div class="report-subtitle">Personal Assessment Report</div>
+    <div class="cover-band">
+      <div class="cover-name"><%= user_name %></div>
+      <div class="cover-date">
+        <%= new Date(completed_at).toLocaleDateString('en-GB', { year: 'numeric', month: 'long', day: 'numeric' }) %>
+      </div>
+    </div>
+    <p style="font-size:10pt; color:#374151; max-width:380pt; text-align:center; margin-top:20pt;">
+      This report presents your personal PAEI management style profile based on your responses
+      to the Adizes Management Style Indicator questionnaire. It provides insights into
+      how you currently operate, what your role demands, and what you naturally prefer.
+    </p>
+    <p class="confidential">
+      CONFIDENTIAL — For individual use only.<br>
+      © Adizes Institute. All rights reserved.
+    </p>
+  </div>
+  <div class="page-footer">
+    <span>Adizes India | info@adizesindia.com | www.adizesindia.com</span>
+    <span>Confidential — Page 1</span>
+  </div>
+</div>
+
+<!-- PAGE 2: P Role Description -->
+<div class="page page-break">
+  <div class="page-header">
+    <img class="logo" src="./assets/logo.png" alt="Adizes India">
+    <span class="header-tagline">PAEI Management Style Indicator</span>
+  </div>
+  <h1 style="color:#C8102E; margin-bottom:16pt;">The Four Management Styles</h1>
+  <div class="role-page-header">
+    <div class="role-badge P">P</div>
+    <div class="role-title">
+      <h2>Producer (P) — The Driver</h2>
+      <div class="role-tagline">Short-term results · Execution · Action orientation</div>
+    </div>
+  </div>
+  <div class="role-content">
+    <div class="role-description">
+      <p>The Producer role is focused on <strong>getting things done</strong>. Producers are highly results-oriented,
+      motivated by short-term goals, and thrive on action. They know what needs to be accomplished and
+      push hard to deliver it — on time, within budget, and to the required standard.</p>
+      <p>In organisations, the P function provides the energy and drive to move from planning to execution.
+      Without adequate P function, organisations talk without doing — paralysed by discussion while
+      opportunities pass.</p>
+      <p>At their best, Producers are decisive, persistent, and intensely focused. They cut through
+      ambiguity and deliver. At their worst, they become <em>Lone Rangers</em> — doing everything
+      themselves, burning out, and failing to develop others around them.</p>
+      <table class="role-table">
+        <tr>
+          <th>Work Habits</th>
+          <th>Attitude toward Other Styles</th>
+        </tr>
+        <tr>
+          <td>Focuses on immediate tasks<br>Sets tight deadlines<br>Pushes for closure<br>Prefers action over analysis</td>
+          <td><strong>A:</strong> Too slow, too many rules<br><strong>E:</strong> Too many ideas, never executes<br><strong>I:</strong> Too focused on feelings, not results</td>
+        </tr>
+      </table>
+    </div>
+    <div class="role-quadrant">
+      <img src="./assets/paei_quad_P.svg" alt="P Quadrant">
+    </div>
+  </div>
+  <div class="page-footer">
+    <span>Adizes India | info@adizesindia.com | www.adizesindia.com</span>
+    <span>Confidential — Page 2</span>
+  </div>
+</div>
+
+<!-- PAGE 3: A Role Description -->
+<div class="page page-break">
+  <div class="page-header">
+    <img class="logo" src="./assets/logo.png" alt="Adizes India">
+    <span class="header-tagline">PAEI Management Style Indicator</span>
+  </div>
+  <div class="role-page-header">
+    <div class="role-badge A">A</div>
+    <div class="role-title">
+      <h2>Administrator (A) — The Organiser</h2>
+      <div class="role-tagline">Systems · Process · Reliability · Order</div>
+    </div>
+  </div>
+  <div class="role-content">
+    <div class="role-description">
+      <p>The Administrator role is focused on <strong>how things are done</strong>. Administrators
+      build systems, establish processes, and ensure that the organisation functions efficiently,
+      consistently, and in compliance with its own standards. They are the guardians of institutional
+      memory and procedural discipline.</p>
+      <p>Without adequate A function, organisations become chaotic — innovation and energy dissipate
+      into disorder. With too much A and too little of other functions, organisations become rigid
+      and bureaucratic, optimising the process at the expense of results.</p>
+      <p>At their best, Administrators are thorough, reliable, and precise — ensuring that what
+      works today still works tomorrow. At their worst, they become <em>Bureaucrats</em> — following
+      rules that no longer serve the organisation's goals, prioritising procedure over purpose.</p>
+      <table class="role-table">
+        <tr>
+          <th>Work Habits</th>
+          <th>Attitude toward Other Styles</th>
+        </tr>
+        <tr>
+          <td>Documents and systematises<br>Monitors compliance<br>Manages by policy<br>Values predictability</td>
+          <td><strong>P:</strong> Cuts corners, ignores process<br><strong>E:</strong> Disruptive, changes for change's sake<br><strong>I:</strong> Soft, avoids difficult decisions</td>
+        </tr>
+      </table>
+    </div>
+    <div class="role-quadrant">
+      <img src="./assets/paei_quad_A.svg" alt="A Quadrant">
+    </div>
+  </div>
+  <div class="page-footer">
+    <span>Adizes India | info@adizesindia.com | www.adizesindia.com</span>
+    <span>Confidential — Page 3</span>
+  </div>
+</div>
+
+<!-- PAGE 4: E Role Description -->
+<div class="page page-break">
+  <div class="page-header">
+    <img class="logo" src="./assets/logo.png" alt="Adizes India">
+    <span class="header-tagline">PAEI Management Style Indicator</span>
+  </div>
+  <div class="role-page-header">
+    <div class="role-badge E">E</div>
+    <div class="role-title">
+      <h2>Entrepreneur (E) — The Visionary</h2>
+      <div class="role-tagline">Change · Innovation · Long-term vision · Risk-taking</div>
+    </div>
+  </div>
+  <div class="role-content">
+    <div class="role-description">
+      <p>The Entrepreneur role is focused on <strong>what could be done</strong>. Entrepreneurs are
+      driven by change, innovation, and the future. They identify opportunities before others see them,
+      challenge the status quo, and inspire organisations to evolve. They are energised by possibilities
+      and have a high tolerance for risk.</p>
+      <p>Without adequate E function, organisations stagnate — incrementally optimising a declining
+      strategy. With too much E and insufficient A and P, organisations launch initiatives that never
+      land and exhaust their people through constant change.</p>
+      <p>At their best, Entrepreneurs see the future clearly and inspire others to build it. At their
+      worst, they become <em>Arsonists</em> — burning down what works in pursuit of the next exciting
+      idea, leaving trails of unfinished projects.</p>
+      <table class="role-table">
+        <tr>
+          <th>Work Habits</th>
+          <th>Attitude toward Other Styles</th>
+        </tr>
+        <tr>
+          <td>Generates many ideas<br>Pivots quickly<br>Comfortable with ambiguity<br>Challenges assumptions</td>
+          <td><strong>P:</strong> Too narrow, misses the big picture<br><strong>A:</strong> Kills ideas with bureaucracy<br><strong>I:</strong> Too consensus-driven, moves too slowly</td>
+        </tr>
+      </table>
+    </div>
+    <div class="role-quadrant">
+      <img src="./assets/paei_quad_E.svg" alt="E Quadrant">
+    </div>
+  </div>
+  <div class="page-footer">
+    <span>Adizes India | info@adizesindia.com | www.adizesindia.com</span>
+    <span>Confidential — Page 4</span>
+  </div>
+</div>
+
+<!-- PAGE 5: I Role Description -->
+<div class="page page-break">
+  <div class="page-header">
+    <img class="logo" src="./assets/logo.png" alt="Adizes India">
+    <span class="header-tagline">PAEI Management Style Indicator</span>
+  </div>
+  <div class="role-page-header">
+    <div class="role-badge I">I</div>
+    <div class="role-title">
+      <h2>Integrator (I) — The Cohesive Shepherd</h2>
+      <div class="role-tagline">People · Consensus · Team harmony · Long-term cohesion</div>
+    </div>
+  </div>
+  <div class="role-content">
+    <div class="role-description">
+      <p>The Integrator role is focused on <strong>who needs to be aligned</strong>. Integrators
+      build team cohesion, resolve interpersonal conflicts, and ensure that the organisation functions
+      as a united whole rather than a collection of competing silos. They are skilled listeners,
+      consensus builders, and political navigators.</p>
+      <p>Without adequate I function, organisations fracture — talented individuals pull in different
+      directions, knowledge is hoarded, and politics undermine execution. With too much I and insufficient
+      P and E, organisations drift toward groupthink and conflict-avoidance.</p>
+      <p>At their best, Integrators create environments where diverse talent thrives and the whole
+      exceeds the sum of its parts. At their worst, they become <em>Super-Followers</em> — unable to
+      make unpopular decisions, prioritising harmony over necessary change.</p>
+      <table class="role-table">
+        <tr>
+          <th>Work Habits</th>
+          <th>Attitude toward Other Styles</th>
+        </tr>
+        <tr>
+          <td>Builds consensus before deciding<br>Invests in relationships<br>Seeks diverse input<br>Addresses interpersonal friction</td>
+          <td><strong>P:</strong> Drives results at the cost of people<br><strong>A:</strong> Hides behind rules instead of talking<br><strong>E:</strong> Disrupts team stability with constant change</td>
+        </tr>
+      </table>
+    </div>
+    <div class="role-quadrant">
+      <img src="./assets/paei_quad_I.svg" alt="I Quadrant">
+    </div>
+  </div>
+  <div class="page-footer">
+    <span>Adizes India | info@adizesindia.com | www.adizesindia.com</span>
+    <span>Confidential — Page 5</span>
+  </div>
+</div>
+
+<!-- PAGE 6: Personal Results Overview -->
+<div class="page page-break">
+  <div class="page-header">
+    <img class="logo" src="./assets/logo.png" alt="Adizes India">
+    <span class="header-tagline">PAEI Management Style Indicator</span>
+  </div>
+  <div class="results-header-band">
+    <h2>Personal Results — <%= user_name %></h2>
+    <div style="font-size:9pt; color:rgba(255,255,255,0.7); margin-bottom:8pt;">
+      Assessment completed <%= new Date(completed_at).toLocaleDateString('en-GB', { year: 'numeric', month: 'long', day: 'numeric' }) %>
+    </div>
+    <%
+      const roleColors = { P: '#C8102E', A: '#1D3557', E: '#E87722', I: '#2A9D8F' };
+      const wantProfile = profile.want || 'paei';
+    %>
+    <div style="margin-top:6pt;">
+      <div style="font-size:8pt; color:rgba(255,255,255,0.6); text-transform:uppercase; letter-spacing:1pt; margin-bottom:6pt;">
+        Your PAEI Profile (Want dimension)
+      </div>
+      <div class="profile-badges">
+        <% wantProfile.split('').forEach(function(char) {
+             const role = char.toUpperCase();
+             const isDominant = char === char.toUpperCase();
+        %>
+          <div class="profile-badge <%= isDominant ? role : 'non-dominant' %>">
+            <%= char %>
+          </div>
+        <% }); %>
+      </div>
+      <div style="font-size:8pt; color:rgba(255,255,255,0.55); margin-top:5pt;">
+        CAPITAL = dominant (score &gt; 30/50) · lowercase = non-dominant (≤ 30)
+      </div>
+    </div>
+  </div>
+  <div style="display:flex; align-items:center; gap:10pt; margin-bottom:12pt;">
+    <span style="background:#C8102E; color:white; font-size:9pt; font-weight:700; padding:3pt 10pt; border-radius:12pt;">
+      <%= interpretation.style_label %>
+    </span>
+    <span style="font-size:9.5pt; color:#6b7280; font-style:italic;">
+      <%= interpretation.style_tagline %>
+    </span>
+  </div>
+  <% if (interpretation.combined_description) { %>
+    <p style="font-size:9.5pt; color:#374151; line-height:1.6; margin-bottom:12pt;">
+      <%= interpretation.combined_description %>
+    </p>
+  <% } %>
+  <h3 style="color:#1a1a1a; margin-bottom:10pt; font-size:10pt; text-transform:uppercase; letter-spacing:0.5pt;">
+    Score Summary
+  </h3>
+  <table class="role-table">
+    <thead>
+      <tr>
+        <th>Role</th>
+        <th>Is (current)</th>
+        <th>Should (role demands)</th>
+        <th>Want (preferred)</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% ['P','A','E','I'].forEach(function(role) { %>
+        <tr>
+          <td style="font-weight:600; color:<%= roleColors[role] %>;"><%= role %></td>
+          <td><%= scaled_scores.is[role] %> / 50</td>
+          <td><%= scaled_scores.should[role] %> / 50</td>
+          <td><%= scaled_scores.want[role] %> / 50</td>
+        </tr>
+      <% }); %>
+    </tbody>
+  </table>
+  <div class="page-footer">
+    <span>Adizes India | info@adizesindia.com | www.adizesindia.com</span>
+    <span>Confidential — Page 6</span>
+  </div>
+</div>
+
+<!-- PAGE 7: Radar Chart -->
+<div class="page page-break">
+  <div class="page-header">
+    <img class="logo" src="./assets/logo.png" alt="Adizes India">
+    <span class="header-tagline">PAEI Management Style Indicator</span>
+  </div>
+  <h2 style="margin-bottom:4pt;">Style Comparison — Is / Should / Want</h2>
+  <p style="font-size:8.5pt; color:#6b7280; margin-bottom:16pt;">
+    Three overlapping profiles across the four PAEI dimensions. Gaps between the lines reveal tension
+    between how you currently behave, what your role demands, and what you prefer.
+  </p>
+  <div class="chart-container" style="height:380pt;">
+    <canvas id="radarChart"></canvas>
+  </div>
+  <div class="page-footer">
+    <span>Adizes India | info@adizesindia.com | www.adizesindia.com</span>
+    <span>Confidential — Page 7</span>
+  </div>
+</div>
+
+<!-- PAGE 8: Gap Analysis -->
+<div class="page page-break">
+  <div class="page-header">
+    <img class="logo" src="./assets/logo.png" alt="Adizes India">
+    <span class="header-tagline">PAEI Management Style Indicator</span>
+  </div>
+  <h2 style="margin-bottom:4pt;">Gap Analysis</h2>
+  <p style="font-size:8.5pt; color:#6b7280; margin-bottom:16pt;">
+    <strong>External Gap</strong> = difference between Is (current behaviour) and Should (role demands).
+    <strong>Internal Gap</strong> = difference between Should and Want (natural preference).
+    Green &lt; 7 pts · Yellow 7–14 pts · Red 15+ pts.
+  </p>
+  <div class="chart-container" style="height:220pt; margin-bottom:18pt;">
+    <canvas id="barChart"></canvas>
+  </div>
+  <table class="gap-table">
+    <thead>
+      <tr>
+        <th>Role</th>
+        <th>Is</th>
+        <th>Should</th>
+        <th>External Gap</th>
+        <th>Severity</th>
+        <th>Internal Gap</th>
+        <th>Severity</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% gaps.forEach(function(g) { %>
+        <tr>
+          <td style="font-weight:600;"><%= g.role_name %></td>
+          <td><%= g.is_score %></td>
+          <td><%= g.should_score %></td>
+          <td style="text-align:center;"><%= g.external_gap > 0 ? '+' : '' %><%= g.external_gap %></td>
+          <td><span class="severity-badge <%= g.external_severity %>"><%= g.external_severity %></span></td>
+          <td style="text-align:center;"><%= g.internal_gap > 0 ? '+' : '' %><%= g.internal_gap %></td>
+          <td><span class="severity-badge <%= g.internal_severity %>"><%= g.internal_severity %></span></td>
+        </tr>
+        <% if (g.external_message || g.internal_message) { %>
+          <tr>
+            <td></td>
+            <td colspan="3" style="font-size:8pt; color:#6b7280; font-style:italic; padding-top:2pt;">
+              <%= g.external_message %>
+            </td>
+            <td></td>
+            <td colspan="2" style="font-size:8pt; color:#6b7280; font-style:italic; padding-top:2pt;">
+              <%= g.internal_message %>
+            </td>
+          </tr>
+        <% } %>
+      <% }); %>
+    </tbody>
+  </table>
+  <div class="page-footer">
+    <span>Adizes India | info@adizesindia.com | www.adizesindia.com</span>
+    <span>Confidential — Page 8</span>
+  </div>
+</div>
+
+<!-- PAGE 9: Style Interpretation -->
+<div class="page">
+  <div class="page-header">
+    <img class="logo" src="./assets/logo.png" alt="Adizes India">
+    <span class="header-tagline">PAEI Management Style Indicator</span>
+  </div>
+  <h2 style="margin-bottom:6pt;">Style Interpretation — <%= interpretation.style_label %></h2>
+  <p style="font-size:8.5pt; color:#6b7280; margin-bottom:14pt; font-style:italic;">
+    "<%= interpretation.style_tagline %>"
+  </p>
+  <div class="interp-grid">
+    <div class="interp-card strengths">
+      <h3>✓ Strengths</h3>
+      <p><%= interpretation.strengths %></p>
+    </div>
+    <div class="interp-card blind-spots">
+      <h3>⚠ Blind Spots</h3>
+      <p><%= interpretation.blind_spots %></p>
+    </div>
+    <div class="interp-card working-with">
+      <h3>⟳ Working with Others</h3>
+      <p><%= interpretation.working_with_others %></p>
+    </div>
+  </div>
+  <% if (interpretation.mismanagement_risks && interpretation.mismanagement_risks.length > 0) { %>
+    <div style="margin-top:14pt;">
+      <h3 style="font-size:9pt; text-transform:uppercase; letter-spacing:0.5pt; color:#6b7280; margin-bottom:8pt;">
+        Mismanagement Risk Under Stress
+      </h3>
+      <% interpretation.mismanagement_risks.forEach(function(risk) { %>
+        <div class="risk-item"><%= risk %></div>
+      <% }); %>
+    </div>
+  <% } %>
+  <div style="margin-top:20pt; padding:12pt; background:#f9fafb; border-radius:6pt; border:1px solid #e5e7eb;">
+    <p style="font-size:8pt; color:#6b7280; line-height:1.6;">
+      <strong>How to use this report:</strong> Your PAEI profile is a tool for self-awareness, not a fixed label.
+      Strengths can become liabilities when over-used. Blind spots are growth opportunities. Use this report
+      to open conversations with colleagues, coaches, and managers — not to limit yourself or others.
+    </p>
+  </div>
+  <div class="page-footer">
+    <span>Adizes India | info@adizesindia.com | www.adizesindia.com</span>
+    <span>Confidential — Page 9</span>
+  </div>
+</div>
+
+<!-- Chart.js — injected by Lambda handler after page.setContent() via page.addScriptTag() -->
+<!-- initCharts() is called by the handler via page.evaluate() after Chart.js is loaded -->
+<script>
+  function initCharts(scaledScores, gaps) {
+    // Radar Chart
+    const radarCtx = document.getElementById('radarChart').getContext('2d');
+    new Chart(radarCtx, {
+      type: 'radar',
+      data: {
+        labels: ['Producer (P)', 'Administrator (A)', 'Entrepreneur (E)', 'Integrator (I)'],
+        datasets: [
+          {
+            label: 'Is',
+            data: [scaledScores.is.P, scaledScores.is.A, scaledScores.is.E, scaledScores.is.I],
+            borderColor: '#C8102E', backgroundColor: 'rgba(200,16,46,0.15)',
+            borderWidth: 2, pointRadius: 4,
+          },
+          {
+            label: 'Should',
+            data: [scaledScores.should.P, scaledScores.should.A, scaledScores.should.E, scaledScores.should.I],
+            borderColor: '#1D3557', backgroundColor: 'rgba(29,53,87,0.15)',
+            borderWidth: 2, pointRadius: 4,
+          },
+          {
+            label: 'Want',
+            data: [scaledScores.want.P, scaledScores.want.A, scaledScores.want.E, scaledScores.want.I],
+            borderColor: '#E87722', backgroundColor: 'rgba(232,119,34,0.15)',
+            borderWidth: 2, pointRadius: 4,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        scales: { r: { min: 0, max: 50, ticks: { stepSize: 10 } } },
+        plugins: { legend: { position: 'bottom' } },
+        animation: false,
+      },
+    });
+
+    // Bar Chart (Gap Analysis)
+    const barCtx = document.getElementById('barChart').getContext('2d');
+    new Chart(barCtx, {
+      type: 'bar',
+      data: {
+        labels: gaps.map(function(g) { return g.role_name; }),
+        datasets: [
+          {
+            label: 'Is',
+            data: gaps.map(function(g) { return g.is_score; }),
+            backgroundColor: '#C8102E', borderRadius: 3,
+          },
+          {
+            label: 'Should',
+            data: gaps.map(function(g) { return g.should_score; }),
+            backgroundColor: '#1D3557', borderRadius: 3,
+          },
+        ],
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true,
+        maintainAspectRatio: true,
+        scales: { x: { min: 0, max: 50 } },
+        plugins: { legend: { position: 'bottom' } },
+        animation: false,
+      },
+    });
+
+    // Signal to Puppeteer that both charts are fully rendered
+    window.__chartsReady = true;
+  }
+</script>
+
+</body>
+</html>
