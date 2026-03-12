@@ -1,4 +1,7 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
+import boto3
+import json
+import logging
 from app.auth import get_current_user
 from app.database import supabase_admin
 from app.schemas.assessment import QuestionsResponse, SubmitRequest, SubmitResponse, Section, Question, Option
@@ -9,7 +12,46 @@ from app.config import settings
 import uuid
 from datetime import datetime, timezone
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter()
+
+
+def _build_pdf_payload(result_id: str, user_name: str, now: str,
+                        scores: dict, gaps: list, interp: dict) -> dict:
+    """Build the JSON payload for the PDF Lambda function."""
+    return {
+        "assessment_id": result_id,
+        "user_name": user_name,
+        "completed_at": now,
+        "profile": scores["profile"],
+        "scaled_scores": scores["scaled"],
+        "gaps": gaps,
+        "interpretation": interp,
+    }
+
+
+def _trigger_pdf_lambda(assessment_id: str, payload: dict) -> None:
+    """Fire-and-forget: invoke Lambda async. Non-fatal if it fails."""
+    if not settings.aws_access_key_id:
+        logger.info(f"[pdf-lambda] AWS credentials not configured — skipping trigger for {assessment_id}")
+        return
+    try:
+        client = boto3.client(
+            "lambda",
+            region_name=settings.aws_region,
+            aws_access_key_id=settings.aws_access_key_id,
+            aws_secret_access_key=settings.aws_secret_access_key,
+        )
+        client.invoke(
+            FunctionName=settings.pdf_lambda_function_name,
+            InvocationType="Event",
+            Payload=json.dumps(payload).encode(),
+        )
+        logger.info(f"[pdf-lambda] Triggered async PDF generation for assessment {assessment_id}")
+    except Exception as e:
+        logger.error(f"[pdf-lambda] Trigger failed for assessment {assessment_id}: {e}")
+
 
 SECTION_META = [
     {
@@ -82,7 +124,7 @@ def get_questions(_: dict = Depends(get_current_user)):
 
 
 @router.post("/submit", response_model=SubmitResponse)
-def submit_assessment(body: SubmitRequest, user: dict = Depends(get_current_user)):
+def submit_assessment(body: SubmitRequest, background_tasks: BackgroundTasks, user: dict = Depends(get_current_user)):
     """Score a completed assessment and persist the result."""
     if len(body.answers) != 36:
         raise HTTPException(
@@ -176,5 +218,9 @@ def submit_assessment(body: SubmitRequest, user: dict = Depends(get_current_user
             }])
     except Exception as e:
         print(f"[assessment] Completion email failed (non-fatal): {e}")
+
+    # Trigger async PDF generation in Lambda (non-blocking)
+    pdf_payload = _build_pdf_payload(result_id, user_name, now, scores, gaps, interp)
+    background_tasks.add_task(_trigger_pdf_lambda, result_id, pdf_payload)
 
     return SubmitResponse(result_id=result_id)
