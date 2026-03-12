@@ -175,7 +175,7 @@ export function AdminRespondent() {
             </CardHeader>
             <CardContent>
               <div className="h-[400px] w-full">
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer width="99%" height="100%">
                   <RadarChart cx="50%" cy="50%" outerRadius="70%" data={radarData}>
                     <PolarGrid stroke="#e5e7eb" />
                     <PolarAngleAxis dataKey="subject" tick={{ fill: "#4b5563", fontSize: 12, fontWeight: 500 }} />
@@ -201,7 +201,7 @@ export function AdminRespondent() {
             </CardHeader>
             <CardContent>
               <div className="h-[280px] w-full mb-6">
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer width="99%" height="100%">
                   <BarChart data={gapChartData} layout="vertical" margin={{ top: 5, right: 30, left: 40, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f3f4f6" />
                     <XAxis type="number" domain={[0, 50]} tick={{ fill: "#9ca3af" }} />
