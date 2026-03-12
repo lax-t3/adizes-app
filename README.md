@@ -73,6 +73,92 @@ PDF_LAMBDA_FUNCTION_NAME=adizes-pdf-generator
 
 > **Docker note**: When running inside Docker, use `http://host.docker.internal:54321` as `SUPABASE_URL` so the container can reach your local Supabase.
 
+## Production Deployment (AWS App Runner via ECR)
+
+AWS App Runner pulls the Docker image directly from ECR and manages scaling, TLS, and health
+checks automatically — no EC2 or load balancer configuration needed.
+
+### ECR Image URI
+
+```
+094492115510.dkr.ecr.ap-south-1.amazonaws.com/adizes-backend:latest
+```
+
+### Step 1 — Push a new image to ECR
+
+Run this whenever you want to deploy a new version:
+
+```bash
+# Authenticate Docker to ECR
+aws ecr get-login-password --region ap-south-1 | \
+  docker login --username AWS --password-stdin \
+  094492115510.dkr.ecr.ap-south-1.amazonaws.com
+
+# Build for linux/amd64 and push  (--provenance=false required on Apple Silicon)
+docker buildx build \
+  --platform linux/amd64 \
+  --provenance=false \
+  -t 094492115510.dkr.ecr.ap-south-1.amazonaws.com/adizes-backend:latest \
+  --push .
+```
+
+### Step 2 — Create the App Runner service (first time only)
+
+1. Open **AWS Console → App Runner → Create service** (region: `ap-south-1`)
+2. Source:
+   - **Repository type:** Amazon ECR
+   - **Container image URI:** `094492115510.dkr.ecr.ap-south-1.amazonaws.com/adizes-backend:latest`
+   - **Deployment trigger:** Automatic (redeploys on every new image push)
+3. Configure service:
+   - **Port:** `8000`
+   - **CPU:** 1 vCPU · **Memory:** 2 GB (minimum recommended)
+4. Set environment variables (Add all of these under **Environment variables**):
+
+```
+SUPABASE_URL              = https://swiznkamzxyfzgckebqi.supabase.co
+SUPABASE_ANON_KEY         = <anon key from Supabase dashboard>
+SUPABASE_SERVICE_ROLE_KEY = <service role key from Supabase dashboard>
+SUPABASE_JWT_SECRET       = <JWT secret from Supabase dashboard>
+FRONTEND_URL              = https://your-netlify-app.netlify.app
+AWS_REGION                = ap-south-1
+AWS_ACCESS_KEY_ID         = <IAM user key for Lambda invocation>
+AWS_SECRET_ACCESS_KEY     = <IAM user secret for Lambda invocation>
+PDF_LAMBDA_FUNCTION_NAME  = adizes-pdf-generator
+```
+
+5. **Create & deploy** — App Runner provisions the service and gives you a URL like:
+   `https://xxxxxxxxxxxx.ap-south-1.awsapprunner.com`
+
+### Step 3 — Update Supabase CORS and frontend URL
+
+In Supabase Dashboard → Project Settings → API → **Allowed CORS origins**, add your App Runner URL.
+
+Update `FRONTEND_URL` on App Runner to point to your Netlify URL (so CORS headers are set correctly).
+
+### Step 4 — Subsequent deploys
+
+Just push a new image to ECR — App Runner auto-redeploys within ~1 minute:
+
+```bash
+aws ecr get-login-password --region ap-south-1 | \
+  docker login --username AWS --password-stdin \
+  094492115510.dkr.ecr.ap-south-1.amazonaws.com
+
+docker buildx build \
+  --platform linux/amd64 --provenance=false \
+  -t 094492115510.dkr.ecr.ap-south-1.amazonaws.com/adizes-backend:latest \
+  --push .
+```
+
+### IAM permissions required for App Runner
+
+App Runner needs an **ECR access role** to pull images. When creating the service, select
+**Create new service role** — AWS creates `AppRunnerECRAccessRole` automatically with the
+required `ecr:GetDownloadUrlForLayer`, `ecr:BatchGetImage` and `ecr:GetAuthorizationToken`
+permissions.
+
+---
+
 ## Production Deployment (Render.com)
 
 1. Create a new **Web Service** on Render.com, connect to the `adizes-backend` branch
