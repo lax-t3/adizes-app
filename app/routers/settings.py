@@ -78,16 +78,17 @@ def save_smtp(body: SmtpConfig, admin: dict = Depends(require_admin)):
 
 @router.post("/smtp/test")
 def test_smtp(body: TestEmailRequest, admin: dict = Depends(require_admin)):
-    ok = send_email(
-        to_email=str(body.to_email),
-        subject="Test email from Adizes Platform",
-        html_body=(
-            "<p>This is a test email from your Adizes India.</p>"
-            "<p>If you received this, your SMTP settings are working correctly.</p>"
-        ),
-    )
-    if not ok:
-        raise HTTPException(status_code=400, detail="Failed to send test email. Check SMTP settings.")
+    try:
+        send_email(
+            to_email=str(body.to_email),
+            subject="Test email from Adizes India",
+            html_body=(
+                "<p>This is a test email from Adizes India.</p>"
+                "<p>If you received this, your SMTP settings are working correctly.</p>"
+            ),
+        )
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
     return {"message": f"Test email sent to {body.to_email}"}
 
 
