@@ -53,7 +53,7 @@ adizes-frontend/
       client.ts        # Axios instance with JWT interceptor + 401 redirect
       profile.ts       # getProfile, updateProfile, changePassword
       assessment.ts    # questions, submit
-      results.ts       # getResults, getMyAssessments
+      results.ts       # getResult, getMyAssessments (downloadPdf removed — PDFs served from S3 via pdf_url)
       admin.ts         # cohort CRUD, member management, user management
       settings.ts      # SMTP + email template CRUD
     components/
@@ -68,7 +68,7 @@ adizes-frontend/
       SetPassword.tsx  # Redirect shim → /register (for old invite email links)
       Dashboard.tsx    # PAEI results tabs + My Assessments list
       Assessment.tsx   # 36-question assessment flow
-      Results.tsx      # Full PAEI results + PDF download
+      Results.tsx      # Full PAEI results + PDF download (S3 url state machine: null→"Generating…"+check-again, set→window.open)
       AdminDashboard.tsx
       AdminCohortList.tsx
       AdminCohortDetail.tsx   # Cohort members + resend invite

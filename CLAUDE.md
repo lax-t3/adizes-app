@@ -24,7 +24,7 @@ Scaffolded via Google AI Studio, wired to `adizes-backend` FastAPI.
 | `src/api/client.ts` | Axios instance — reads JWT from localStorage, attaches as Bearer token |
 | `src/api/auth.ts` | `login()`, `register()` → POST /auth/* |
 | `src/api/assessment.ts` | `getQuestions()`, `submitAssessment()` |
-| `src/api/results.ts` | `getResult()`, `downloadPdf()` |
+| `src/api/results.ts` | `getResult()`, `getMyAssessments()` — `downloadPdf` removed; PDFs now served from S3 via `pdf_url` field |
 | `src/api/admin.ts` | `listCohorts()`, `getCohort()`, `exportCohortCsv()` |
 | `src/store/authStore.ts` | Persisted Zustand — `{ user, role, token }` |
 | `src/store/assessmentStore.ts` | In-memory — sections, answers (question_index→option_key), resultId |
