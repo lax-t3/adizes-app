@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuthStore } from "@/store/authStore";
 import { Button } from "@/components/ui/Button";
@@ -8,7 +8,30 @@ import { register as apiRegister, setPassword, saveInviteProfile } from "@/api/a
 import { decodeJwt } from "@/lib/jwt";
 import { Footer } from "@/components/layout/Footer";
 
+// Parse invite/recovery token from URL hash synchronously at module evaluation time
+// so that mode detection is available on the very first render (no flash).
+function parseInviteHash() {
+  const params = new URLSearchParams(window.location.hash.slice(1));
+  const token = params.get("access_token");
+  const type = params.get("type");
+  if (token && (type === "invite" || type === "recovery")) {
+    const decoded = decodeJwt(token);
+    const meta = (decoded.user_metadata ?? {}) as Record<string, unknown>;
+    return {
+      token,
+      name: typeof meta.name === "string" ? meta.name : "",
+      email: typeof decoded.email === "string" ? decoded.email : "",
+    };
+  }
+  return null;
+}
+
 export function Register() {
+  // ── Activate mode — computed once from hash, never changes ───────────
+  const [inviteHash] = useState(parseInviteHash);  // lazy initializer: runs once
+  const activateMode = inviteHash !== null;
+  const accessToken = inviteHash?.token ?? null;
+
   // ── Normal mode state ────────────────────────────────────────────────
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -20,32 +43,14 @@ export function Register() {
   const loginStore = useAuthStore((state) => state.login);
 
   // ── Activate mode state ──────────────────────────────────────────────
-  const [activateMode, setActivateMode] = useState(false);
-  const [accessToken, setAccessToken] = useState<string | null>(null);
-  const [activateName, setActivateName] = useState("");
-  const [activateEmail, setActivateEmail] = useState("");
+  const [activateName, setActivateName] = useState(inviteHash?.name ?? "");
+  const [activateEmail] = useState(inviteHash?.email ?? "");
   const [activatePassword, setActivatePassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");  // not `confirm` — shadows window.confirm
   const [termsActivate, setTermsActivate] = useState(false);
   const [activateError, setActivateError] = useState("");
   const [activateLoading, setActivateLoading] = useState(false);
   const [activateSuccess, setActivateSuccess] = useState(false);
-
-  useEffect(() => {
-    const hash = window.location.hash.slice(1);
-    const params = new URLSearchParams(hash);
-    const token = params.get("access_token");
-    const type = params.get("type");
-
-    if (token && (type === "invite" || type === "recovery")) {
-      setActivateMode(true);
-      setAccessToken(token);
-      const decoded = decodeJwt(token);
-      const meta = decoded.user_metadata ?? {};
-      if (meta.name) setActivateName(meta.name);
-      if (decoded.email) setActivateEmail(decoded.email);
-    }
-  }, []);
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -68,12 +73,12 @@ export function Register() {
 
   const handleActivate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (activatePassword !== confirmPassword) {
-      setActivateError("Passwords do not match.");
-      return;
-    }
     if (activatePassword.length < 8) {
       setActivateError("Password must be at least 8 characters.");
+      return;
+    }
+    if (activatePassword !== confirmPassword) {
+      setActivateError("Passwords do not match.");
       return;
     }
 
@@ -101,7 +106,7 @@ export function Register() {
     }
   };
 
-  // Invalid invite link — token present in hash but wrong/missing type
+  // Invalid invite link — token present in hash but wrong/missing type (checked synchronously, no flash)
   if (window.location.hash.includes("access_token") && !activateMode) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
