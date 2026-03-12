@@ -78,6 +78,12 @@ def save_smtp(body: SmtpConfig, admin: dict = Depends(require_admin)):
 
 @router.post("/smtp/test")
 def test_smtp(body: TestEmailRequest, admin: dict = Depends(require_admin)):
+    from app.services.email_service import _get_smtp_settings
+    cfg = _get_smtp_settings()
+    if not cfg or not cfg.get("host") or not cfg.get("from_email"):
+        raise HTTPException(status_code=400, detail="SMTP is not configured. Fill in all required fields and save first.")
+
+    diag = f"host={cfg.get('host')} port={cfg.get('port')} ssl={cfg.get('use_ssl')} user={cfg.get('username')} from={cfg.get('from_email')}"
     try:
         send_email(
             to_email=str(body.to_email),
@@ -88,7 +94,7 @@ def test_smtp(body: TestEmailRequest, admin: dict = Depends(require_admin)):
             ),
         )
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=f"{e} | config: {diag}")
     return {"message": f"Test email sent to {body.to_email}"}
 
 
