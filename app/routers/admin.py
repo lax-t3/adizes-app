@@ -207,7 +207,7 @@ def enroll_user(cohort_id: str, body: EnrollUserRequest, admin: dict = Depends(r
         try:
             resp = supabase_admin.auth.admin.invite_user_by_email(
                 body.email,
-                options={"redirect_to": f"{settings.frontend_url}/set-password"},
+                options={"redirect_to": f"{settings.frontend_url}/register"},
             )
             target = resp.user
             invited_new = True
@@ -243,7 +243,7 @@ def enroll_user(cohort_id: str, body: EnrollUserRequest, admin: dict = Depends(r
                 lr = supabase_admin.auth.admin.generate_link({
                     "type": "invite",
                     "email": body.email,
-                    "options": {"redirect_to": f"{settings.frontend_url}/set-password"},
+                    "options": {"redirect_to": f"{settings.frontend_url}/register"},
                 })
                 invite_link_val = getattr(lr.properties, "action_link", settings.frontend_url)
             except Exception:
@@ -303,7 +303,7 @@ def bulk_enroll(cohort_id: str, body: BulkEnrollRequest, admin: dict = Depends(r
 
             if not user:
                 # Invite new user
-                data: dict = {"redirect_to": f"{settings.frontend_url}/set-password"}
+                data: dict = {"redirect_to": f"{settings.frontend_url}/register"}
                 if entry.name:
                     data["data"] = {"name": entry.name}
                 resp = supabase_admin.auth.admin.invite_user_by_email(email, options=data)
@@ -335,7 +335,7 @@ def bulk_enroll(cohort_id: str, body: BulkEnrollRequest, admin: dict = Depends(r
                         lr = supabase_admin.auth.admin.generate_link({
                             "type": "invite",
                             "email": email,
-                            "options": {"redirect_to": f"{settings.frontend_url}/set-password"},
+                            "options": {"redirect_to": f"{settings.frontend_url}/register"},
                         })
                         invite_link_val = getattr(lr.properties, "action_link", settings.frontend_url)
                     except Exception:
@@ -405,7 +405,7 @@ def resend_enrollment_invite(cohort_id: str, user_id: str, admin: dict = Depends
             lr = supabase_admin.auth.admin.generate_link({
                 "type": "invite",
                 "email": email,
-                "options": {"redirect_to": f"{settings.frontend_url}/set-password"},
+                "options": {"redirect_to": f"{settings.frontend_url}/register"},
             })
             invite_link_val = getattr(lr.properties, "action_link", settings.frontend_url)
         except Exception:
@@ -469,7 +469,7 @@ def invite_admin(body: InviteAdminRequest, admin: dict = Depends(require_admin))
             "email": body.email,
             "options": {
                 "data": {"name": body.name},
-                "redirect_to": f"{settings.frontend_url}/set-password",
+                "redirect_to": f"{settings.frontend_url}/register",
             },
         })
         invite_link_val = lr.properties.action_link
@@ -515,13 +515,13 @@ def resend_invite(user_id: str, admin: dict = Depends(require_admin)):
     admin_name = meta.get("name", "") or email
 
     # For existing invited users, type=invite fails ("already registered").
-    # type=recovery works for any existing user and redirects to /set-password.
+    # type=recovery works for any existing user and redirects to /register.
     invite_link_val = settings.frontend_url
     try:
         lr = supabase_admin.auth.admin.generate_link({
             "type": "recovery",
             "email": email,
-            "options": {"redirect_to": f"{settings.frontend_url}/set-password"},
+            "options": {"redirect_to": f"{settings.frontend_url}/register"},
         })
         invite_link_val = lr.properties.action_link
     except Exception:
