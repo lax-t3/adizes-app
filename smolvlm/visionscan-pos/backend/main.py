@@ -1,11 +1,15 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
+import logging
 
 from app.models import Base
 from app.database import engine
 from app.routers import sessions, inventory, checkout, detect
+from app.services.ollama_service import ollama_service
 from config import config
+
+logger = logging.getLogger(__name__)
 
 # Create tables
 Base.metadata.create_all(bind=engine)
@@ -16,6 +20,16 @@ Base.metadata.create_all(bind=engine)
 async def lifespan(app: FastAPI):
     # Startup
     print("Starting VisionScan POS API...")
+
+    # Check Ollama service availability
+    if ollama_service.health_check():
+        logger.info(f"✓ Ollama service available at {ollama_service.endpoint}")
+    else:
+        logger.warning(
+            f"⚠ Ollama service not available at {ollama_service.endpoint} - "
+            "detection features will be disabled. Ensure Ollama is running."
+        )
+
     yield
     # Shutdown
     print("Shutting down VisionScan POS API...")

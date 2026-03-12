@@ -33,8 +33,13 @@ def detect_from_image(
 
     Returns list of potential product matches from inventory.
     """
-    # Verify session exists
-    session = db.query(ScanSession).filter(ScanSession.id == session_id).first()
+    # Verify session exists and lock it to prevent race conditions
+    session = (
+        db.query(ScanSession)
+        .filter(ScanSession.id == session_id)
+        .with_for_update()
+        .first()
+    )
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
 
@@ -79,6 +84,17 @@ def detect_from_image(
                         matched_from=ollama_result.product_name,
                     )
                 )
+
+        # Re-check session status after detection to catch race conditions
+        db.refresh(session)
+        if session.status != "active":
+            logger.warning(
+                f"Session {session_id} was completed during detection - results discarded"
+            )
+            raise HTTPException(
+                status_code=400,
+                detail="Session was completed during detection"
+            )
 
         return ImageDetectionResponse(
             results=detection_results,

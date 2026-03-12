@@ -25,6 +25,7 @@ export function WebcamScanner({
   const webcamRef = useRef<Webcam>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [webcamError, setWebcamError] = useState<string | null>(null);
   const [results, setResults] = useState<DetectionResult[]>([]);
   const [showResults, setShowResults] = useState(false);
 
@@ -54,8 +55,28 @@ export function WebcamScanner({
         setError('No products detected in image. Try again.');
       }
     } catch (err) {
-      const message =
-        err instanceof Error ? err.message : 'Detection failed. Is Ollama running?';
+      let message = 'Detection failed';
+
+      if (err instanceof Error) {
+        const errorMsg = err.message.toLowerCase();
+
+        if (errorMsg.includes('503') || errorMsg.includes('service unavailable')) {
+          message = 'Detection service unavailable. Please ensure Ollama is running and healthy.';
+        } else if (errorMsg.includes('timeout') || errorMsg.includes('timed out')) {
+          message = 'Detection timed out. Try with better lighting or a clearer image.';
+        } else if (errorMsg.includes('400') || errorMsg.includes('bad request')) {
+          message = 'Invalid image. Please try capturing again.';
+        } else if (errorMsg.includes('completed during detection')) {
+          message = 'Session was completed while detecting. Please start a new session.';
+        } else if (errorMsg.includes('not active')) {
+          message = 'Session is not active. Please start a new session.';
+        } else if (errorMsg.includes('failed to capture')) {
+          message = 'Failed to capture image. Please check camera permissions.';
+        } else {
+          message = err.message || 'Detection failed. Please try again.';
+        }
+      }
+
       setError(message);
     } finally {
       setLoading(false);
@@ -87,6 +108,11 @@ export function WebcamScanner({
           width={640}
           height={480}
           videoConstraints={{ facingMode: 'environment' }}
+          onUserMediaError={(err) => {
+            setWebcamError(
+              'Camera access denied. Please enable camera permissions or use manual entry.'
+            );
+          }}
         />
       </div>
 
@@ -99,7 +125,14 @@ export function WebcamScanner({
         {loading ? 'Detecting...' : 'Detect Products'}
       </button>
 
-      {/* Error Message */}
+      {/* Webcam Error */}
+      {webcamError && (
+        <div className="p-3 bg-yellow-100 border border-yellow-400 text-yellow-700 rounded">
+          {webcamError}
+        </div>
+      )}
+
+      {/* Detection Error */}
       {error && (
         <div className="p-3 bg-red-100 border border-red-400 text-red-700 rounded">
           {error}

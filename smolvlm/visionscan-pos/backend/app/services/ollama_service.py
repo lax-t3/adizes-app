@@ -24,6 +24,22 @@ class OllamaService:
         self.model = model or config.OLLAMA_MODEL
         self.api_url = f"{self.endpoint}/api/generate"
 
+    def health_check(self) -> bool:
+        """
+        Check if Ollama service is reachable and responsive.
+
+        Returns: True if Ollama is available, False otherwise
+        """
+        try:
+            response = requests.get(
+                f"{self.endpoint}/api/tags",
+                timeout=5
+            )
+            return response.status_code == 200
+        except requests.RequestException as e:
+            logger.warning(f"Ollama health check failed: {e}")
+            return False
+
     def build_inventory_prompt(self, inventory_names: List[str]) -> str:
         """Build prompt with inventory context."""
         inventory_str = ", ".join(inventory_names)
