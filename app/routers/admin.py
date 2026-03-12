@@ -233,8 +233,10 @@ def enroll_user(cohort_id: str, body: EnrollUserRequest, admin: dict = Depends(r
         "user_id": str(target.id),
     }).execute()
 
-    # For existing users who haven't confirmed yet, generate a recovery link
-    if not invited_new and not getattr(target, "email_confirmed_at", None):
+    # For existing users (not newly invited), always generate a recovery link
+    # regardless of email_confirmed_at — confirmed state can be set by Supabase
+    # even before the user has gone through the activate flow.
+    if not invited_new:
         try:
             lr = supabase_admin.auth.admin.generate_link({
                 "type": "recovery",
@@ -326,8 +328,10 @@ def bulk_enroll(cohort_id: str, body: BulkEnrollRequest, admin: dict = Depends(r
                     failed.append({"email": email, "reason": f"Could not invite user: {e}"})
                     continue
 
-            # For existing users who haven't confirmed yet, generate a recovery link
-            if not invited_new and not getattr(user, "email_confirmed_at", None):
+            # For existing users, always generate a recovery link regardless of
+            # email_confirmed_at — Supabase can set confirmed state before the user
+            # has actually gone through the activate flow.
+            if not invited_new:
                 try:
                     lr = supabase_admin.auth.admin.generate_link({
                         "type": "recovery",
@@ -412,20 +416,18 @@ def resend_enrollment_invite(cohort_id: str, user_id: str, admin: dict = Depends
     meta = getattr(auth_user, "user_metadata", None) or {}
     user_name_val = meta.get("name", "") or email
 
-    # Determine if user has confirmed their email (i.e. set a password via invite)
-    email_confirmed = getattr(auth_user, "email_confirmed_at", None)
+    # Always generate a fresh recovery link — admin explicitly requested resend.
+    # type=recovery works for any user regardless of email_confirmed_at state.
     invite_link_val = settings.frontend_url
-    if not email_confirmed:
-        # type=invite fails for already-registered users; use type=recovery instead
-        try:
-            lr = supabase_admin.auth.admin.generate_link({
-                "type": "recovery",
-                "email": email,
-                "options": {"redirect_to": f"{settings.frontend_url}/register"},
-            })
-            invite_link_val = lr.properties.action_link
-        except Exception:
-            pass
+    try:
+        lr = supabase_admin.auth.admin.generate_link({
+            "type": "recovery",
+            "email": email,
+            "options": {"redirect_to": f"{settings.frontend_url}/register"},
+        })
+        invite_link_val = lr.properties.action_link
+    except Exception:
+        pass
 
     if not smtp_configured():
         raise HTTPException(status_code=400, detail="SMTP is not configured. Please set up SMTP in Settings first.")
