@@ -77,7 +77,7 @@ exports.handler = async (event) => {
       '--no-zygote',
       '--disable-setuid-sandbox',
     ],
-    headless: 'new',
+    headless: true,
   });
 
   let pdfBytes;
