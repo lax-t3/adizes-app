@@ -16,9 +16,6 @@ RUN dnf install -y \
     nss \
     && dnf clean all
 
-# Set Puppeteer cache inside image (not Lambda's read-only /tmp)
-ENV PUPPETEER_CACHE_DIR=/var/task/.cache/puppeteer
-
 COPY package*.json ./
 RUN npm ci
 

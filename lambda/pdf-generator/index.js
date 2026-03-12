@@ -1,6 +1,7 @@
 'use strict';
 
-const puppeteer = require('puppeteer');
+const chromium = require('@sparticuz/chromium');
+const puppeteer = require('puppeteer-core');
 const ejs = require('ejs');
 const fs = require('fs');
 const path = require('path');
@@ -65,19 +66,12 @@ exports.handler = async (event) => {
   });
   const html = inlineAssets(renderedHtml);
 
-  // 2. Launch Puppeteer
-  // executablePath() returns Chrome downloaded into PUPPETEER_CACHE_DIR during npm ci
+  // 2. Launch Puppeteer using @sparticuz/chromium (Lambda-optimized binary)
   const browser = await puppeteer.launch({
-    executablePath: puppeteer.executablePath(),
-    args: [
-      '--no-sandbox',
-      '--disable-dev-shm-usage',
-      '--disable-gpu',
-      '--single-process',
-      '--no-zygote',
-      '--disable-setuid-sandbox',
-    ],
-    headless: true,
+    args: chromium.args,
+    defaultViewport: chromium.defaultViewport,
+    executablePath: await chromium.executablePath(),
+    headless: chromium.headless,
   });
 
   let pdfBytes;
@@ -129,7 +123,6 @@ exports.handler = async (event) => {
     Key: key,
     Body: pdfBytes,
     ContentType: 'application/pdf',
-    ACL: 'public-read',
   }));
 
   const pdfUrl = `https://${process.env.S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`;
