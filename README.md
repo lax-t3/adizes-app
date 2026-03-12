@@ -10,8 +10,8 @@ FastAPI backend for the **Adizes PAEI Management Style Assessment** platform.
 | Framework | FastAPI |
 | Database | Supabase PostgreSQL |
 | Auth | Supabase Auth (JWT — ES256 local / HS256 cloud) |
-| Storage | Supabase Storage (generated PDFs) |
-| PDF | WeasyPrint + Jinja2 |
+| PDF (primary) | AWS Lambda Docker + Puppeteer 22 + EJS + Chart.js → S3 |
+| PDF (fallback) | WeasyPrint + Jinja2 (server-side, used for email attachments) |
 | Email | Python smtplib (AWS SES / Gmail / Resend / Custom SMTP) |
 | Container | Docker |
 
@@ -63,6 +63,12 @@ SUPABASE_ANON_KEY=<from: supabase status>
 SUPABASE_SERVICE_ROLE_KEY=<from: supabase status>
 SUPABASE_JWT_SECRET=super-secret-jwt-token-with-at-least-32-characters-long
 FRONTEND_URL=http://localhost:3000
+
+# AWS Lambda PDF (optional — leave blank to skip Lambda trigger in local dev)
+AWS_REGION=ap-south-1
+AWS_ACCESS_KEY_ID=
+AWS_SECRET_ACCESS_KEY=
+PDF_LAMBDA_FUNCTION_NAME=adizes-pdf-generator
 ```
 
 > **Docker note**: When running inside Docker, use `http://host.docker.internal:54321` as `SUPABASE_URL` so the container can reach your local Supabase.
@@ -116,8 +122,8 @@ adizes-backend/
       auth.py                  # Login, register, set-password, profile CRUD,
                                #   change password, GET /auth/my-assessments
       assessment.py            # GET /assessment/questions, POST /assessment/submit
-                               #   (fires PDF completion email on submit)
-      results.py               # GET /results/:id, GET /results/:id/pdf
+                               #   (fires PDF completion email + triggers Lambda PDF as BackgroundTask)
+      results.py               # GET /results/:id (includes pdf_url), GET /results/:id/pdf (WeasyPrint fallback)
       admin.py                 # Cohorts, members (enroll/bulk/resend-invite/remove),
                                #   respondents, CSV export, admin user management
       settings.py              # SMTP config CRUD, email template CRUD + reset
@@ -132,7 +138,7 @@ adizes-backend/
     schemas/
       auth.py                  # Login, register, profile, password, MyAssessmentItem
       assessment.py            # Questions, submit, options
-      results.py               # ResultResponse, GapDetail, Interpretation
+      results.py               # ResultResponse (includes pdf_url), GapDetail, Interpretation
       admin.py                 # Cohorts, members, bulk enroll, admin users
       settings.py              # SmtpConfig, EmailTemplate CRUD
   migrations/
@@ -167,14 +173,14 @@ adizes-backend/
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
 | GET | `/assessment/questions` | JWT | All 36 questions in 3 sections |
-| POST | `/assessment/submit` | JWT | Submit answers → result_id + sends completion email with PDF |
+| POST | `/assessment/submit` | JWT | Submit answers → result_id + sends completion email + triggers Lambda PDF (fire-and-forget) |
 
 ### Results (`/results`)
 
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
-| GET | `/results/{result_id}` | JWT | Scores + gaps + interpretation |
-| GET | `/results/{result_id}/pdf` | JWT | Stream PDF report |
+| GET | `/results/{result_id}` | JWT | Scores + gaps + interpretation + `pdf_url` (null until Lambda completes) |
+| GET | `/results/{result_id}/pdf` | JWT | Stream WeasyPrint PDF (server-side fallback) |
 
 ### Admin — Cohorts (`/admin`)
 
@@ -230,6 +236,47 @@ python -m venv venv && source venv/bin/activate
 pip install -r requirements.txt
 pytest tests/ -v
 ```
+
+## Lambda PDF Generator
+
+The primary PDF report is generated asynchronously by a Docker Lambda function.
+
+```
+POST /assessment/submit
+  └── BackgroundTask: boto3.invoke(Lambda, InvocationType="Event")
+
+Lambda (lambda/pdf-generator/):
+  EJS render → inline assets → Puppeteer → Chart.js charts
+  → page.pdf() → S3 PutObject (public-read)
+  → Supabase PATCH assessments.pdf_url
+```
+
+### Deploy Lambda
+
+```bash
+# Set required env vars first
+export SUPABASE_URL=https://...
+export SUPABASE_SERVICE_ROLE_KEY=...
+export S3_BUCKET_NAME=adizes-pdf-reports
+
+cd lambda/pdf-generator
+./deploy.sh
+```
+
+### AWS Pre-requisites (one-time)
+
+```bash
+# IAM role with S3 PutObject + CloudWatch logs
+aws iam create-role --role-name adizes-pdf-lambda-role ...
+
+# S3 bucket with Block Public Access disabled
+aws s3api create-bucket --bucket adizes-pdf-reports --region ap-south-1 ...
+
+# IAM user for FastAPI with lambda:InvokeFunction
+aws iam create-user --user-name adizes-backend-lambda-invoker
+```
+
+See `lambda/pdf-generator/deploy.sh` for full AWS CLI commands.
 
 ## Related
 

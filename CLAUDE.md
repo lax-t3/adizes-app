@@ -12,7 +12,9 @@ Provides REST API for auth, assessment, results, admin, and email functionality.
 ## Tech Stack
 - Python 3.11+ / FastAPI
 - Supabase PostgreSQL + Auth (JWT)
-- WeasyPrint + Jinja2 (PDF generation)
+- WeasyPrint + Jinja2 (server-side PDF fallback + email attachments)
+- AWS Lambda Docker + Puppeteer (primary PDF generation — `lambda/pdf-generator/`)
+- boto3 (Lambda invocation from FastAPI)
 - Python smtplib (email via SMTP)
 - Docker (containerized deployment)
 
@@ -43,3 +45,13 @@ Swagger docs: http://localhost:8000/docs
 - DB and users reset on every `supabase start` — re-apply migrations + recreate users
 - Python source files are baked into Docker image at build time — rebuild after every `.py` change
 - `SUPABASE_URL` in `.env` uses `127.0.0.1`; `docker-compose.yml` overrides to `host.docker.internal`
+- `boto3` is required in `requirements.txt` — Lambda trigger is skipped if `AWS_ACCESS_KEY_ID` is empty (safe for local dev)
+
+## Lambda PDF — AWS Config Fields (optional, local dev skips)
+```
+AWS_REGION=ap-south-1
+AWS_ACCESS_KEY_ID=<IAM user key>
+AWS_SECRET_ACCESS_KEY=<IAM user secret>
+PDF_LAMBDA_FUNCTION_NAME=adizes-pdf-generator
+```
+Deploy Lambda: run `lambda/pdf-generator/deploy.sh` (requires ECR + IAM role + S3 bucket pre-created).
