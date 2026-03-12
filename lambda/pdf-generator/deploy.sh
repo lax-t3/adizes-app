@@ -35,8 +35,7 @@ aws ecr describe-repositories --repository-names "$ECR_REPO" \
   --region "$REGION" --image-scanning-configuration scanOnPush=true
 
 # ── Build for linux/amd64 and push ────────────────────────────────────────────
-docker build --platform linux/amd64 -t "$IMAGE_URI" "$SCRIPT_DIR"
-docker push "$IMAGE_URI"
+docker buildx build --platform linux/amd64 --provenance=false -t "$IMAGE_URI" --push "$SCRIPT_DIR"
 
 # ── Create Lambda (first deploy) or update image URI (subsequent deploys) ──────
 if aws lambda get-function --function-name "$LAMBDA_NAME" --region "$REGION" 2>/dev/null; then
