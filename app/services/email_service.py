@@ -34,7 +34,7 @@ DEFAULT_TEMPLATES = {
   <div class="header"><h1>{{platform_name}}</h1></div>
   <div class="body">
     <h2>Hello {{user_name}},</h2>
-    <p>You have been enrolled in the <strong>{{cohort_name}}</strong> cohort for the Adizes PAEI Management Style Assessment.</p>
+    <p>You have been enrolled in the <strong>{{cohort_name}}</strong> cohort for the Adizes Management Style Assessment.</p>
     <p>Please click the button below to set your password and access the platform:</p>
     <a href="{{invite_link}}" class="btn">Accept Invitation &amp; Set Password</a>
     <p>If you already have an account, you can log in directly at <a href="{{platform_url}}">{{platform_url}}</a>.</p>
@@ -66,7 +66,7 @@ DEFAULT_TEMPLATES = {
   <div class="header"><h1>{{platform_name}} Admin</h1></div>
   <div class="body">
     <h2>Hello {{admin_name}},</h2>
-    <p>You have been invited to administer the <strong>{{platform_name}}</strong> platform.</p>
+    <p>You have been invited to administer <strong>{{platform_name}}</strong>.</p>
     <p>Click the button below to set your password and access the admin panel:</p>
     <a href="{{invite_link}}" class="btn">Set Password &amp; Sign In</a>
     <p>If the button doesn't work, copy and paste this link into your browser:<br><small>{{invite_link}}</small></p>

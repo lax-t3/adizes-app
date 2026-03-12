@@ -481,12 +481,24 @@ def invite_admin(body: InviteAdminRequest, admin: dict = Depends(require_admin))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Invite sent but could not set admin role: {e}")
 
+    # Generate the actual invite link (with token) for the SMTP email
+    invite_link_val = f"{settings.frontend_url}/set-password"
+    try:
+        lr = supabase_admin.auth.admin.generate_link({
+            "type": "invite",
+            "email": body.email,
+            "options": {"redirect_to": f"{settings.frontend_url}/set-password"},
+        })
+        invite_link_val = getattr(lr.properties, "action_link", invite_link_val)
+    except Exception:
+        pass
+
     # Fire-and-forget admin invite email via SMTP
     try:
         send_template_email("admin_invite", body.email, {
             "admin_name": body.name or body.email,
             "admin_email": body.email,
-            "invite_link": settings.frontend_url,
+            "invite_link": invite_link_val,
             "platform_name": "Adizes India",
         })
     except Exception:
