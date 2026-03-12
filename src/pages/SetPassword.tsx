@@ -4,10 +4,21 @@ import axios from "axios";
 
 const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
 
+function decodeJwt(token: string): Record<string, any> {
+  try {
+    const payload = token.split(".")[1];
+    return JSON.parse(atob(payload.replace(/-/g, "+").replace(/_/g, "/")));
+  } catch {
+    return {};
+  }
+}
+
 export function SetPassword() {
   const navigate = useNavigate();
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [tokenType, setTokenType] = useState<string | null>(null);
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [loading, setLoading] = useState(false);
@@ -22,6 +33,13 @@ export function SetPassword() {
     const type = params.get("type");
     setAccessToken(token);
     setTokenType(type);
+
+    if (token) {
+      const decoded = decodeJwt(token);
+      const meta = decoded.user_metadata ?? {};
+      if (meta.name) setName(meta.name);
+      if (decoded.email) setEmail(decoded.email);
+    }
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -33,13 +51,26 @@ export function SetPassword() {
     setError("");
     setLoading(true);
     try {
-      await axios.post(
-        `${API_URL}/auth/set-password`,
-        { password },
-        { headers: { Authorization: `Bearer ${accessToken}` } }
-      );
+      const headers = { Authorization: `Bearer ${accessToken}` };
+
+      // Set the password
+      await axios.post(`${API_URL}/auth/set-password`, { password }, { headers });
+
+      // Save the name if provided
+      if (name.trim() && email) {
+        try {
+          await axios.put(
+            `${API_URL}/auth/profile`,
+            { name: name.trim(), email },
+            { headers }
+          );
+        } catch {
+          // Non-fatal — password is already set
+        }
+      }
+
       setSuccess(true);
-      setTimeout(() => navigate("/admin"), 3000);
+      setTimeout(() => navigate("/"), 3000);
     } catch (err: any) {
       setError(err?.response?.data?.detail ?? "Failed to set password. The link may have expired.");
     } finally {
@@ -65,20 +96,47 @@ export function SetPassword() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
       <div className="max-w-md w-full">
         <div className="text-center mb-8">
-          <img src="/logo.png" alt="Adizes" className="h-10 mx-auto mb-4" />
-          <h1 className="text-2xl font-bold text-gray-900">Set Your Password</h1>
-          <p className="text-sm text-gray-500 mt-1">Create a password to activate your administrator account.</p>
+          <img src="/logo.png" alt="Adizes" className="h-14 mx-auto mb-4" />
+          <h1 className="text-2xl font-bold text-gray-900">Activate Your Account</h1>
+          <p className="text-sm text-gray-500 mt-1">Confirm your name and create a password to get started.</p>
         </div>
 
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
           {success ? (
             <div className="text-center">
               <div className="text-5xl mb-4">✅</div>
-              <h2 className="text-lg font-semibold text-gray-900 mb-2">Password Set!</h2>
-              <p className="text-sm text-gray-500">Your account is ready. Redirecting you to login…</p>
+              <h2 className="text-lg font-semibold text-gray-900 mb-2">Account Activated!</h2>
+              <p className="text-sm text-gray-500">Your account is ready. Redirecting to login…</p>
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
+              {/* Email — read-only, pre-filled from token */}
+              {email && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                  <input
+                    type="email"
+                    readOnly
+                    value={email}
+                    className="w-full h-10 rounded-md border border-gray-200 bg-gray-50 px-3 text-sm text-gray-500 cursor-not-allowed"
+                  />
+                </div>
+              )}
+
+              {/* Name — editable, pre-filled from invite metadata */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                <input
+                  type="text"
+                  required
+                  value={name}
+                  onChange={e => setName(e.target.value)}
+                  className="w-full h-10 rounded-md border border-gray-300 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                  placeholder="Your full name"
+                  autoFocus={!name}
+                />
+              </div>
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">New Password</label>
                 <input
@@ -89,9 +147,10 @@ export function SetPassword() {
                   onChange={e => setPassword(e.target.value)}
                   className="w-full h-10 rounded-md border border-gray-300 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                   placeholder="Min. 8 characters"
-                  autoFocus
+                  autoFocus={!!name}
                 />
               </div>
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Confirm Password</label>
                 <input
@@ -103,9 +162,11 @@ export function SetPassword() {
                   placeholder="Repeat password"
                 />
               </div>
+
               {error && (
                 <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded px-3 py-2">{error}</p>
               )}
+
               <button
                 type="submit"
                 disabled={loading}
