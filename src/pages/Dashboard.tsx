@@ -20,7 +20,7 @@ import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
 } from "recharts";
 import { motion } from "motion/react";
-import { getResult, downloadPdf, getMyAssessments } from "@/api/results";
+import { getResult, getMyAssessments } from "@/api/results";
 import type { ResultResponse, MyAssessmentItem } from "@/types/api";
 
 // ─── Tab bar ──────────────────────────────────────────────────────────────────
@@ -57,25 +57,36 @@ function TabBar({ active, onChange }: { active: Tab; onChange: (t: Tab) => void 
 function ResultsDashboard({ resultId }: { resultId: string }) {
   const [result, setResult] = useState<ResultResponse | null>(null);
   const [loading, setLoading] = useState(true);
-  const [pdfLoading, setPdfLoading] = useState(false);
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const [checkingPdf, setCheckingPdf] = useState(false);
+  const [pdfCheckMessage, setPdfCheckMessage] = useState("");
   const [error, setError] = useState("");
 
   useEffect(() => {
     getResult(resultId)
-      .then(setResult)
+      .then((r) => {
+        setResult(r);
+        setPdfUrl(r.pdf_url);
+      })
       .catch(() => setError("Failed to load results."))
       .finally(() => setLoading(false));
   }, [resultId]);
 
-  const handleDownloadPdf = async () => {
-    if (!result) return;
-    setPdfLoading(true);
+  const handleCheckAgain = async () => {
+    setCheckingPdf(true);
+    setPdfCheckMessage("");
     try {
-      await downloadPdf(resultId, result.user_name);
+      const r = await getResult(resultId);
+      if (r.pdf_url) {
+        setPdfUrl(r.pdf_url);
+        setPdfCheckMessage("");
+      } else {
+        setPdfCheckMessage("Still generating, try again shortly.");
+      }
     } catch {
-      // silent
+      setPdfCheckMessage("Could not check status. Please try again.");
     } finally {
-      setPdfLoading(false);
+      setCheckingPdf(false);
     }
   };
 
@@ -279,18 +290,32 @@ function ResultsDashboard({ resultId }: { resultId: string }) {
       </Card>
 
       {/* Download PDF */}
-      <div className="flex justify-end">
-        <Button
-          size="lg"
-          onClick={handleDownloadPdf}
-          disabled={pdfLoading}
-          className="shadow-md hover:shadow-lg transition-all"
-        >
-          {pdfLoading
-            ? <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Generating…</>
-            : <><Download className="mr-2 h-5 w-5" /> Download Full Report (PDF)</>
-          }
-        </Button>
+      <div className="flex flex-col items-end gap-1">
+        {pdfUrl ? (
+          <Button
+            size="lg"
+            onClick={() => window.open(pdfUrl, "_blank")}
+            className="shadow-md hover:shadow-lg transition-all"
+          >
+            <Download className="mr-2 h-5 w-5" /> Download Full Report (PDF)
+          </Button>
+        ) : (
+          <Button size="lg" disabled className="opacity-60 cursor-not-allowed">
+            <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Generating report…
+          </Button>
+        )}
+        {!pdfUrl && (
+          <button
+            onClick={handleCheckAgain}
+            disabled={checkingPdf}
+            className="text-xs text-primary hover:underline disabled:opacity-50"
+          >
+            {checkingPdf ? "Checking…" : "Check again"}
+          </button>
+        )}
+        {pdfCheckMessage && (
+          <p className="text-xs text-gray-500">{pdfCheckMessage}</p>
+        )}
       </div>
     </div>
   );
@@ -337,19 +362,6 @@ function MyAssessmentsTab({
   loading: boolean;
 }) {
   const navigate = useNavigate();
-  const [pdfLoading, setPdfLoading] = useState<string | null>(null);
-
-  const handleDownload = async (item: MyAssessmentItem) => {
-    if (!item.result_id) return;
-    setPdfLoading(item.cohort_id);
-    try {
-      await downloadPdf(item.result_id, item.cohort_name);
-    } catch {
-      // silent
-    } finally {
-      setPdfLoading(null);
-    }
-  };
 
   if (loading) {
     return (
@@ -431,13 +443,10 @@ function MyAssessmentsTab({
                       </Button>
                       <Button
                         size="sm"
-                        onClick={() => handleDownload(item)}
-                        disabled={pdfLoading === item.cohort_id}
+                        variant="outline"
+                        onClick={() => navigate(`/results?id=${item.result_id}`)}
                       >
-                        {pdfLoading === item.cohort_id
-                          ? <Loader2 className="h-4 w-4 animate-spin" />
-                          : <><Download className="mr-1.5 h-3.5 w-3.5" /> PDF</>
-                        }
+                        <Download className="mr-1.5 h-3.5 w-3.5" /> PDF Report
                       </Button>
                     </>
                   ) : (
