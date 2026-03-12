@@ -7,6 +7,11 @@ class Settings(BaseSettings):
     supabase_service_role_key: str
     supabase_jwt_secret: str
     frontend_url: str = "http://localhost:5173"
+    # AWS Lambda PDF trigger
+    aws_region: str = "ap-south-1"
+    aws_access_key_id: str = ""
+    aws_secret_access_key: str = ""
+    pdf_lambda_function_name: str = "adizes-pdf-generator"
 
     class Config:
         env_file = ".env"
