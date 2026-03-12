@@ -202,14 +202,18 @@ def enroll_user(cohort_id: str, body: EnrollUserRequest, admin: dict = Depends(r
     target = next((u for u in all_users if u.email == body.email), None)
     invited_new = False
 
+    invite_link_val = settings.frontend_url
+
     if not target:
-        # User doesn't exist — invite them so they can register and take the assessment
+        # User doesn't exist — use generate_link which creates the user AND returns the invite link
         try:
-            resp = supabase_admin.auth.admin.invite_user_by_email(
-                body.email,
-                options={"redirect_to": f"{settings.frontend_url}/register"},
-            )
-            target = resp.user
+            lr = supabase_admin.auth.admin.generate_link({
+                "type": "invite",
+                "email": body.email,
+                "options": {"redirect_to": f"{settings.frontend_url}/register"},
+            })
+            target = lr.user
+            invite_link_val = lr.properties.action_link
             invited_new = True
         except Exception as e:
             raise HTTPException(status_code=400, detail=f"Could not invite user: {e}")
@@ -236,18 +240,6 @@ def enroll_user(cohort_id: str, body: EnrollUserRequest, admin: dict = Depends(r
         ).data.get("name", "") if cohort.data else ""
         meta = getattr(target, "user_metadata", None) or {}
         user_name_val = meta.get("name", "") or body.email
-        # Try to generate an invite link for the email
-        invite_link_val = settings.frontend_url
-        if invited_new:
-            try:
-                lr = supabase_admin.auth.admin.generate_link({
-                    "type": "invite",
-                    "email": body.email,
-                    "options": {"redirect_to": f"{settings.frontend_url}/register"},
-                })
-                invite_link_val = getattr(lr.properties, "action_link", settings.frontend_url)
-            except Exception:
-                pass
         send_template_email("user_enrolled", body.email, {
             "user_name": user_name_val,
             "user_email": body.email,
@@ -301,13 +293,20 @@ def bulk_enroll(cohort_id: str, body: BulkEnrollRequest, admin: dict = Depends(r
             user = email_to_user.get(email)
             invited_new = False
 
+            invite_link_val = settings.frontend_url
+
             if not user:
-                # Invite new user
-                data: dict = {"redirect_to": f"{settings.frontend_url}/register"}
+                # Use generate_link: creates the user AND returns the invite link in one call
+                link_data: dict = {
+                    "type": "invite",
+                    "email": email,
+                    "options": {"redirect_to": f"{settings.frontend_url}/register"},
+                }
                 if entry.name:
-                    data["data"] = {"name": entry.name}
-                resp = supabase_admin.auth.admin.invite_user_by_email(email, options=data)
-                user = resp.user
+                    link_data["options"]["data"] = {"name": entry.name}
+                lr = supabase_admin.auth.admin.generate_link(link_data)
+                user = lr.user
+                invite_link_val = lr.properties.action_link
                 email_to_user[email] = user   # cache so duplicates in the sheet are caught
                 invited_new = True
 
@@ -329,17 +328,6 @@ def bulk_enroll(cohort_id: str, body: BulkEnrollRequest, admin: dict = Depends(r
                 cohort_name_val = cohort_resp.data.get("name", "") if cohort_resp.data else ""
                 meta = getattr(user, "user_metadata", None) or {}
                 user_name_val = (entry.name or meta.get("name", "")) or email
-                invite_link_val = settings.frontend_url
-                if invited_new:
-                    try:
-                        lr = supabase_admin.auth.admin.generate_link({
-                            "type": "invite",
-                            "email": email,
-                            "options": {"redirect_to": f"{settings.frontend_url}/register"},
-                        })
-                        invite_link_val = getattr(lr.properties, "action_link", settings.frontend_url)
-                    except Exception:
-                        pass
                 send_template_email("user_enrolled", email, {
                     "user_name": user_name_val,
                     "user_email": email,
