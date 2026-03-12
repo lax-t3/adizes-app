@@ -3,7 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { GapBadge } from "@/components/ui/GapBadge";
-import { ArrowLeft, Download, Loader2 } from "lucide-react";
+import { ArrowLeft, Download, Loader2, Info } from "lucide-react";
 import { InfoTooltip } from "@/components/ui/InfoTooltip";
 import { Users, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
@@ -180,7 +180,7 @@ export function AdminRespondent() {
             </CardHeader>
             <CardContent>
               <div className="h-[400px] w-full">
-                <ResponsiveContainer width="99%" height="100%">
+                <ResponsiveContainer width="99%" height="100%" debounce={50}>
                   <RadarChart cx="50%" cy="50%" outerRadius="70%" data={radarData}>
                     <PolarGrid stroke="#e5e7eb" />
                     <PolarAngleAxis dataKey="subject" tick={{ fill: "#4b5563", fontSize: 12, fontWeight: 500 }} />
@@ -209,7 +209,7 @@ export function AdminRespondent() {
             </CardHeader>
             <CardContent>
               <div className="h-[280px] w-full mb-6">
-                <ResponsiveContainer width="99%" height="100%">
+                <ResponsiveContainer width="99%" height="100%" debounce={50}>
                   <BarChart data={gapChartData} layout="vertical" margin={{ top: 5, right: 30, left: 40, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f3f4f6" />
                     <XAxis type="number" domain={[0, 50]} tick={{ fill: "#9ca3af" }} />

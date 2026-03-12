@@ -568,7 +568,7 @@ export function AdminCohortDetail() {
               </CardHeader>
               <CardContent>
                 <div className="h-[300px] w-full">
-                  <ResponsiveContainer width="99%" height="100%">
+                  <ResponsiveContainer width="99%" height="100%" debounce={50}>
                     <RadarChart cx="50%" cy="50%" outerRadius="70%" data={radarData}>
                       <PolarGrid stroke="#e5e7eb" />
                       <PolarAngleAxis dataKey="subject" tick={{ fill: "#4b5563", fontSize: 12 }} />
@@ -593,7 +593,7 @@ export function AdminCohortDetail() {
               </CardHeader>
               <CardContent>
                 <div className="h-[300px] w-full">
-                  <ResponsiveContainer width="99%" height="100%">
+                  <ResponsiveContainer width="99%" height="100%" debounce={50}>
                     <BarChart data={distData} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
                       <XAxis dataKey="name" tick={{ fill: "#4b5563", fontSize: 12 }} />

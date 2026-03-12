@@ -164,7 +164,7 @@ function ResultsDashboard({ resultId }: { resultId: string }) {
           </CardHeader>
           <CardContent>
             <div className="h-[360px] w-full">
-              <ResponsiveContainer width="99%" height="100%">
+              <ResponsiveContainer width="99%" height="100%" debounce={50}>
                 <RadarChart cx="50%" cy="50%" outerRadius="70%" data={radarData}>
                   <PolarGrid stroke="#e5e7eb" />
                   <PolarAngleAxis dataKey="subject" tick={{ fill: "#4b5563", fontSize: 11, fontWeight: 500 }} />
@@ -188,7 +188,7 @@ function ResultsDashboard({ resultId }: { resultId: string }) {
           </CardHeader>
           <CardContent>
             <div className="h-[250px] w-full mb-4">
-              <ResponsiveContainer width="99%" height="100%">
+              <ResponsiveContainer width="99%" height="100%" debounce={50}>
                 <BarChart data={gapChartData} layout="vertical" margin={{ top: 5, right: 30, left: 40, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f3f4f6" />
                   <XAxis type="number" domain={[0, 50]} tick={{ fill: "#9ca3af" }} />
