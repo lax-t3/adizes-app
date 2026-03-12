@@ -79,6 +79,7 @@ export interface ResultResponse {
   scaled_scores: { is: ScoreSet; should: ScoreSet; want: ScoreSet };
   gaps: GapDetail[];
   interpretation: Interpretation;
+  pdf_url: string | null;
 }
 
 // ── My Assessments ────────────────────────────────────────────────────────────
