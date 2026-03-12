@@ -6,8 +6,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/Badge";
 import { GapBadge } from "@/components/ui/GapBadge";
 import { Button } from "@/components/ui/Button";
-import { Download, Info, Loader2 } from "lucide-react";
-import { Users, CheckCircle2 } from "lucide-react";
+import { Download, Loader2 } from "lucide-react";
+import { Users, CheckCircle2, Info } from "lucide-react";
+import { InfoTooltip } from "@/components/ui/InfoTooltip";
 import {
   Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
@@ -121,7 +122,10 @@ export function Results() {
               </p>
             </div>
             <div className="flex items-center gap-4 bg-gray-800/50 p-4 rounded-xl border border-gray-700 backdrop-blur-sm">
-              <div className="text-sm text-gray-400 font-medium uppercase tracking-wider">Dominant Style</div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-sm text-gray-400 font-medium uppercase tracking-wider">Dominant Style</span>
+                <InfoTooltip text="Your PAEI profile based on the 'Want' dimension — how you want to behave. A CAPITAL letter means that role scored above 30/50 (dominant). A lowercase letter means it scored 30 or below (non-dominant). Most people have 1–2 dominant roles." />
+              </div>
               <div className="flex gap-1.5">
                 {profileBadges.map(({ role, char, isDominant }) =>
                   isDominant ? (
@@ -148,7 +152,8 @@ export function Results() {
             <Card className="h-full shadow-md border-t-4 border-t-primary">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  Style Comparison <Info className="h-4 w-4 text-gray-400" />
+                  Style Comparison
+                  <InfoTooltip text="Three lines for three questions the assessment asks: 'Is' = how you currently behave at work. 'Should' = what your role demands of you. 'Want' = how you naturally prefer to act. Gaps between the lines reveal tension between your role and your instincts." />
                 </CardTitle>
                 <CardDescription>
                   Visual representation of your Is, Should, and Want profiles.
@@ -177,7 +182,10 @@ export function Results() {
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.2 }}>
             <Card className="h-full shadow-md">
               <CardHeader>
-                <CardTitle>Gap Analysis</CardTitle>
+                <CardTitle className="flex items-center gap-2">
+                  Gap Analysis
+                  <InfoTooltip text="External Gap = difference between 'Is' (how you behave) and 'Should' (what your role demands). Internal Gap = difference between 'Should' and 'Want' (what you prefer). Large gaps signal potential stress or misalignment. Green = aligned (< 7pts), Yellow = watch (7–14pts), Red = tension (15+pts)." />
+                </CardTitle>
                 <CardDescription>
                   Differences between your current behavior (Is) and job demands (Should).
                 </CardDescription>
@@ -197,7 +205,10 @@ export function Results() {
                   </ResponsiveContainer>
                 </div>
                 <div className="space-y-3">
-                  <h4 className="font-medium text-gray-900 text-sm uppercase tracking-wider mb-4">Gap Severity</h4>
+                  <h4 className="font-medium text-gray-900 text-sm uppercase tracking-wider mb-4 flex items-center gap-1.5">
+                  Gap Severity
+                  <InfoTooltip text="Ext (External): gap between how you behave (Is) and what your role demands (Should). Int (Internal): gap between role demands (Should) and your natural preference (Want). Numbers show point difference on the 0–50 scale." />
+                </h4>
                   {gaps.map((g) => (
                     <div key={g.role} className="flex items-center justify-between p-3 rounded-lg bg-gray-50 border border-gray-100">
                       <span className="font-medium text-gray-700">{g.role_name}</span>
@@ -222,7 +233,10 @@ export function Results() {
                   </span>
                   <span className="text-gray-500 italic text-sm">{interpretation.style_tagline}</span>
                 </div>
-                <CardTitle className="text-2xl font-display">Style Interpretation</CardTitle>
+                <CardTitle className="text-2xl font-display flex items-center gap-2">
+                  Style Interpretation
+                  <InfoTooltip text="Based on your dominant 'Want' role. Describes how you naturally lead and collaborate. Use this as a mirror — not a box. Strengths are your assets; Blind Spots are where growth lies; Working with Others shows how to bridge style differences with colleagues." />
+                </CardTitle>
                 {interpretation.combined_description && (
                   <CardDescription className="text-base">{interpretation.combined_description}</CardDescription>
                 )}
@@ -235,6 +249,7 @@ export function Results() {
                         <CheckCircle2 className="h-5 w-5" />
                       </div>
                       Strengths
+                      <InfoTooltip text="The natural advantages of your dominant PAEI style — behaviours and qualities that come easily to you and add value to your team." />
                     </div>
                     <p className="text-gray-600 text-sm leading-relaxed">{interpretation.strengths}</p>
                   </div>
@@ -244,6 +259,7 @@ export function Results() {
                         <Info className="h-5 w-5" />
                       </div>
                       Blind Spots
+                      <InfoTooltip text="The typical pitfalls of your style — patterns that can undermine effectiveness if left unchecked. Awareness is the first step to growth." />
                     </div>
                     <p className="text-gray-600 text-sm leading-relaxed">{interpretation.blind_spots}</p>
                   </div>
@@ -253,6 +269,7 @@ export function Results() {
                         <Users className="h-5 w-5" />
                       </div>
                       Working with Others
+                      <InfoTooltip text="Practical tips for collaborating with the other three PAEI styles. Each style sees the world differently — these suggestions help you bridge those differences." />
                     </div>
                     <p className="text-gray-600 text-sm leading-relaxed">{interpretation.working_with_others}</p>
                   </div>

@@ -3,7 +3,8 @@ import { useParams, Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { GapBadge } from "@/components/ui/GapBadge";
-import { ArrowLeft, Download, Info, Loader2 } from "lucide-react";
+import { ArrowLeft, Download, Loader2 } from "lucide-react";
+import { InfoTooltip } from "@/components/ui/InfoTooltip";
 import { Users, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { motion } from "motion/react";
@@ -143,14 +144,17 @@ export function AdminRespondent() {
               </p>
             </div>
             <div className="flex items-center gap-4">
-              <div className="flex gap-1.5">
-                {profileBadges.map(({ role, char, isDominant }) =>
-                  isDominant ? (
-                    <Badge key={role} variant={role} className="text-lg px-2 py-0.5">{char}</Badge>
-                  ) : (
-                    <Badge key={role} variant="outline" className="text-lg px-2 py-0.5 bg-gray-100">{char}</Badge>
-                  )
-                )}
+              <div className="flex items-center gap-2">
+                <div className="flex gap-1.5">
+                  {profileBadges.map(({ role, char, isDominant }) =>
+                    isDominant ? (
+                      <Badge key={role} variant={role} className="text-lg px-2 py-0.5">{char}</Badge>
+                    ) : (
+                      <Badge key={role} variant="outline" className="text-lg px-2 py-0.5 bg-gray-100">{char}</Badge>
+                    )
+                  )}
+                </div>
+                <InfoTooltip text="PAEI profile from the 'Want' dimension. CAPITAL = dominant role (score > 30/50). Lowercase = non-dominant (≤ 30). Role colours: P = red, A = navy, E = amber, I = teal." />
               </div>
               <Button variant="outline" onClick={handleDownloadPdf} disabled={pdfLoading}>
                 {pdfLoading
@@ -167,7 +171,8 @@ export function AdminRespondent() {
           <Card className="h-full shadow-sm border-t-4 border-t-primary">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                Style Comparison <Info className="h-4 w-4 text-gray-400" />
+                Style Comparison
+                <InfoTooltip text="Three lines for three dimensions: 'Is' = how the respondent currently behaves. 'Should' = what their role demands. 'Want' = their natural preference. Gaps between lines reveal where role demands and instincts diverge." />
               </CardTitle>
               <CardDescription>
                 Visual representation of Is, Should, and Want profiles.
@@ -194,7 +199,10 @@ export function AdminRespondent() {
           {/* Gap Analysis */}
           <Card className="h-full shadow-sm">
             <CardHeader>
-              <CardTitle>Gap Analysis</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                Gap Analysis
+                <InfoTooltip text="Ext (External): gap between 'Is' and 'Should' — are they behaving as the role demands? Int (Internal): gap between 'Should' and 'Want' — does the role match their natural preference? Green < 7pts, Yellow 7–14pts, Red 15+pts." />
+              </CardTitle>
               <CardDescription>
                 Differences between current behavior (Is) and job demands (Should).
               </CardDescription>
@@ -214,7 +222,10 @@ export function AdminRespondent() {
                 </ResponsiveContainer>
               </div>
               <div className="space-y-3">
-                <h4 className="font-medium text-gray-900 text-sm uppercase tracking-wider mb-4">Gap Severity</h4>
+                <h4 className="font-medium text-gray-900 text-sm uppercase tracking-wider mb-4 flex items-center gap-1.5">
+                  Gap Severity
+                  <InfoTooltip text="Ext = External gap (Is vs Should). Int = Internal gap (Should vs Want). Both scored on 0–50 scale. Positive = 'Is' exceeds 'Should'; Negative = 'Is' falls short." />
+                </h4>
                 {gaps.map((g) => (
                   <div key={g.role} className="flex items-center justify-between p-3 rounded-lg bg-gray-50 border border-gray-100">
                     <span className="font-medium text-gray-700">{g.role_name}</span>
@@ -238,7 +249,10 @@ export function AdminRespondent() {
                   </span>
                   <span className="text-gray-500 italic text-sm">{interpretation.style_tagline}</span>
                 </div>
-                <CardTitle className="text-2xl font-display">Style Interpretation</CardTitle>
+                <CardTitle className="text-2xl font-display flex items-center gap-2">
+                  Style Interpretation
+                  <InfoTooltip text="Derived from the dominant 'Want' role. Describes natural leadership and collaboration tendencies. Strengths = core assets. Blind Spots = areas for development. Working with Others = how to adapt to colleagues with different styles." />
+                </CardTitle>
                 {interpretation.combined_description && (
                   <CardDescription className="text-base">{interpretation.combined_description}</CardDescription>
                 )}
