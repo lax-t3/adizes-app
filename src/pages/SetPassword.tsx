@@ -78,7 +78,7 @@ export function SetPassword() {
     }
   };
 
-  if (!accessToken || tokenType !== "invite") {
+  if (!accessToken || (tokenType !== "invite" && tokenType !== "recovery")) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
         <div className="max-w-md w-full bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center">
