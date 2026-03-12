@@ -168,7 +168,7 @@ def submit_assessment(body: SubmitRequest, user: dict = Depends(get_current_user
                 "user_email": user_email,
                 "cohort_name": cohort_name_for_email or "your cohort",
                 "dominant_style": dominant,
-                "platform_name": "Adizes PAEI Platform",
+                "platform_name": "Adizes India",
                 "platform_url": settings.frontend_url,
             }, attachments=[{
                 "filename": f"PAEI_Report_{result_id[:8]}.pdf",

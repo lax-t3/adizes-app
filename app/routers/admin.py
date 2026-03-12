@@ -253,7 +253,7 @@ def enroll_user(cohort_id: str, body: EnrollUserRequest, admin: dict = Depends(r
             "user_email": body.email,
             "cohort_name": cohort_name_val,
             "invite_link": invite_link_val,
-            "platform_name": "Adizes PAEI Platform",
+            "platform_name": "Adizes India",
             "platform_url": settings.frontend_url,
         })
     except Exception:
@@ -345,7 +345,7 @@ def bulk_enroll(cohort_id: str, body: BulkEnrollRequest, admin: dict = Depends(r
                     "user_email": email,
                     "cohort_name": cohort_name_val,
                     "invite_link": invite_link_val,
-                    "platform_name": "Adizes PAEI Platform",
+                    "platform_name": "Adizes India",
                     "platform_url": settings.frontend_url,
                 })
             except Exception:
@@ -420,7 +420,7 @@ def resend_enrollment_invite(cohort_id: str, user_id: str, admin: dict = Depends
             "user_email": email,
             "cohort_name": cohort_name_val,
             "invite_link": invite_link_val,
-            "platform_name": "Adizes PAEI Platform",
+            "platform_name": "Adizes India",
             "platform_url": settings.frontend_url,
         })
     except Exception as e:
@@ -487,7 +487,7 @@ def invite_admin(body: InviteAdminRequest, admin: dict = Depends(require_admin))
             "admin_name": body.name or body.email,
             "admin_email": body.email,
             "invite_link": settings.frontend_url,
-            "platform_name": "Adizes PAEI Platform",
+            "platform_name": "Adizes India",
         })
     except Exception:
         pass  # Non-fatal
@@ -534,7 +534,7 @@ def resend_invite(user_id: str, admin: dict = Depends(require_admin)):
             "admin_name": admin_name,
             "admin_email": email,
             "invite_link": invite_link_val,
-            "platform_name": "Adizes PAEI Platform",
+            "platform_name": "Adizes India",
             "platform_url": settings.frontend_url,
         })
     except Exception as e:

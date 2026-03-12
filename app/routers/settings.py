@@ -82,7 +82,7 @@ def test_smtp(body: TestEmailRequest, admin: dict = Depends(require_admin)):
         to_email=str(body.to_email),
         subject="Test email from Adizes Platform",
         html_body=(
-            "<p>This is a test email from your Adizes PAEI Platform.</p>"
+            "<p>This is a test email from your Adizes India.</p>"
             "<p>If you received this, your SMTP settings are working correctly.</p>"
         ),
     )
