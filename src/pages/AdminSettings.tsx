@@ -20,7 +20,7 @@ const PROVIDERS = [
 ];
 
 const PROVIDER_HINTS: Record<string, string> = {
-  ses:    "Use your SES SMTP credentials (Access Key ID as username, Secret Access Key as password). Verify your sending domain in AWS SES first.",
+  ses:    "⚠️ Do NOT use your IAM Access Key / Secret Key here. Go to AWS Console → SES → SMTP Settings → Create SMTP Credentials to generate a dedicated SMTP username and password. The SMTP password is a separately derived key (~44 chars). Also verify your sending domain/email in SES before testing.",
   gmail:  "Use your Google Workspace email and an App Password (not your account password). Enable 2FA and create an App Password under Google Account → Security.",
   resend: "Use 'resend' as username and your Resend API key as password. Port 465 with SSL.",
   custom: "Enter your SMTP server details manually.",
