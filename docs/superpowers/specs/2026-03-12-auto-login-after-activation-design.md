@@ -26,25 +26,37 @@ Replace the current post-activation behaviour (success panel + 2-second redirect
 
 No backend changes. No new files. No new routes.
 
+### Token Lifecycle Note
+
+The `accessToken` in `window.location.hash` is a **session JWT** — Supabase converted the OTP to a full session token when the user clicked the verify link. It is not a one-time OTP. `setPassword` calls `admin.update_user_by_id` on the backend and does NOT consume this JWT. `saveInviteProfile` can safely use the same `accessToken` after `setPassword` returns.
+
 ### New `handleActivate` Submit Flow
 
 1. Validate: password length ≥ 8, then passwords match — show inline error if not (unchanged)
-2. Call `setPassword(accessToken!, activatePassword)` — sets the password via invite/recovery token
-3. If `activateName.trim()` is non-empty and `activateEmail` is non-empty, call `saveInviteProfile(accessToken!, activateName.trim(), activateEmail)` — non-fatal (catch and ignore)
-4. Call `login(activateEmail, activatePassword)` from `src/api/auth.ts` — logs in with the newly-set credentials
-5. Call `loginStore(user, role, token)` — stores JWT in Zustand auth store (same pattern as `handleRegister`)
-6. Call `navigate("/dashboard")` via React Router — lands on Dashboard
+2. Call `setPassword(accessToken!, activatePassword)` — sets the password using the session JWT
+3. If `activateName.trim()` is non-empty, call `saveInviteProfile(accessToken!, activateName.trim(), activateEmail)` — non-fatal (catch and ignore); the session JWT is still valid here
+4. If `activateEmail` is empty at this point, treat as auto-login failure: the password was set in step 2, so show the success panel and redirect to `/` (same as the auto-login fallback below). Do not attempt `login()` with an empty email.
+5. Call `login(activateEmail, activatePassword)` from `src/api/auth.ts` — logs in with the newly-set credentials; `data` is an `AuthResponse` with fields `user_id`, `email`, `name`, `role`, `access_token`
+6. Call `loginStore({ id: data.user_id, email: data.email, name: data.name || activateName.trim() }, data.role, data.access_token)` — stores JWT in Zustand. `data.name` is typed `string` but the backend reads from `user_metadata.name` which returns `""` if not yet populated (e.g., if `saveInviteProfile` in step 3 failed). Fall back to `activateName.trim()` in that case.
+7. Call `navigate("/dashboard", { replace: true })` — replaces the history entry so the `#access_token=…` hash is cleared from the address bar and browser history
 
-**Fallback on auto-login failure:** If step 4 throws, do not surface a confusing error. The password was already set successfully. Show the existing success panel (`setActivateSuccess(true)`) and redirect to `/` after 2 seconds so the user can log in manually. The success message in this case should read: "Account activated! Redirecting to login…" (unchanged from current text).
+**Fallback on auto-login failure:** If step 5 throws, the password was already set. Show the existing success panel (`setActivateSuccess(true)`) and `window.location.replace("/")` after 2 seconds — user logs in manually. The success message reads: "Account activated! Redirecting to login…" (unchanged from current text). The `window.location.replace` in this fallback also clears the hash.
 
-### State Removed
+The existing `finally { setActivateLoading(false) }` block wraps the entire flow and remains unchanged.
 
-- `activateSuccess` — no longer needed in the happy path (navigation happens immediately)
-- The `setTimeout(() => window.location.replace("/"), 2000)` call — replaced by `navigate("/dashboard")` in the happy path; the 2-second fallback redirect remains only in the catch block for auto-login failure
+The button label "Activating…" covers the entire async sequence (setPassword → saveInviteProfile → login). No intermediate UI state change between steps.
 
-### Imports Added
+### State Usage Changed
 
-- `login` from `src/api/auth.ts` — already exported, just not imported in Register.tsx yet
+- `activateSuccess` — remains declared; it drives the JSX success-panel branch. In the happy path it is **not** set (navigation fires immediately). It is only set to `true` in the auto-login `catch` block to trigger the fallback success panel.
+- The `setTimeout(() => window.location.replace("/"), 2000)` call — moves from the happy path into the auto-login `catch` block only.
+
+### Imports Changed
+
+- Modify the existing `@/api/auth` import in `Register.tsx` (line 7) to add `login`:
+  ```ts
+  import { login, register as apiRegister, setPassword, saveInviteProfile } from "@/api/auth";
+  ```
 
 ### No Changes To
 
