@@ -50,7 +50,7 @@ if aws lambda get-function --function-name "$LAMBDA_NAME" --region "$REGION" 2>/
     --region "$REGION"
   aws lambda update-function-configuration \
     --function-name "$LAMBDA_NAME" \
-    --timeout 60 \
+    --timeout 90 \
     --memory-size 1024 \
     --region "$REGION" \
     --environment "Variables={SUPABASE_URL=${SUPABASE_URL},SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY},S3_BUCKET_NAME=${S3_BUCKET_NAME}}"
@@ -61,7 +61,7 @@ else
     --package-type Image \
     --code "ImageUri=${IMAGE_URI}" \
     --role "$LAMBDA_ROLE" \
-    --timeout 60 \
+    --timeout 90 \
     --memory-size 1024 \
     --architectures x86_64 \
     --region "$REGION" \
