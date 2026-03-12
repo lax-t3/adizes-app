@@ -52,3 +52,4 @@ class ResultResponse(BaseModel):
     scaled_scores: Dict            # { is, should, want } → { P,A,E,I }
     gaps: List[GapDetail]
     interpretation: Interpretation
+    pdf_url: Optional[str] = None

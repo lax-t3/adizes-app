@@ -41,6 +41,7 @@ def get_result(result_id: str, user: dict = Depends(get_current_user)):
         scaled_scores=data["scaled_scores"],
         gaps=[GapDetail(**g) for g in data["gaps"]],
         interpretation=Interpretation(**data["interpretation"]),
+        pdf_url=data.get("pdf_url"),
     )
 
 
