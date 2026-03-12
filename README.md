@@ -38,10 +38,37 @@ Defaults to `http://localhost:8000` if unset.
 
 ## Production Deployment (Netlify)
 
-1. Connect `lax-t3/adizes-app` repo to Netlify, branch: `main` (frontend branch)
-2. Build command: `npm run build`
-3. Publish directory: `dist`
-4. Set env var: `VITE_API_URL=https://your-backend.onrender.com`
+### Prerequisites
+- Backend deployed to AWS App Runner (see [adizes-backend](../adizes-backend))
+- App Runner service URL: `https://h9uxjpkp8h.ap-south-1.awsapprunner.com`
+
+### Steps
+
+1. Connect `lax-t3/adizes-app` repo to Netlify
+2. Set **branch**: `adizes-frontend`
+3. **Build command**: `npm run build`
+4. **Publish directory**: `dist`
+5. Add environment variable:
+
+```
+VITE_API_URL=https://h9uxjpkp8h.ap-south-1.awsapprunner.com
+```
+
+> **Important:** Use `VITE_API_URL` exactly — not `VITE_API_BASE_URL` or any other name.
+> The variable must have no trailing slash.
+
+6. Deploy. Once Netlify gives you a URL (e.g. `https://adizes-app.netlify.app`):
+   - Go to **AWS App Runner → your service → Configuration → Environment variables**
+   - Update `FRONTEND_URL` to your Netlify URL — this enables CORS on the backend
+
+### SPA Routing
+
+`public/_redirects` is already configured to serve `index.html` for all routes:
+```
+/*    /index.html    200
+```
+This ensures direct navigation to `/dashboard`, `/results/:id`, `/admin/*` etc. works
+on Netlify instead of returning 404.
 
 ## Project Structure
 
