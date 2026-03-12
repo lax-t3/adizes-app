@@ -38,7 +38,7 @@ CREATE TABLE IF NOT EXISTS cohorts (
 CREATE TABLE IF NOT EXISTS cohort_members (
     cohort_id   UUID NOT NULL REFERENCES cohorts(id) ON DELETE CASCADE,
     user_id     UUID NOT NULL,   -- references auth.users
-    joined_at   TIMESTAMPTZ DEFAULT now(),
+    enrolled_at TIMESTAMPTZ DEFAULT now(),
     PRIMARY KEY (cohort_id, user_id)
 );
 
