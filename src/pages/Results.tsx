@@ -14,7 +14,7 @@ import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
 } from "recharts";
 import { motion } from "motion/react";
-import { getResult, downloadPdf } from "@/api/results";
+import { getResult } from "@/api/results";
 import type { ResultResponse } from "@/types/api";
 
 export function Results() {
@@ -23,7 +23,9 @@ export function Results() {
   const [searchParams] = useSearchParams();
   const [result, setResult] = useState<ResultResponse | null>(null);
   const [loading, setLoading] = useState(true);
-  const [pdfLoading, setPdfLoading] = useState(false);
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const [checkingPdf, setCheckingPdf] = useState(false);
+  const [pdfCheckMessage, setPdfCheckMessage] = useState("");
   const [error, setError] = useState("");
 
   // Result ID comes from URL param (set after submit) or store
@@ -36,20 +38,30 @@ export function Results() {
       return;
     }
     getResult(id)
-      .then(setResult)
+      .then((r) => {
+        setResult(r);
+        setPdfUrl(r.pdf_url);
+      })
       .catch(() => setError("Failed to load results. Please try again."))
       .finally(() => setLoading(false));
   }, [id]);
 
-  const handleDownloadPdf = async () => {
-    if (!id || !result) return;
-    setPdfLoading(true);
+  const handleCheckAgain = async () => {
+    if (!id) return;
+    setCheckingPdf(true);
+    setPdfCheckMessage("");
     try {
-      await downloadPdf(id, result.user_name);
+      const r = await getResult(id);
+      if (r.pdf_url) {
+        setPdfUrl(r.pdf_url);
+        setPdfCheckMessage("");
+      } else {
+        setPdfCheckMessage("Still generating, try again shortly.");
+      }
     } catch {
-      // silent — user can retry
+      setPdfCheckMessage("Could not check status. Please try again.");
     } finally {
-      setPdfLoading(false);
+      setCheckingPdf(false);
     }
   };
 
@@ -299,20 +311,43 @@ export function Results() {
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 shadow-[0_-4px_6px_-1px_rgb(0,0,0,0.05)] z-50">
         <div className="mx-auto max-w-7xl flex items-center justify-between px-4 sm:px-6 lg:px-8">
           <div className="hidden sm:block">
-            <p className="text-sm font-medium text-gray-900">Ready to dive deeper?</p>
-            <p className="text-xs text-gray-500">Download your comprehensive report.</p>
-          </div>
-          <Button
-            size="lg"
-            onClick={handleDownloadPdf}
-            disabled={pdfLoading}
-            className="w-full sm:w-auto shadow-md hover:shadow-lg transition-all"
-          >
-            {pdfLoading
-              ? <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Generating…</>
-              : <><Download className="mr-2 h-5 w-5" /> Download Full Report (PDF)</>
+            <p className="text-sm font-medium text-gray-900">Your PDF report</p>
+            {pdfUrl
+              ? <p className="text-xs text-gray-500">Ready to download.</p>
+              : <p className="text-xs text-gray-500">Being generated in the background.</p>
             }
-          </Button>
+          </div>
+          <div className="flex flex-col items-end gap-1">
+            {pdfUrl ? (
+              <Button
+                size="lg"
+                onClick={() => window.open(pdfUrl, "_blank")}
+                className="w-full sm:w-auto shadow-md hover:shadow-lg transition-all"
+              >
+                <Download className="mr-2 h-5 w-5" /> Download Full Report (PDF)
+              </Button>
+            ) : (
+              <Button
+                size="lg"
+                disabled
+                className="w-full sm:w-auto opacity-60 cursor-not-allowed"
+              >
+                <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Generating report…
+              </Button>
+            )}
+            {!pdfUrl && (
+              <button
+                onClick={handleCheckAgain}
+                disabled={checkingPdf}
+                className="text-xs text-primary hover:underline disabled:opacity-50"
+              >
+                {checkingPdf ? "Checking…" : "Check again"}
+              </button>
+            )}
+            {pdfCheckMessage && (
+              <p className="text-xs text-gray-500">{pdfCheckMessage}</p>
+            )}
+          </div>
         </div>
       </div>
     </div>

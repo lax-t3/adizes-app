@@ -24,7 +24,6 @@ import {
   Legend,
 } from "recharts";
 import { getRespondent } from "@/api/admin";
-import { downloadPdf } from "@/api/results";
 import type { GapDetail, Interpretation, ScoreSet } from "@/types/api";
 
 interface RespondentData {
@@ -37,6 +36,7 @@ interface RespondentData {
     scaled_scores: { is: ScoreSet; should: ScoreSet; want: ScoreSet };
     gaps: GapDetail[];
     interpretation: Interpretation;
+    pdf_url: string | null;
   };
 }
 
@@ -45,7 +45,9 @@ export function AdminRespondent() {
   const [data, setData] = useState<RespondentData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [pdfLoading, setPdfLoading] = useState(false);
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const [checkingPdf, setCheckingPdf] = useState(false);
+  const [pdfCheckMessage, setPdfCheckMessage] = useState("");
 
   useEffect(() => {
     if (!id) {
@@ -54,20 +56,30 @@ export function AdminRespondent() {
       return;
     }
     getRespondent(id)
-      .then(setData)
+      .then((d) => {
+        setData(d);
+        setPdfUrl(d.result.pdf_url);
+      })
       .catch(() => setError("Failed to load respondent data."))
       .finally(() => setLoading(false));
   }, [id]);
 
-  const handleDownloadPdf = async () => {
-    if (!data) return;
-    setPdfLoading(true);
+  const handleCheckAgain = async () => {
+    if (!id) return;
+    setCheckingPdf(true);
+    setPdfCheckMessage("");
     try {
-      await downloadPdf(data.result.id, data.user.name || data.user.email);
+      const fresh = await getRespondent(id);
+      if (fresh.result.pdf_url) {
+        setPdfUrl(fresh.result.pdf_url);
+        setPdfCheckMessage("");
+      } else {
+        setPdfCheckMessage("Still generating, try again shortly.");
+      }
     } catch {
-      // silent — user can retry
+      setPdfCheckMessage("Could not check status.");
     } finally {
-      setPdfLoading(false);
+      setCheckingPdf(false);
     }
   };
 
@@ -156,12 +168,29 @@ export function AdminRespondent() {
                 </div>
                 <InfoTooltip text="PAEI profile from the 'Want' dimension. CAPITAL = dominant role (score > 30/50). Lowercase = non-dominant (≤ 30). Role colours: P = red, A = navy, E = amber, I = teal." />
               </div>
-              <Button variant="outline" onClick={handleDownloadPdf} disabled={pdfLoading}>
-                {pdfLoading
-                  ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Generating…</>
-                  : <><Download className="mr-2 h-4 w-4" /> PDF Report</>
-                }
-              </Button>
+              <div className="flex flex-col items-end gap-1">
+                {pdfUrl ? (
+                  <Button variant="outline" onClick={() => window.open(pdfUrl, "_blank")}>
+                    <Download className="mr-2 h-4 w-4" /> PDF Report
+                  </Button>
+                ) : (
+                  <Button variant="outline" disabled className="opacity-60">
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Generating…
+                  </Button>
+                )}
+                {!pdfUrl && (
+                  <button
+                    onClick={handleCheckAgain}
+                    disabled={checkingPdf}
+                    className="text-xs text-primary hover:underline disabled:opacity-50"
+                  >
+                    {checkingPdf ? "Checking…" : "Check again"}
+                  </button>
+                )}
+                {pdfCheckMessage && (
+                  <p className="text-xs text-gray-500">{pdfCheckMessage}</p>
+                )}
+              </div>
             </div>
           </div>
         </div>
