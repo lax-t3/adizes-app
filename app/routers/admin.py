@@ -461,15 +461,19 @@ def list_admin_users(admin: dict = Depends(require_admin)):
 @router.post("/users/invite", status_code=status.HTTP_201_CREATED)
 def invite_admin(body: InviteAdminRequest, admin: dict = Depends(require_admin)):
     """Send an email invite to a new administrator."""
+    # generate_link(type=invite) creates the user AND returns the invite link in one call.
+    # invite_user_by_email sends Supabase's own email but gives us no link for our custom email.
     try:
-        resp = supabase_admin.auth.admin.invite_user_by_email(
-            body.email,
-            options={
+        lr = supabase_admin.auth.admin.generate_link({
+            "type": "invite",
+            "email": body.email,
+            "options": {
                 "data": {"name": body.name},
                 "redirect_to": f"{settings.frontend_url}/set-password",
             },
-        )
-        user_id = str(resp.user.id)
+        })
+        invite_link_val = lr.properties.action_link
+        user_id = str(lr.user.id)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -479,19 +483,7 @@ def invite_admin(body: InviteAdminRequest, admin: dict = Depends(require_admin))
             user_id, {"app_metadata": {"role": "admin"}}
         )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Invite sent but could not set admin role: {e}")
-
-    # Generate the actual invite link (with token) for the SMTP email
-    invite_link_val = f"{settings.frontend_url}/set-password"
-    try:
-        lr = supabase_admin.auth.admin.generate_link({
-            "type": "invite",
-            "email": body.email,
-            "options": {"redirect_to": f"{settings.frontend_url}/set-password"},
-        })
-        invite_link_val = getattr(lr.properties, "action_link", invite_link_val)
-    except Exception:
-        pass
+        raise HTTPException(status_code=500, detail=f"Invite created but could not set admin role: {e}")
 
     # Fire-and-forget admin invite email via SMTP
     try:
@@ -502,7 +494,7 @@ def invite_admin(body: InviteAdminRequest, admin: dict = Depends(require_admin))
             "platform_name": "Adizes India",
         })
     except Exception:
-        pass  # Non-fatal
+        pass  # Non-fatal — link is still valid even if SMTP fails
 
     return {
         "message": f"Invite email sent to {body.email}",
@@ -522,16 +514,16 @@ def resend_invite(user_id: str, admin: dict = Depends(require_admin)):
     meta = getattr(auth_user, "user_metadata", None) or {}
     admin_name = meta.get("name", "") or email
 
-    # Use generate_link instead of invite_user_by_email — the latter fails with 400
-    # for any user that already exists in Supabase, making resend impossible.
+    # For existing invited users, type=invite fails ("already registered").
+    # type=recovery works for any existing user and redirects to /set-password.
     invite_link_val = settings.frontend_url
     try:
         lr = supabase_admin.auth.admin.generate_link({
-            "type": "invite",
+            "type": "recovery",
             "email": email,
             "options": {"redirect_to": f"{settings.frontend_url}/set-password"},
         })
-        invite_link_val = getattr(lr.properties, "action_link", settings.frontend_url)
+        invite_link_val = lr.properties.action_link
     except Exception:
         pass  # Fall back to platform URL
 
