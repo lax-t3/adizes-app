@@ -183,25 +183,21 @@ def send_email(
     password = cfg.get("password", "")
     use_ssl = bool(cfg.get("use_ssl", False))
 
-    try:
-        context = ssl.create_default_context()
-        if use_ssl:
-            with smtplib.SMTP_SSL(host, port, context=context) as server:
-                if username:
-                    server.login(username, password)
-                server.sendmail(cfg["from_email"], to_email, msg.as_bytes())
-        else:
-            with smtplib.SMTP(host, port, timeout=10) as server:
-                server.ehlo()
-                server.starttls(context=context)
-                server.ehlo()
-                if username:
-                    server.login(username, password)
-                server.sendmail(cfg["from_email"], to_email, msg.as_bytes())
-        return True
-    except Exception as e:
-        print(f"[email_service] Send error to {to_email}: {e}")
-        return False
+    context = ssl.create_default_context()
+    if use_ssl:
+        with smtplib.SMTP_SSL(host, port, context=context) as server:
+            if username:
+                server.login(username, password)
+            server.sendmail(cfg["from_email"], to_email, msg.as_bytes())
+    else:
+        with smtplib.SMTP(host, port, timeout=10) as server:
+            server.ehlo()
+            server.starttls(context=context)
+            server.ehlo()
+            if username:
+                server.login(username, password)
+            server.sendmail(cfg["from_email"], to_email, msg.as_bytes())
+    return True
 
 
 def send_template_email(
