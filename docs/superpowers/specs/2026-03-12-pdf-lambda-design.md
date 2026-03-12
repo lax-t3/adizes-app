@@ -214,6 +214,7 @@ exports.handler = async (event) => {
     Key: key,
     Body: pdfBytes,
     ContentType: 'application/pdf',
+    ACL: 'public-read',   // required — object must be public for direct URL access
   }));
 
   // 7. Build URL (pre-signed, 7-day expiry — see Infrastructure section)
@@ -498,11 +499,7 @@ else
     --timeout 60 \
     --memory-size 1024 \
     --region "$REGION" \
-    --environment "Variables={
-      SUPABASE_URL=${SUPABASE_URL},
-      SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY},
-      S3_BUCKET_NAME=${S3_BUCKET_NAME}
-    }"
+    --environment "Variables={SUPABASE_URL=${SUPABASE_URL},SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY},S3_BUCKET_NAME=${S3_BUCKET_NAME}}"
 fi
 
 echo "✓ Lambda deployed: ${LAMBDA_NAME} → ${IMAGE_URI}"
