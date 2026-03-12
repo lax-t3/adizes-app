@@ -294,7 +294,7 @@ export function Results() {
                     </h4>
                     <div className="space-y-2">
                       {interpretation.mismanagement_risks.map((risk, i) => (
-                        <div key={i} className="bg-red-50 border-l-3 border-red-400 border-l-4 px-4 py-2 rounded-r-md text-sm text-gray-700">
+                        <div key={i} className="bg-red-50 border-l-4 border-red-400 px-4 py-2 rounded-r-md text-sm text-gray-700">
                           {risk}
                         </div>
                       ))}
