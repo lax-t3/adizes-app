@@ -412,14 +412,14 @@ def resend_enrollment_invite(cohort_id: str, user_id: str, admin: dict = Depends
     email_confirmed = getattr(auth_user, "email_confirmed_at", None)
     invite_link_val = settings.frontend_url
     if not email_confirmed:
-        # Still needs to accept invite — generate a fresh invite link
+        # type=invite fails for already-registered users; use type=recovery instead
         try:
             lr = supabase_admin.auth.admin.generate_link({
-                "type": "invite",
+                "type": "recovery",
                 "email": email,
                 "options": {"redirect_to": f"{settings.frontend_url}/register"},
             })
-            invite_link_val = getattr(lr.properties, "action_link", settings.frontend_url)
+            invite_link_val = lr.properties.action_link
         except Exception:
             pass
 
