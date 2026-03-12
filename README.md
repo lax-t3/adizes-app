@@ -156,7 +156,7 @@ adizes-backend/
 |--------|------|------|-------------|
 | POST | `/auth/login` | — | Login → JWT |
 | POST | `/auth/register` | — | Register new user |
-| POST | `/auth/set-password` | Invite JWT | Accept invite, set password |
+| POST | `/auth/set-password` | Invite JWT | Accept invite, set password (frontend: invite links land on `/register`, not `/set-password`) |
 | GET | `/auth/profile` | JWT | Get current user profile |
 | PUT | `/auth/profile` | JWT | Update name, email, phone |
 | PUT | `/auth/password` | JWT | Change password (verifies current) |
