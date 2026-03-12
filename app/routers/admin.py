@@ -502,32 +502,43 @@ def invite_admin(body: InviteAdminRequest, admin: dict = Depends(require_admin))
 def resend_invite(user_id: str, admin: dict = Depends(require_admin)):
     """Resend the invite email for a pending administrator."""
     try:
-        auth_resp = supabase_admin.auth.admin.get_user_by_id(user_id)
-        email = auth_resp.user.email
+        auth_user = supabase_admin.auth.admin.get_user_by_id(user_id).user
     except Exception:
         raise HTTPException(status_code=404, detail="User not found")
 
-    try:
-        supabase_admin.auth.admin.invite_user_by_email(
-            email,
-            options={"redirect_to": f"{settings.frontend_url}/set-password"},
-        )
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    email = auth_user.email or ""
+    meta = getattr(auth_user, "user_metadata", None) or {}
+    admin_name = meta.get("name", "") or email
 
-    # Fire-and-forget resend via SMTP
+    # Use generate_link instead of invite_user_by_email — the latter fails with 400
+    # for any user that already exists in Supabase, making resend impossible.
+    invite_link_val = settings.frontend_url
     try:
-        auth_user = supabase_admin.auth.admin.get_user_by_id(user_id).user
-        meta = getattr(auth_user, "user_metadata", None) or {}
-        admin_name = meta.get("name", "") or email
+        lr = supabase_admin.auth.admin.generate_link({
+            "type": "invite",
+            "email": email,
+            "options": {"redirect_to": f"{settings.frontend_url}/set-password"},
+        })
+        invite_link_val = getattr(lr.properties, "action_link", settings.frontend_url)
+    except Exception:
+        pass  # Fall back to platform URL
+
+    if not smtp_configured():
+        raise HTTPException(
+            status_code=400,
+            detail="SMTP is not configured. Please set up SMTP in Settings to resend invites.",
+        )
+
+    try:
         send_template_email("admin_invite", email, {
             "admin_name": admin_name,
             "admin_email": email,
-            "invite_link": settings.frontend_url,
+            "invite_link": invite_link_val,
             "platform_name": "Adizes PAEI Platform",
+            "platform_url": settings.frontend_url,
         })
-    except Exception:
-        pass  # Non-fatal
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to send email: {e}")
 
     return {"message": f"Invite resent to {email}"}
 
