@@ -232,35 +232,53 @@ def enroll_user(cohort_id: str, body: EnrollUserRequest, admin: dict = Depends(r
         "user_id": str(target.id),
     }).execute()
 
-    # For existing users (not newly invited), always generate a recovery link
-    # regardless of email_confirmed_at — confirmed state can be set by Supabase
-    # even before the user has gone through the activate flow.
+    # Determine activation state for existing users
+    is_activated = False
     if not invited_new:
         try:
-            lr = supabase_admin.auth.admin.generate_link({
-                "type": "recovery",
-                "email": body.email,
-                "options": {"redirect_to": f"{settings.frontend_url}/register"},
-            })
-            invite_link_val = lr.properties.action_link
+            fetched = supabase_admin.auth.admin.get_user_by_id(str(target.id)).user
+            is_activated = getattr(fetched, "email_confirmed_at", None) is not None
         except Exception:
             pass
 
+        if not is_activated:
+            # User exists but hasn't completed activation — send fresh recovery link
+            try:
+                lr = supabase_admin.auth.admin.generate_link({
+                    "type": "recovery",
+                    "email": body.email,
+                    "options": {"redirect_to": f"{settings.frontend_url}/register"},
+                })
+                invite_link_val = lr.properties.action_link
+            except Exception:
+                pass
+
     # Fire-and-forget enrollment email
     try:
-        cohort_name_val = (
-            supabase_admin.table("cohorts").select("name").eq("id", cohort_id).single().execute()
-        ).data.get("name", "") if cohort.data else ""
+        _cohort_name_resp = supabase_admin.table("cohorts").select("name").eq("id", cohort_id).single().execute()
+        cohort_name_val = (_cohort_name_resp.data.get("name", "") if _cohort_name_resp.data else "")
         meta = getattr(target, "user_metadata", None) or {}
         user_name_val = meta.get("name", "") or body.email
-        send_template_email("user_enrolled", body.email, {
-            "user_name": user_name_val,
-            "user_email": body.email,
-            "cohort_name": cohort_name_val,
-            "invite_link": invite_link_val,
-            "platform_name": "Adizes India",
-            "platform_url": settings.frontend_url,
-        })
+
+        if is_activated:
+            # Activated user: dashboard link only (no invite_link needed)
+            send_template_email("cohort_enrollment_existing", body.email, {
+                "user_name": user_name_val,
+                "user_email": body.email,
+                "cohort_name": cohort_name_val,
+                "platform_name": "Adizes India",
+                "platform_url": settings.frontend_url,
+            })
+        else:
+            # New or not-yet-activated user: activation/invite link
+            send_template_email("user_enrolled", body.email, {
+                "user_name": user_name_val,
+                "user_email": body.email,
+                "cohort_name": cohort_name_val,
+                "invite_link": invite_link_val,
+                "platform_name": "Adizes India",
+                "platform_url": settings.frontend_url,
+            })
     except Exception:
         pass  # Non-fatal — enrollment succeeded regardless
 
@@ -327,19 +345,26 @@ def bulk_enroll(cohort_id: str, body: BulkEnrollRequest, admin: dict = Depends(r
                     failed.append({"email": email, "reason": f"Could not invite user: {e}"})
                     continue
 
-            # For existing users, always generate a recovery link regardless of
-            # email_confirmed_at — Supabase can set confirmed state before the user
-            # has actually gone through the activate flow.
+            # Determine activation state for existing users
+            is_activated = False
             if not invited_new:
                 try:
-                    lr = supabase_admin.auth.admin.generate_link({
-                        "type": "recovery",
-                        "email": email,
-                        "options": {"redirect_to": f"{settings.frontend_url}/register"},
-                    })
-                    invite_link_val = lr.properties.action_link
+                    fetched = supabase_admin.auth.admin.get_user_by_id(str(user.id)).user
+                    is_activated = getattr(fetched, "email_confirmed_at", None) is not None
                 except Exception:
                     pass
+
+                if not is_activated:
+                    try:
+                        link_data = {
+                            "type": "recovery",
+                            "email": email,
+                            "options": {"redirect_to": f"{settings.frontend_url}/register"},
+                        }
+                        lr = supabase_admin.auth.admin.generate_link(link_data)
+                        invite_link_val = lr.properties.action_link
+                    except Exception:
+                        pass
 
             uid = str(user.id)
             if uid in existing_ids:
@@ -359,14 +384,24 @@ def bulk_enroll(cohort_id: str, body: BulkEnrollRequest, admin: dict = Depends(r
                 cohort_name_val = cohort_resp.data.get("name", "") if cohort_resp.data else ""
                 meta = getattr(user, "user_metadata", None) or {}
                 user_name_val = (entry.name or meta.get("name", "")) or email
-                send_template_email("user_enrolled", email, {
-                    "user_name": user_name_val,
-                    "user_email": email,
-                    "cohort_name": cohort_name_val,
-                    "invite_link": invite_link_val,
-                    "platform_name": "Adizes India",
-                    "platform_url": settings.frontend_url,
-                })
+
+                if is_activated:
+                    send_template_email("cohort_enrollment_existing", email, {
+                        "user_name": user_name_val,
+                        "user_email": email,
+                        "cohort_name": cohort_name_val,
+                        "platform_name": "Adizes India",
+                        "platform_url": settings.frontend_url,
+                    })
+                else:
+                    send_template_email("user_enrolled", email, {
+                        "user_name": user_name_val,
+                        "user_email": email,
+                        "cohort_name": cohort_name_val,
+                        "invite_link": invite_link_val,
+                        "platform_name": "Adizes India",
+                        "platform_url": settings.frontend_url,
+                    })
             except Exception:
                 pass  # Non-fatal
 
@@ -415,31 +450,41 @@ def resend_enrollment_invite(cohort_id: str, user_id: str, admin: dict = Depends
     meta = getattr(auth_user, "user_metadata", None) or {}
     user_name_val = meta.get("name", "") or email
 
-    # Always generate a fresh recovery link — admin explicitly requested resend.
-    # type=recovery works for any user regardless of email_confirmed_at state.
+    is_activated = getattr(auth_user, "email_confirmed_at", None) is not None
+
     invite_link_val = settings.frontend_url
-    try:
-        lr = supabase_admin.auth.admin.generate_link({
-            "type": "recovery",
-            "email": email,
-            "options": {"redirect_to": f"{settings.frontend_url}/register"},
-        })
-        invite_link_val = lr.properties.action_link
-    except Exception:
-        pass
+    if not is_activated:
+        try:
+            lr = supabase_admin.auth.admin.generate_link({
+                "type": "recovery",
+                "email": email,
+                "options": {"redirect_to": f"{settings.frontend_url}/register"},
+            })
+            invite_link_val = lr.properties.action_link
+        except Exception:
+            pass
 
     if not smtp_configured():
         raise HTTPException(status_code=400, detail="SMTP is not configured. Please set up SMTP in Settings first.")
 
     try:
-        send_template_email("user_enrolled", email, {
-            "user_name": user_name_val,
-            "user_email": email,
-            "cohort_name": cohort_name_val,
-            "invite_link": invite_link_val,
-            "platform_name": "Adizes India",
-            "platform_url": settings.frontend_url,
-        })
+        if is_activated:
+            send_template_email("cohort_enrollment_existing", email, {
+                "user_name": user_name_val,
+                "user_email": email,
+                "cohort_name": cohort_name_val,
+                "platform_name": "Adizes India",
+                "platform_url": settings.frontend_url,
+            })
+        else:
+            send_template_email("user_enrolled", email, {
+                "user_name": user_name_val,
+                "user_email": email,
+                "cohort_name": cohort_name_val,
+                "invite_link": invite_link_val,
+                "platform_name": "Adizes India",
+                "platform_url": settings.frontend_url,
+            })
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to send email: {e}")
 
