@@ -151,7 +151,7 @@ def get_cohort(cohort_id: str, admin: dict = Depends(require_admin)):
 
         assessment = (
             supabase_admin.table("assessments")
-            .select("id, completed_at, scaled_scores, interpretation")
+            .select("id, completed_at, scaled_scores, interpretation, status")
             .eq("user_id", uid)
             .order("completed_at", desc=True)
             .limit(1)
@@ -159,17 +159,18 @@ def get_cohort(cohort_id: str, admin: dict = Depends(require_admin)):
         )
 
         a = assessment.data[0] if assessment.data else None
+        a_status = a.get("status", "pending") if a else "pending"
         dominant = None
-        if a and a.get("interpretation"):
+        if a_status == "completed" and a and a.get("interpretation"):
             dominant = "".join(a["interpretation"].get("dominant_roles", []))
-        if a and a.get("scaled_scores"):
+        if a_status == "completed" and a and a.get("scaled_scores"):
             all_scaled.append(a["scaled_scores"])
 
         respondents.append(RespondentSummary(
             user_id=uid,
             name=name,
             email=email,
-            status="completed" if (a and a.get("completed_at")) else "pending",
+            status=a_status,
             dominant_style=dominant,
             completed_at=a["completed_at"] if a else None,
         ))

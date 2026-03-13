@@ -44,7 +44,7 @@ class MyAssessmentItem(BaseModel):
     cohort_id: str
     cohort_name: str
     enrolled_at: Optional[str] = None
-    status: str  # "pending" | "completed"
+    status: str  # "pending" | "completed" | "expired"
     result_id: Optional[str] = None
     completed_at: Optional[str] = None
     dominant_style: Optional[str] = None

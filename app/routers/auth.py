@@ -172,19 +172,19 @@ def my_assessments(current_user: dict = Depends(get_current_user)):
         .execute()
     )
 
-    # Fetch latest completed assessment for this user once
+    # Fetch latest assessment for this user once (any status)
     assessment_resp = (
         supabase_admin.table("assessments")
-        .select("id, completed_at, interpretation")
+        .select("id, completed_at, interpretation, status")
         .eq("user_id", user_id)
-        .not_.is_("completed_at", "null")
         .order("completed_at", desc=True)
         .limit(1)
         .execute()
     )
     latest = assessment_resp.data[0] if assessment_resp.data else None
+    latest_status = latest.get("status", "pending") if latest else "pending"
     dominant = None
-    if latest and latest.get("interpretation"):
+    if latest_status == "completed" and latest and latest.get("interpretation"):
         dominant = "".join(latest["interpretation"].get("dominant_roles", []))
 
     result = []
@@ -194,9 +194,9 @@ def my_assessments(current_user: dict = Depends(get_current_user)):
             cohort_id=m["cohort_id"],
             cohort_name=cohort.get("name", ""),
             enrolled_at=m.get("enrolled_at"),
-            status="completed" if latest else "pending",
-            result_id=latest["id"] if latest else None,
-            completed_at=latest["completed_at"] if latest else None,
+            status=latest_status,
+            result_id=latest["id"] if latest_status == "completed" and latest else None,
+            completed_at=latest["completed_at"] if latest_status == "completed" and latest else None,
             dominant_style=dominant,
         ))
 

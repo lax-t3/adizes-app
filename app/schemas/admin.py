@@ -60,7 +60,7 @@ class RespondentSummary(BaseModel):
     user_id: str
     name: str
     email: str
-    status: str           # 'pending' | 'completed'
+    status: str           # 'pending' | 'in_progress' | 'completed' | 'expired'
     dominant_style: Optional[str] = None
     completed_at: Optional[str] = None
 
