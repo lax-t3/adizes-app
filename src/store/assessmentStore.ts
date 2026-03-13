@@ -1,6 +1,9 @@
 import { create } from 'zustand';
 import type { Section } from '@/types/api';
 
+// RankMap: one entry per option key, null = not yet ranked
+export type RankMap = Record<string, number | null>;  // { a: 1|2|3|4|null, ... }
+
 interface AssessmentState {
   // Questions loaded from API
   sections: Section[];
@@ -10,9 +13,9 @@ interface AssessmentState {
   currentSection: 0 | 1 | 2;
   currentQuestion: number;
 
-  // Answers: key = question_index (0-based), value = option_key ('a'|'b'|'c'|'d')
-  answers: Record<number, string>;
-  saveAnswer: (questionIndex: number, optionKey: string) => void;
+  // Answers: key = question_index (0-based), value = rank map for that question
+  answers: Record<number, RankMap>;
+  saveRanks: (questionIndex: number, rankMap: RankMap) => void;
   nextQuestion: () => void;
   prevQuestion: () => void;
   nextSection: () => void;
@@ -32,9 +35,9 @@ export const useAssessmentStore = create<AssessmentState>((set) => ({
   currentQuestion: 0,
   answers: {},
 
-  saveAnswer: (questionIndex, optionKey) =>
+  saveRanks: (questionIndex, rankMap) =>
     set((state) => ({
-      answers: { ...state.answers, [questionIndex]: optionKey },
+      answers: { ...state.answers, [questionIndex]: rankMap },
     })),
 
   nextQuestion: () =>
