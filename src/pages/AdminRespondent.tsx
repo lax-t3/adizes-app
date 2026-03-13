@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { GapBadge } from "@/components/ui/GapBadge";
@@ -38,11 +38,14 @@ interface RespondentData {
     gaps: GapDetail[];
     interpretation: Interpretation;
     pdf_url: string | null;
-  };
+  } | null;
+  cohort_id: string;
 }
 
 export function AdminRespondent() {
   const { id } = useParams<{ id: string }>();
+  const [searchParams] = useSearchParams();
+  const cohortId = searchParams.get("cohort_id");
   const [data, setData] = useState<RespondentData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -51,27 +54,27 @@ export function AdminRespondent() {
   const [pdfCheckMessage, setPdfCheckMessage] = useState("");
 
   useEffect(() => {
-    if (!id) {
-      setError("No respondent ID provided.");
+    if (!id || !cohortId) {
+      setError("No respondent ID or cohort ID provided.");
       setLoading(false);
       return;
     }
-    getRespondent(id)
+    getRespondent(id, cohortId)
       .then((d) => {
         setData(d);
-        setPdfUrl(d.result.pdf_url);
+        setPdfUrl(d.result?.pdf_url ?? null);
       })
       .catch(() => setError("Failed to load respondent data."))
       .finally(() => setLoading(false));
-  }, [id]);
+  }, [id, cohortId]);
 
   const handleCheckAgain = async () => {
-    if (!id) return;
+    if (!id || !cohortId) return;
     setCheckingPdf(true);
     setPdfCheckMessage("");
     try {
-      const fresh = await getRespondent(id);
-      if (fresh.result.pdf_url) {
+      const fresh = await getRespondent(id, cohortId);
+      if (fresh.result?.pdf_url) {
         setPdfUrl(fresh.result.pdf_url);
         setPdfCheckMessage("");
       } else {
@@ -110,7 +113,27 @@ export function AdminRespondent() {
     );
   }
 
-  const { user, result } = data;
+  if (!data.result) {
+    return (
+      <div className="p-6 sm:p-10 max-w-3xl mx-auto">
+        <Link to="/admin/cohorts" className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 mb-6">
+          <ArrowLeft className="h-4 w-4" /> Back to Cohorts
+        </Link>
+        <Card>
+          <CardContent className="p-8 text-center">
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">{data.user.name || data.user.email}</h2>
+            <p className="text-gray-500 mb-4">No assessment submitted yet for this cohort.</p>
+            <span className="inline-flex items-center gap-1 text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">
+              Awaiting assessment
+            </span>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  const { user } = data;
+  const result = data.result;
   const { scaled_scores, gaps, profile, interpretation } = result;
 
   const radarData = (["P", "A", "E", "I"] as const).map((role) => ({
