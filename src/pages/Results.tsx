@@ -136,7 +136,7 @@ export function Results() {
             <div className="flex items-center gap-4 bg-gray-800/50 p-4 rounded-xl border border-gray-700 backdrop-blur-sm">
               <div className="flex items-center gap-1.5">
                 <span className="text-sm text-gray-400 font-medium uppercase tracking-wider">Dominant Style</span>
-                <InfoTooltip text="Your PAEI profile based on the 'Want' dimension — how you want to behave. A CAPITAL letter means that role scored above 30/50 (dominant). A lowercase letter means it scored 30 or below (non-dominant). Most people have 1–2 dominant roles." />
+                <InfoTooltip text="Your PAEI profile based on the 'Want' dimension — how you want to behave. A CAPITAL letter means that role scored above 30 (dominant). A lowercase letter means it scored 30 or below (non-dominant). Scores range from 12–48. Most people have 1–2 dominant roles." />
               </div>
               <div className="flex gap-1.5">
                 {profileBadges.map(({ role, char, isDominant }) =>
@@ -177,7 +177,7 @@ export function Results() {
                     <RadarChart cx="50%" cy="50%" outerRadius="70%" data={radarData}>
                       <PolarGrid stroke="#e5e7eb" />
                       <PolarAngleAxis dataKey="subject" tick={{ fill: "#4b5563", fontSize: 12, fontWeight: 500 }} />
-                      <PolarRadiusAxis angle={30} domain={[0, 50]} tick={{ fill: "#9ca3af" }} />
+                      <PolarRadiusAxis angle={30} domain={[12, 48]} tick={{ fill: "#9ca3af" }} />
                       <Radar name="Is" dataKey="is" stroke="#C8102E" fill="#C8102E" fillOpacity={0.4} />
                       <Radar name="Should" dataKey="should" stroke="#1D3557" fill="#1D3557" fillOpacity={0.4} />
                       <Radar name="Want" dataKey="want" stroke="#E87722" fill="#E87722" fillOpacity={0.4} />
@@ -207,7 +207,7 @@ export function Results() {
                   <ResponsiveContainer width="99%" height="100%" debounce={50}>
                     <BarChart data={gapChartData} layout="vertical" margin={{ top: 5, right: 30, left: 40, bottom: 5 }}>
                       <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f3f4f6" />
-                      <XAxis type="number" domain={[0, 50]} tick={{ fill: "#9ca3af" }} />
+                      <XAxis type="number" domain={[12, 48]} tick={{ fill: "#9ca3af" }} />
                       <YAxis dataKey="name" type="category" tick={{ fill: "#4b5563", fontSize: 12, fontWeight: 500 }} width={100} />
                       <Tooltip cursor={{ fill: "#f9fafb" }} contentStyle={{ borderRadius: "8px", border: "none", boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)" }} />
                       <Legend />
@@ -219,7 +219,7 @@ export function Results() {
                 <div className="space-y-3">
                   <h4 className="font-medium text-gray-900 text-sm uppercase tracking-wider mb-4 flex items-center gap-1.5">
                   Gap Severity
-                  <InfoTooltip text="Ext (External): gap between how you behave (Is) and what your role demands (Should). Int (Internal): gap between role demands (Should) and your natural preference (Want). Numbers show point difference on the 0–50 scale." />
+                  <InfoTooltip text="Ext (External): gap between how you behave (Is) and what your role demands (Should). Int (Internal): gap between role demands (Should) and your natural preference (Want). Numbers show point difference on the 12–48 scale." />
                 </h4>
                   {gaps.map((g) => (
                     <div key={g.role} className="flex items-center justify-between p-3 rounded-lg bg-gray-50 border border-gray-100">
