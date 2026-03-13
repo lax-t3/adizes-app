@@ -73,7 +73,8 @@ export function AdminSidebar() {
           <LogOut className="mr-3 h-5 w-5 text-gray-400 group-hover:text-gray-500" />
           Log out
         </button>
-        <div className="px-3 pt-2 pb-1 space-y-0.5">
+        <div className="px-3 pt-2 pb-1 space-y-2">
+          <img src="/hil_blue.png" alt="Heartfulness Institute of Leadership" className="h-6 w-auto opacity-60" referrerPolicy="no-referrer" />
           <p className="text-[10px] text-gray-400 leading-snug">&copy; {new Date().getFullYear()} Adizes Institute</p>
           <p className="text-[10px] text-gray-400 leading-snug">Powered by <span className="font-medium text-gray-500">Turiyaskills</span></p>
         </div>

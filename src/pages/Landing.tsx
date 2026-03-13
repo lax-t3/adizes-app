@@ -222,6 +222,9 @@ export function Landing() {
           <p className="text-center text-xs text-gray-400">
             &copy; {new Date().getFullYear()} Adizes Institute &middot; Powered by <span className="font-medium text-gray-500">Turiyaskills</span>
           </p>
+          <div className="mt-4 flex justify-center">
+            <img src="/hil_blue.png" alt="Heartfulness Institute of Leadership" className="h-7 w-auto opacity-70" referrerPolicy="no-referrer" />
+          </div>
         </div>
       </div>
     </div>
