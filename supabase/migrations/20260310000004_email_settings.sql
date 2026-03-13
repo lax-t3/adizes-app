@@ -1,0 +1,13 @@
+CREATE TABLE IF NOT EXISTS app_settings (
+  key TEXT PRIMARY KEY,
+  value JSONB NOT NULL,
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS email_templates (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  subject TEXT NOT NULL,
+  html_body TEXT NOT NULL,
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
