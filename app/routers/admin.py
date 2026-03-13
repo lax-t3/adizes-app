@@ -32,12 +32,12 @@ def get_stats(admin: dict = Depends(require_admin)):
 
     assessments_resp = (
         supabase_admin.table("assessments")
-        .select("user_id, user_name, completed_at")
+        .select("user_id, user_name, completed_at, status")
         .execute()
     )
     all_assessments = assessments_resp.data or []
     total_assessments = len(all_assessments)
-    completed = [a for a in all_assessments if a.get("completed_at")]
+    completed = [a for a in all_assessments if a.get("status") == "completed"]
     completion_pct = round(len(completed) / total_assessments * 100) if total_assessments else 0
 
     recent_resp = (

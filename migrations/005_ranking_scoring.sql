@@ -1,4 +1,4 @@
--- migrations/003_ranking_scoring.sql
+-- migrations/005_ranking_scoring.sql
 -- Ranking-based scoring redesign
 -- Run order: this file after 001 and 002
 
@@ -21,4 +21,4 @@ UPDATE assessments SET status = 'in_progress'
 -- rows with neither timestamp remain 'pending'
 
 -- 4. Mark ALL existing assessments expired (clean slate — full re-take)
-UPDATE assessments SET status = 'expired';
+UPDATE assessments SET status = 'expired', updated_at = NOW();
