@@ -84,8 +84,10 @@ export async function deleteAdminUser(userId: string) {
   await apiClient.delete(`/admin/users/${userId}`);
 }
 
-export async function getRespondent(userId: string) {
-  const { data } = await apiClient.get(`/admin/respondents/${userId}`);
+export async function getRespondent(userId: string, cohortId: string) {
+  const { data } = await apiClient.get(`/admin/respondents/${userId}`, {
+    params: { cohort_id: cohortId },
+  });
   return data;
 }
 

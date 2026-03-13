@@ -83,7 +83,7 @@ export interface ResultResponse {
 }
 
 // ── My Assessments ────────────────────────────────────────────────────────────
-export interface MyAssessmentItem {
+export interface CohortAssessmentHistory {
   cohort_id: string;
   cohort_name: string;
   enrolled_at: string | null;
@@ -92,6 +92,9 @@ export interface MyAssessmentItem {
   completed_at: string | null;
   dominant_style: string | null;
 }
+
+// Alias for backwards compatibility — remove once Dashboard.tsx is updated in Task 11
+export type MyAssessmentItem = CohortAssessmentHistory;
 
 // ── Admin ─────────────────────────────────────────────────────────────────────
 export interface CohortSummary {
