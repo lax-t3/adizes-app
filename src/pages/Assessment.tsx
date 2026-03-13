@@ -184,12 +184,18 @@ export function Assessment() {
     setSubmitError("");
 
     // Validate every question has all 4 ranks filled in
-    const totalQuestionCount = sections.reduce((acc, s) => acc + s.questions.length, 0);
-    const allComplete =
-      Object.keys(answers).length === totalQuestionCount &&
-      Object.values(answers).every((rankMap) => isRankMapComplete(rankMap));
-    if (!allComplete) {
-      setSubmitError("Some questions are incomplete. Please go back and rank all options before submitting.");
+    const allQuestions = sections.flatMap((s) => s.questions);
+    const incompleteNums = allQuestions
+      .filter((q) => {
+        const rm = answers[q.question_index];
+        return !rm || !isRankMapComplete(rm);
+      })
+      .map((q) => q.question_index + 1); // 1-based for display
+
+    if (incompleteNums.length > 0) {
+      setSubmitError(
+        `Question${incompleteNums.length > 1 ? "s" : ""} ${incompleteNums.join(", ")} ${incompleteNums.length > 1 ? "are" : "is"} incomplete — please go back and rank all 4 options.`
+      );
       return;
     }
 
@@ -213,6 +219,11 @@ export function Assessment() {
 
   const handleBack = () => {
     if (autoAdvanceTimer.current) clearTimeout(autoAdvanceTimer.current);
+    // If leaving an incomplete question, clear its partial answer so it starts
+    // fresh when the user returns — prevents stale partial ranks blocking submit.
+    if (!isComplete) {
+      saveRanks(question.question_index, initRankMap(optionKeys));
+    }
     if (currentQuestion > 0) {
       prevQuestion();
     } else if (currentSection > 0) {
