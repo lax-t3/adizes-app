@@ -132,6 +132,24 @@ def submit_assessment(body: SubmitRequest, background_tasks: BackgroundTasks, us
             detail=f"Expected 36 answers, got {len(body.answers)}",
         )
 
+    user_id = user["sub"]
+    user_name = (user.get("user_metadata") or {}).get("name", "")
+
+    # Verify user is enrolled in the specified cohort
+    cohort_id = body.cohort_id
+    enrollment = (
+        supabase_admin.table("cohort_members")
+        .select("user_id")
+        .eq("cohort_id", cohort_id)
+        .eq("user_id", user_id)
+        .execute()
+    )
+    if not enrollment.data:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You are not enrolled in this cohort",
+        )
+
     answers_dicts = [a.model_dump() for a in body.answers]
 
     # Score
@@ -141,15 +159,13 @@ def submit_assessment(body: SubmitRequest, background_tasks: BackgroundTasks, us
 
     result_id = str(uuid.uuid4())
     now = datetime.now(timezone.utc).isoformat()
-    user_id = user["sub"]
-
-    user_name = (user.get("user_metadata") or {}).get("name", "")
 
     # Persist assessment
     supabase_admin.table("assessments").insert({
         "id": result_id,
         "user_id": user_id,
         "user_name": user_name,
+        "cohort_id": cohort_id,
         "completed_at": now,
         "raw_scores": scores["raw"],
         "scaled_scores": scores["scaled"],
@@ -178,18 +194,19 @@ def submit_assessment(body: SubmitRequest, background_tasks: BackgroundTasks, us
         if smtp_configured():
             user_email = (user.get("email") or
                           (supabase_admin.auth.admin.get_user_by_id(user_id).user.email) or "")
-            # Find cohort for this user
-            cohort_row = (
-                supabase_admin.table("cohort_members")
-                .select("cohort_id, cohorts(name)")
-                .eq("user_id", user_id)
-                .limit(1)
-                .execute()
-            )
             cohort_name_for_email = ""
-            if cohort_row.data:
-                c = cohort_row.data[0].get("cohorts")
-                cohort_name_for_email = c.get("name", "") if c else ""
+            try:
+                cohort_name_row = (
+                    supabase_admin.table("cohorts")
+                    .select("name")
+                    .eq("id", cohort_id)
+                    .single()
+                    .execute()
+                )
+                if cohort_name_row.data:
+                    cohort_name_for_email = cohort_name_row.data.get("name", "")
+            except Exception:
+                pass
 
             dominant = "".join(interp.get("dominant_roles", []))
 
