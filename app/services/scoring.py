@@ -68,48 +68,43 @@ DOMINANT_THRESHOLD = 30  # scaled score above this → dominant
 
 def score_answers(answers: List[Dict]) -> Dict:
     """
-    Score a completed assessment.
+    Score a completed ranking assessment (v2: rank-order, 12–48 scale).
 
     Args:
-        answers: list of { question_index: int, option_key: str }
-                 question_index is 0-based (0–35)
+        answers: list of { question_index: int, ranks: {a:int, b:int, c:int, d:int} }
+                 ranks values must be a permutation of {1,2,3,4}
+                 rank 1 = most preferred (4 pts), rank 4 = least preferred (1 pt)
 
     Returns:
         {
-          "raw": { "is": {P,A,E,I}, "should": {P,A,E,I}, "want": {P,A,E,I} },
-          "scaled": same structure, scores 0–50,
-          "profile": { "is": "paEI", "should": "Paei", "want": "paEI" }
+          "raw":     { "is": {P,A,E,I}, ... }  -- raw 12-48 totals (same as scaled)
+          "scaled":  { "is": {P,A,E,I}, ... }  -- 12-48 values (no scaling applied)
+          "profile": { "is": "paEI", ... }
         }
     """
-    raw = {s: {"P": 0, "A": 0, "E": 0, "I": 0} for s in SECTIONS}
+    scores = {s: {"P": 0, "A": 0, "E": 0, "I": 0} for s in SECTIONS}
 
     for answer in answers:
-        q_idx = answer["question_index"]
-        opt = answer["option_key"]
+        q_idx = answer.get("question_index")
+        ranks = answer.get("ranks", {})
 
         if q_idx not in SCORING_KEY:
             continue
-        role = SCORING_KEY[q_idx].get(opt)
-        if not role:
-            continue
 
         section = SECTIONS[q_idx // 12]
-        raw[section][role] += 1
+        q_mapping = SCORING_KEY[q_idx]   # { option_key: PAEI_role }
 
-    scaled = {
-        section: {
-            role: round(raw[section][role] / 12 * 50)
-            for role in ROLES
-        }
-        for section in SECTIONS
-    }
+        for opt, rank in ranks.items():
+            role = q_mapping.get(opt)
+            if role and isinstance(rank, int) and 1 <= rank <= 4:
+                scores[section][role] += (5 - rank)
 
     profile = {
-        section: _build_profile_string(scaled[section])
+        section: _build_profile_string(scores[section])
         for section in SECTIONS
     }
 
-    return {"raw": raw, "scaled": scaled, "profile": profile}
+    return {"raw": scores, "scaled": scores, "profile": profile}
 
 
 def _build_profile_string(scores: Dict[str, int]) -> str:
