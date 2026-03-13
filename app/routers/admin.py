@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
+from typing import Optional
 from fastapi.responses import StreamingResponse
 from app.auth import require_admin
 from app.database import supabase_admin
@@ -71,16 +72,14 @@ def list_cohorts(admin: dict = Depends(require_admin)):
     for c in rows.data:
         members = c.get("cohort_members", [])
         member_ids = [m["user_id"] for m in members]
-        completed = 0
-        if member_ids:
-            comp_rows = (
-                supabase_admin.table("assessments")
-                .select("user_id")
-                .in_("user_id", member_ids)
-                .not_.is_("completed_at", "null")
-                .execute()
-            )
-            completed = len(comp_rows.data)
+        comp_rows = (
+            supabase_admin.table("assessments")
+            .select("user_id")
+            .eq("cohort_id", c["id"])
+            .eq("status", "completed")
+            .execute()
+        )
+        completed = len(comp_rows.data or [])
 
         total = len(members)
         results.append(CohortSummary(
@@ -153,7 +152,7 @@ def get_cohort(cohort_id: str, admin: dict = Depends(require_admin)):
             supabase_admin.table("assessments")
             .select("id, completed_at, scaled_scores, interpretation, status")
             .eq("user_id", uid)
-            .order("completed_at", desc=True)
+            .eq("cohort_id", cohort_id)
             .limit(1)
             .execute()
         )
@@ -592,17 +591,16 @@ def delete_admin_user(user_id: str, admin: dict = Depends(require_admin)):
 
 
 @router.get("/respondents/{user_id}")
-def get_respondent(user_id: str, admin: dict = Depends(require_admin)):
-    assessment = (
-        supabase_admin.table("assessments")
-        .select("*")
-        .eq("user_id", user_id)
-        .order("completed_at", desc=True)
-        .limit(1)
-        .execute()
-    )
-    if not assessment.data:
-        raise HTTPException(status_code=404, detail="No completed assessment found")
+def get_respondent(
+    user_id: str,
+    cohort_id: Optional[str] = None,
+    admin: dict = Depends(require_admin),
+):
+    if not cohort_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="cohort_id query parameter is required",
+        )
 
     try:
         auth_resp = supabase_admin.auth.admin.get_user_by_id(user_id)
@@ -611,12 +609,23 @@ def get_respondent(user_id: str, admin: dict = Depends(require_admin)):
         meta = getattr(auth_user, "user_metadata", None) or {}
         name = meta.get("name", "")
     except Exception:
-        email = ""
-        name = assessment.data[0].get("user_name", "")
+        raise HTTPException(status_code=404, detail="User not found")
+
+    assessment = (
+        supabase_admin.table("assessments")
+        .select("*")
+        .eq("user_id", user_id)
+        .eq("cohort_id", cohort_id)
+        .limit(1)
+        .execute()
+    )
+
+    result_data = assessment.data[0] if assessment.data else None
 
     return {
         "user": {"id": user_id, "email": email, "name": name},
-        "result": assessment.data[0],
+        "result": result_data,
+        "cohort_id": cohort_id,
     }
 
 
