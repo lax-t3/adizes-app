@@ -352,6 +352,29 @@ function NoAssessmentCTA({ hasEnrollments }: { hasEnrollments: boolean }) {
   );
 }
 
+// ─── Expired assessment CTA ───────────────────────────────────────────────────
+
+function ExpiredAssessmentCTA() {
+  const navigate = useNavigate();
+  return (
+    <div className="text-center py-12 px-6">
+      <div className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-orange-50 text-orange-500 mb-4">
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+        </svg>
+      </div>
+      <h3 className="text-xl font-semibold text-gray-900 mb-2">Your previous assessment has expired</h3>
+      <p className="text-gray-500 mb-6 max-w-md mx-auto">
+        The assessment has been updated to a new ranking format. Please retake to see your results.
+      </p>
+      <Button onClick={() => navigate("/assessment")}>
+        Begin Assessment
+        <ArrowRight className="ml-2 h-4 w-4" />
+      </Button>
+    </div>
+  );
+}
+
 // ─── My Assessments tab ───────────────────────────────────────────────────────
 
 function MyAssessmentsTab({
@@ -473,6 +496,14 @@ function StatusBadge({ status }: { status: MyAssessmentItem["status"] }) {
       </span>
     );
   }
+  if (status === "expired") {
+    return (
+      <span className="inline-flex items-center gap-1 text-xs font-medium text-orange-700 bg-orange-50 px-2 py-0.5 rounded-full">
+        <span className="h-1.5 w-1.5 rounded-full bg-orange-500" />
+        Expired
+      </span>
+    );
+  }
   return (
     <span className="inline-flex items-center gap-1 text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">
       <Clock className="h-3 w-3" /> Yet to start
@@ -498,6 +529,7 @@ export function Dashboard() {
 
   // The result to show: prefer the latest completed from my-assessments, fall back to local store
   const completedItem = myAssessments.find((a) => a.status === "completed");
+  const expiredItem = myAssessments.find((a) => a.status === "expired");
   const activeResultId = completedItem?.result_id ?? resultId;
   const hasEnrollments = myAssessments.length > 0;
 
@@ -528,6 +560,8 @@ export function Dashboard() {
                 </div>
               ) : activeResultId ? (
                 <ResultsDashboard resultId={activeResultId} />
+              ) : expiredItem ? (
+                <ExpiredAssessmentCTA />
               ) : (
                 <NoAssessmentCTA hasEnrollments={hasEnrollments} />
               )}
