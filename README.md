@@ -32,8 +32,10 @@ supabase start
 DB=$(docker ps -q -f name=supabase_db)
 docker exec -i $DB psql -U postgres -d postgres < migrations/001_initial_schema.sql
 docker exec -i $DB psql -U postgres -d postgres < migrations/002_seed_questions.sql
-docker exec -i $DB psql -U postgres -d postgres < migrations/003_admin_schema.sql
+docker exec -i $DB psql -U postgres -d postgres < migrations/003_add_user_name.sql
 docker exec -i $DB psql -U postgres -d postgres < migrations/004_email_settings.sql
+docker exec -i $DB psql -U postgres -d postgres < migrations/005_ranking_scoring.sql
+docker exec -i $DB psql -U postgres -d postgres < migrations/006_cohort_scoped_assessments.sql
 
 # 3. Copy and edit env (use http://127.0.0.1:54321 for local Supabase)
 cp .env.example .env
@@ -222,16 +224,18 @@ adizes-backend/
       email_service.py         # smtplib SMTP sending; template rendering;
                                #   DEFAULT_TEMPLATES for 3 built-in email types
     schemas/
-      auth.py                  # Login, register, profile, password, MyAssessmentItem
-      assessment.py            # Questions, submit, options
+      auth.py                  # Login, register, profile, password, CohortAssessmentHistory
+      assessment.py            # Questions, submit (requires cohort_id), options
       results.py               # ResultResponse (includes pdf_url), GapDetail, Interpretation
-      admin.py                 # Cohorts, members, bulk enroll, admin users
+      admin.py                 # Cohorts, members, bulk enroll, admin users, RespondentDetail
       settings.py              # SmtpConfig, EmailTemplate CRUD
   migrations/
-    001_initial_schema.sql     # Full DB schema + RLS policies
-    002_seed_questions.sql     # All 36 PAEI questions with options
-    003_admin_schema.sql       # Cohorts + cohort_members tables
-    004_email_settings.sql     # app_settings + email_templates tables
+    001_initial_schema.sql              # Full DB schema + RLS policies
+    002_seed_questions.sql              # All 36 PAEI questions with options
+    003_add_user_name.sql               # user_name column on assessments
+    004_email_settings.sql              # app_settings + email_templates tables
+    005_ranking_scoring.sql             # Ranking-based scoring engine changes
+    006_cohort_scoped_assessments.sql   # Adds cohort_id NOT NULL FK to assessments (clean-slate migration)
   tests/
     test_scoring.py
     test_gap_analysis.py
@@ -259,7 +263,7 @@ adizes-backend/
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
 | GET | `/assessment/questions` | JWT | All 36 questions in 3 sections |
-| POST | `/assessment/submit` | JWT | Submit answers → result_id + sends completion email + triggers Lambda PDF (fire-and-forget) |
+| POST | `/assessment/submit` | JWT | Submit answers (`cohort_id` required in body) → result_id + sends completion email + triggers Lambda PDF (fire-and-forget). Returns 403 if user not enrolled in the cohort. |
 
 ### Results (`/results`)
 
@@ -280,7 +284,7 @@ adizes-backend/
 | POST | `/admin/cohorts/{id}/members/bulk` | Admin | Bulk enroll from list |
 | POST | `/admin/cohorts/{id}/members/{uid}/resend-invite` | Admin | Resend enrollment email |
 | DELETE | `/admin/cohorts/{id}/members/{uid}` | Admin | Remove member |
-| GET | `/admin/respondents/{uid}` | Admin | Individual respondent results |
+| GET | `/admin/respondents/{uid}?cohort_id=<uuid>` | Admin | Respondent results for a specific cohort. `cohort_id` query param required (400 if missing). Returns `result: null` if user hasn't submitted yet. |
 | GET | `/admin/export/{cohort_id}` | Admin | CSV export |
 
 ### Admin — Users (`/admin`)
@@ -311,9 +315,20 @@ Three built-in templates (stored in `app_settings` / `email_templates` tables, e
 
 | Template ID | Trigger | Variables |
 |-------------|---------|-----------|
-| `user_enrolled` | User enrolled into a cohort | `user_name`, `user_email`, `cohort_name`, `invite_link`, `platform_name`, `platform_url` |
+| `user_enrolled` | New or not-yet-activated user enrolled into a cohort | `user_name`, `user_email`, `cohort_name`, `invite_link`, `platform_name`, `platform_url` |
+| `cohort_enrollment_existing` | Already-activated user enrolled into a cohort (dashboard link only, no activation link) | `user_name`, `user_email`, `cohort_name`, `platform_name`, `platform_url` |
 | `admin_invite` | New admin account invited | `admin_name`, `admin_email`, `invite_link`, `platform_name`, `platform_url` |
 | `assessment_complete` | User submits assessment | `user_name`, `user_email`, `cohort_name`, `dominant_style`, `platform_name`, `platform_url` (+ PDF attachment) |
+
+### Enrollment email three-case logic
+
+All three enrollment endpoints (`enroll_user`, `bulk_enroll`, `resend_enrollment_invite`) apply the same branching:
+
+| Case | Condition | Email sent |
+|------|-----------|-----------|
+| New user | No account existed | `user_enrolled` with `type=invite` link |
+| Invited, not activated | Account exists, `email_confirmed_at is None` | `user_enrolled` with `type=recovery` link |
+| Already activated | Account exists, `email_confirmed_at` set | `cohort_enrollment_existing` (dashboard link only) |
 
 ## Running Tests
 
