@@ -167,7 +167,7 @@ export function AdminRespondent() {
                     )
                   )}
                 </div>
-                <InfoTooltip text="PAEI profile from the 'Want' dimension. CAPITAL = dominant role (score > 30/50). Lowercase = non-dominant (≤ 30). Role colours: P = red, A = navy, E = amber, I = teal." />
+                <InfoTooltip text="PAEI profile from the 'Want' dimension. CAPITAL = dominant role (scored above 30, dominant). Scores range 12–48. Lowercase = non-dominant. Role colours: P = red, A = navy, E = amber, I = teal." />
               </div>
               <div className="flex flex-col items-end gap-1">
                 {pdfUrl ? (

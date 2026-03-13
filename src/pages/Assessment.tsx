@@ -167,6 +167,7 @@ export function Assessment() {
       }));
       const result = await submitAssessment(answerPayload);
       setResultId(result.result_id);
+      useAssessmentStore.getState().reset();
       navigate(`/results?id=${result.result_id}`);
     } catch {
       setError("Failed to submit assessment. Please try again.");

@@ -87,7 +87,7 @@ export interface MyAssessmentItem {
   cohort_id: string;
   cohort_name: string;
   enrolled_at: string | null;
-  status: "pending" | "completed" | "expired";
+  status: "pending" | "in_progress" | "completed" | "expired";
   result_id: string | null;
   completed_at: string | null;
   dominant_style: string | null;
