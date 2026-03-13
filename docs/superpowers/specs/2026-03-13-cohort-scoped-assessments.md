@@ -1,8 +1,8 @@
-# Adizes AMSI — Cohort-Scoped Assessments & Attempt Timeline
+# Adizes AMSI — Cohort-Scoped Assessments & Assessment Timeline
 
 **Date:** 2026-03-13
 **Status:** Approved for implementation
-**Scope:** DB migration, backend submit/query logic, user dashboard timeline, admin respondent timeline
+**Scope:** DB migration, backend submit/query logic, user dashboard timeline, admin respondent view
 
 ---
 
@@ -14,7 +14,13 @@ The `assessments` table has no `cohort_id` column. Assessments are scoped to `us
 
 ## Decision: Add `cohort_id` to `assessments` (Approach A)
 
-Add `cohort_id UUID NOT NULL REFERENCES cohorts(id)` directly to the `assessments` table. Every assessment is now scoped to a specific `(user_id, cohort_id)` pair. All queries change from `eq("user_id", uid)` to `eq("user_id", uid).eq("cohort_id", cid)`. A user must take a fresh assessment for each cohort they enroll in.
+Add `cohort_id UUID NOT NULL REFERENCES cohorts(id)` directly to the `assessments` table. Every assessment is scoped to a specific `(user_id, cohort_id)` pair.
+
+**Key business rules:**
+- A user is enrolled in a cohort **at most once** (enforced by the composite PK on `cohort_members`)
+- Therefore a user has **at most one assessment per cohort**
+- A user enrolled in multiple cohorts over time takes a fresh assessment for each — this history of cohort assessments is the "timeline"
+- All queries change from `eq("user_id", uid)` to `eq("user_id", uid).eq("cohort_id", cid)`
 
 ---
 
@@ -38,11 +44,11 @@ CREATE INDEX idx_assessments_user_cohort ON assessments(user_id, cohort_id);
 
 **Invariants after migration:**
 - Every assessment row has a non-null `cohort_id`
-- A user can have multiple assessment rows for the same cohort (retakes / multiple attempts)
-- `ON DELETE CASCADE` on cohorts: deleting a cohort hard-deletes all its assessments and answers. No cohort-delete endpoint currently exists in the admin router — this is a safety constraint for future implementation.
+- Each `(user_id, cohort_id)` pair has at most one assessment row (one enrollment = one assessment)
+- `ON DELETE CASCADE` on cohorts: deleting a cohort hard-deletes all its assessments and answers. No cohort-delete endpoint currently exists in the admin router — this constraint is a safety measure for future implementation.
 - The `answers` table is unchanged (already cascades from assessments)
 - The `status` column (`pending | in_progress | completed | expired`) was added in migration `005_ranking_scoring.sql` and is already present on the table.
-- `started_at TIMESTAMPTZ DEFAULT now()` is set implicitly on insert; since assessments are submitted atomically (not started separately), `started_at` equals the insert timestamp. Semantics unchanged.
+- `started_at TIMESTAMPTZ DEFAULT now()` is set implicitly on insert; since assessments are submitted atomically (all 36 answers at once), `started_at` equals the insert timestamp. Semantics unchanged.
 
 ---
 
@@ -76,39 +82,32 @@ supabase_admin.table("assessments").insert({
 
 **Schema change** (`app/schemas/assessment.py`): Add `cohort_id: str` field to `SubmitRequest`.
 
-**Email logic:** The existing email-sending code in `assessment.py` currently looks up the cohort name by querying `cohort_members`. Since `cohort_id` is now part of the request payload, the email code must use `body.cohort_id` directly to fetch the cohort name instead of querying `cohort_members` arbitrarily.
+**Email logic:** The existing email-sending code in `assessment.py` currently looks up the cohort name by querying `cohort_members` with an arbitrary `.limit(1)`. Since `cohort_id` is now part of the request payload, the email code must use `body.cohort_id` directly to fetch the cohort name.
 
 ### 2.2 `my_assessments` (`app/routers/auth.py`)
 
 **Current behaviour:** Fetches the single latest assessment per user (no cohort filter), attaches it to every enrolled cohort.
 
-**New behaviour:** For each cohort enrollment, query ALL assessments for `(user_id, cohort_id)` ordered by `completed_at DESC`. Return them as a structured history.
+**New behaviour:** For each cohort enrollment, query the assessment for `(user_id, cohort_id)`. Since there is at most one assessment per enrollment, `.limit(1)` is retained. Return a list of per-cohort assessment items, ordered by `enrolled_at DESC` (most recent cohort first) — this ordering produces the user's assessment timeline.
 
 **New response shape** (`app/schemas/auth.py`):
 
 ```python
-class AssessmentAttempt(BaseModel):
-    result_id: str
-    completed_at: str
-    dominant_style: Optional[str] = None
-    status: str  # "completed" | "expired"
-
 class CohortAssessmentHistory(BaseModel):
     cohort_id: str
     cohort_name: str
     enrolled_at: Optional[str] = None
-    status: str                              # "pending" | "completed" | "expired" — derived from latest attempt or "pending"
-    latest: Optional[AssessmentAttempt] = None
-    history: List[AssessmentAttempt] = []    # all attempts, newest first. latest == history[0] by design (convenience duplication)
+    status: str                              # "pending" | "completed" | "expired"
+    result_id: Optional[str] = None
+    completed_at: Optional[str] = None
+    dominant_style: Optional[str] = None
 ```
 
-Note: `status` does not include `"in_progress"` — assessments are submitted atomically (all 36 answers at once), so there is no intermediate in-progress state surfaced to users. `"in_progress"` is reserved as a DB value for future use but not returned by this endpoint.
+Note: `status` does not include `"in_progress"` — assessments are submitted atomically (all 36 answers at once). `"in_progress"` is a DB-level value only and is not surfaced to users.
 
-`latest` equals `history[0]` — this is intentional convenience so callers don't need `history[0]` access patterns.
+`MyAssessmentItem` is replaced by `CohortAssessmentHistory`. They carry the same fields; the rename makes the cohort-scoping intent explicit.
 
-**Status derivation:** If no assessments exist for `(user_id, cohort_id)`, status is `"pending"`. Otherwise read `status` from the most recent row.
-
-**Remove `.limit(1)`.** Fetch all rows via `order("completed_at", desc=True)`.
+**Status derivation:** If no assessment exists for `(user_id, cohort_id)`, status is `"pending"`. Otherwise read `status` from the row.
 
 ### 2.3 Admin Cohort List (`app/routers/admin.py` — `list_cohorts`)
 
@@ -120,26 +119,24 @@ comp_rows = supabase_admin.table("assessments")
     .eq("cohort_id", c["id"])         # ← new filter
     .eq("status", "completed")
     .execute()
-# Deduplicate: count distinct users (only latest per user counts)
-completed_count = len({r["user_id"] for r in (comp_rows.data or [])})
+completed_count = len(comp_rows.data or [])
 ```
 
-Deduplication (using a set) is required because a user can have multiple completed attempts per cohort — only one should be counted.
+No deduplication is needed — at most one completed assessment per `(user_id, cohort_id)` pair.
 
 ### 2.4 Admin Cohort Detail (`app/routers/admin.py` — `get_cohort`)
 
 **Current behaviour:** Queries latest assessment per user, no cohort filter.
 
 **New behaviour:**
-- Query: `eq("user_id", uid).eq("cohort_id", cohort_id).order("completed_at", desc=True)`
-- Use the **most recent** assessment row for status, dominant style, and team aggregate scores
-- Multiple attempts per user are allowed; only the latest counts for team stats
+- Query: `eq("user_id", uid).eq("cohort_id", cohort_id).limit(1)`
+- Use the single assessment row for status, dominant style, and team aggregate scores
 
 ### 2.5 Admin Respondent Detail (`app/routers/admin.py` — `get_respondent`)
 
 **URL change:** The endpoint becomes `GET /admin/respondents/{user_id}?cohort_id=<uuid>`. The `cohort_id` query parameter is required. Return 400 if missing.
 
-**New behaviour:** Return **all** assessment attempts for `(user_id, cohort_id)`, newest first. The respondent detail response adds an `attempts` array:
+**New behaviour:** Fetch the single assessment for `(user_id, cohort_id)`. The response shape is unchanged — no `attempts` array needed (one assessment per enrollment).
 
 ```python
 class RespondentDetail(BaseModel):
@@ -147,8 +144,6 @@ class RespondentDetail(BaseModel):
     name: str
     email: str
     cohort_id: str
-    attempts: List[AssessmentAttempt]   # all attempts, newest first
-    # latest attempt's scores/profile/interpretation at top level for chart rendering
     scaled_scores: Optional[dict] = None
     profile: Optional[dict] = None
     interpretation: Optional[dict] = None
@@ -159,15 +154,19 @@ class RespondentDetail(BaseModel):
 
 **Frontend `AdminCohortDetail.tsx`:** Update the "View Results" link to include `cohort_id` in the URL: `/admin/respondents/${r.user_id}?cohort_id=${cohortId}`.
 
-**`export_cohort_csv`** inherits the cohort-scoped `get_cohort` fix automatically. If retakes are present, the CSV export shows the latest attempt per user (consistent with cohort detail). Multi-attempt CSV export is out of scope.
+**`export_cohort_csv`** inherits the cohort-scoped `get_cohort` fix automatically. No changes needed.
 
 ### 2.6 Admin Stats (`app/routers/admin.py` — `get_stats`)
 
-`get_stats` counts assessments globally across all cohorts. After this migration, a user with two completed assessments (one per cohort) will count as 2 rows. This is correct — each cohort attempt is a distinct completion event. No change required.
+`get_stats` counts assessments globally across all cohorts. A user enrolled in two cohorts and completing both contributes 2 rows. This is correct — each cohort completion is a distinct event. No change required.
 
 ---
 
 ## Section 3: User Dashboard Timeline
+
+### The timeline
+
+The user's "assessment timeline" is the ordered list of `CohortAssessmentHistory` items returned by `my_assessments`, sorted newest cohort first. As the user is enrolled in more cohorts over time and completes each assessment, their timeline grows. No special timeline component is needed — the existing per-cohort cards, rendered in enrollment order, ARE the timeline.
 
 ### API response change
 
@@ -175,56 +174,35 @@ class RespondentDetail(BaseModel):
 
 `MyAssessmentItem` is removed from `src/types/api.ts`. All consumers updated:
 - `src/api/results.ts` — update `getMyAssessments` return type to `CohortAssessmentHistory[]`
-- `src/pages/Dashboard.tsx` — consumes `CohortAssessmentHistory`
+- `src/pages/Dashboard.tsx` — field names unchanged (same fields, renamed type)
 
-### Frontend state
+### Frontend types
 
 `src/types/api.ts` replaces `MyAssessmentItem` with:
 
 ```ts
-export interface AssessmentAttempt {
-  result_id: string
-  completed_at: string
-  dominant_style?: string
-  status: "completed" | "expired"
-}
-
 export interface CohortAssessmentHistory {
   cohort_id: string
   cohort_name: string
   enrolled_at?: string
-  status: "pending" | "completed" | "expired"  // no "in_progress" — atomic submit
-  latest: AssessmentAttempt | null              // == history[0], null if no attempts
-  history: AssessmentAttempt[]                 // all attempts, newest first
+  status: "pending" | "completed" | "expired"
+  result_id?: string
+  completed_at?: string
+  dominant_style?: string
 }
 ```
 
+This is a rename with the same fields — `Dashboard.tsx` field access is unchanged.
+
 ### UI: `Dashboard.tsx`
 
-Each cohort card now has two zones:
+No structural change to card layout. The cards are rendered in the order returned by the API (newest enrollment first). A user enrolled in multiple cohorts sees multiple cards — oldest cohorts scroll down, newest at the top. This ordering is the timeline.
 
-**Zone 1 — Current state** (unchanged layout): shows the latest attempt's result, or expired/pending CTA.
-
-**Zone 2 — Attempt history** (new, below Zone 1): visible only when `history.length > 1`.
-
-```
-┌──────────────────────────────────────────────┐
-│  [Current result / CTA — existing layout]    │
-├──────────────────────────────────────────────┤
-│  Previous attempts (2)          ▼ collapsed  │
-│  ────────────────────────────────────────    │
-│  Attempt 1  ·  13 Mar 2026  ·  A   [View]   │
-│  Attempt 2  ·  20 Mar 2026  ·  pA  [View]   │
-└──────────────────────────────────────────────┘
-```
-
-- Collapsed by default, expandable with a toggle
-- Each row: attempt number, date, dominant style badge, "View" link → `/results?id=<result_id>`
-- No charts in the history list — just the summary row
+The "Begin Assessment" button navigates to `/assessment?cohort_id=<uuid>`. This is the only new UI behaviour.
 
 ### Guard: missing cohort context
 
-If the user reaches `/assessment` without a valid `cohort_id` query param (e.g. direct URL entry), the Assessment page redirects to `/dashboard` and shows a toast: "Please begin your assessment from your dashboard."
+If the user reaches `/assessment` without a valid `cohort_id` query param (e.g. direct URL entry), the Assessment page redirects to `/dashboard` with a toast: "Please begin your assessment from your dashboard."
 
 ### Frontend `assessment.ts` API call change
 
@@ -243,7 +221,7 @@ The "Begin Assessment" button (in `NoAssessmentCTA` and `ExpiredAssessmentCTA`) 
 
 ---
 
-## Section 4: Admin Respondent Timeline
+## Section 4: Admin Respondent View
 
 ### Route change
 
@@ -251,20 +229,9 @@ The "Begin Assessment" button (in `NoAssessmentCTA` and `ExpiredAssessmentCTA`) 
 
 ### UI: `AdminRespondent.tsx`
 
-When `attempts.length > 1`, an **attempt selector** renders above the charts:
+No attempt selector needed — one assessment per enrollment. The existing single-view layout is retained. The only change is: the component now passes `cohort_id` to the `getRespondent` API call, and the API returns results scoped to that cohort.
 
-```
-  Attempt 1 · 13 Mar 2026 · A    Attempt 2 · 20 Mar 2026 · pA   [latest]
-  ───────────────────────────────────────────────────────────────────────
-  [Charts and interpretation for selected attempt]
-```
-
-- Tabs or a segmented control, one tab per attempt, newest last (so latest is rightmost / default)
-- Each tab label: `Attempt N · DD Mon YYYY · <dominant_style>`
-- Selecting a tab fetches (or uses cached) full scores for that `result_id` via `GET /results/{result_id}` (existing endpoint, already supports admin access — no new endpoint needed)
-- If only one attempt, no selector rendered (existing single-view layout)
-
-The admin cohort respondents list (`RespondentSummary`) is unchanged in shape — still shows latest attempt's status and dominant style.
+The admin cohort respondents list (`RespondentSummary`) is unchanged in shape — still shows status and dominant style for the single cohort-scoped assessment.
 
 ---
 
@@ -286,19 +253,19 @@ setCohortId: (id: string) => void
 |------|--------|
 | `migrations/006_cohort_scoped_assessments.sql` | New — wipes data, adds `cohort_id` to assessments |
 | `app/schemas/assessment.py` | `SubmitRequest` adds `cohort_id: str` |
-| `app/schemas/auth.py` | New `AssessmentAttempt`, `CohortAssessmentHistory`; remove `MyAssessmentItem` |
-| `app/schemas/admin.py` | `RespondentDetail` adds `attempts: List[AssessmentAttempt]` |
+| `app/schemas/auth.py` | Rename `MyAssessmentItem` → `CohortAssessmentHistory` (same fields) |
+| `app/schemas/admin.py` | `RespondentDetail` adds `cohort_id` field; remove `attempts` array |
 | `app/routers/assessment.py` | Validate cohort enrollment, insert `cohort_id`, fix email cohort lookup |
-| `app/routers/auth.py` | `my_assessments` returns `List[CohortAssessmentHistory]` |
-| `app/routers/admin.py` | `list_cohorts` deduped count, `get_cohort` scoped, `get_respondent` requires `cohort_id` query param |
-| `src/types/api.ts` | Replace `MyAssessmentItem` with `AssessmentAttempt` + `CohortAssessmentHistory` |
+| `app/routers/auth.py` | `my_assessments` scopes query to `cohort_id` per enrollment |
+| `app/routers/admin.py` | `list_cohorts` scoped count, `get_cohort` scoped, `get_respondent` requires `cohort_id` query param |
+| `src/types/api.ts` | Rename `MyAssessmentItem` → `CohortAssessmentHistory` (same fields) |
 | `src/api/assessment.ts` | `submitAssessment` accepts `cohort_id` as first param |
 | `src/api/admin.ts` | `getRespondent(userId, cohortId)` passes `cohort_id` query param |
 | `src/api/results.ts` | Update `getMyAssessments` return type to `CohortAssessmentHistory[]` |
 | `src/store/assessmentStore.ts` | Add `cohortId` state and `setCohortId` action |
 | `src/pages/Assessment.tsx` | Read `cohort_id` from query param, guard redirect if missing, pass to submit |
-| `src/pages/Dashboard.tsx` | Render `CohortAssessmentHistory`; previous attempts collapse; pass `cohort_id` to Begin Assessment nav |
-| `src/pages/AdminRespondent.tsx` | Read `cohort_id` from search params; attempt selector; charts update per selected attempt |
+| `src/pages/Dashboard.tsx` | Use `CohortAssessmentHistory` type; pass `cohort_id` to Begin Assessment nav |
+| `src/pages/AdminRespondent.tsx` | Read `cohort_id` from search params; pass to `getRespondent` API call |
 | `src/pages/AdminCohortDetail.tsx` | Pass `cohort_id` in View Results link |
 | `tests/test_scoring.py` | No change (scoring logic unchanged) |
 
