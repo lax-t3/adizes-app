@@ -20,6 +20,10 @@ interface AssessmentState {
   prevQuestion: () => void;
   nextSection: () => void;
 
+  // Cohort context for this assessment session
+  cohortId: string | null;
+  setCohortId: (id: string) => void;
+
   // Result after submission
   resultId: string | null;
   setResultId: (id: string) => void;
@@ -52,6 +56,9 @@ export const useAssessmentStore = create<AssessmentState>((set) => ({
       currentQuestion: 0,
     })),
 
+  cohortId: null,
+  setCohortId: (id) => set({ cohortId: id }),
+
   resultId: null,
   setResultId: (id) => set({ resultId: id }),
 
@@ -60,6 +67,7 @@ export const useAssessmentStore = create<AssessmentState>((set) => ({
     currentSection: 0,
     currentQuestion: 0,
     answers: {},
+    cohortId: null,
     resultId: null,
   }),
 }));
