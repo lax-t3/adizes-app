@@ -145,6 +145,23 @@ def _assessment_complete_html() -> str:
     return _build_template("user_email", body)
 
 
+def _cohort_enrollment_existing_html() -> str:
+    cta = _cta("{{platform_url}}", "Go to Dashboard &amp; Begin Assessment")
+    body = f"""
+  <!-- Body -->
+  <tr>
+    <td style="padding:40px 48px 36px;" bgcolor="#ffffff">
+      <p style="margin:0 0 20px;font-family:Georgia,'Times New Roman',serif;font-size:22px;color:#1a1a1a;font-weight:400;line-height:1.35;">Hello {{{{user_name}}}},</p>
+      <p style="margin:0 0 16px;font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#444444;line-height:1.75;">You have been enrolled in the <strong style="color:#1a1a1a;">{{{{cohort_name}}}}</strong> cohort for the <strong style="color:#1a1a1a;">Adizes Management Style Assessment (AMSI)</strong>.</p>
+      <p style="margin:0 0 32px;font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#444444;line-height:1.75;">Log in to your dashboard to begin the assessment for this cohort.</p>
+      {cta}
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:32px 0 24px;"><tr><td style="border-top:1px solid #e8e8e8;font-size:1px;line-height:1px;">&nbsp;</td></tr></table>
+      <p style="margin:0;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#666666;line-height:1.75;">Sign in at <a href="{{{{platform_url}}}}" style="color:#C8102E;text-decoration:none;">{{{{platform_url}}}}</a></p>
+    </td>
+  </tr>"""
+    return _build_template("user_email", body)
+
+
 DEFAULT_TEMPLATES = {
     "user_enrolled": {
         "id": "user_enrolled",
@@ -163,6 +180,12 @@ DEFAULT_TEMPLATES = {
         "name": "Assessment Completion — Thank You",
         "subject": "Your AMSI results are ready — {{platform_name}}",
         "html_body": _assessment_complete_html(),
+    },
+    "cohort_enrollment_existing": {
+        "id": "cohort_enrollment_existing",
+        "name": "Cohort Enrollment — Existing User",
+        "subject": "You've been enrolled in {{cohort_name}} — {{platform_name}}",
+        "html_body": _cohort_enrollment_existing_html(),
     },
 }
 
