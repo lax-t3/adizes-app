@@ -23,15 +23,13 @@ export function Footer() {
           </nav>
 
           {/* Copyright + powered by + HIL logo */}
-          <div className="flex flex-col sm:flex-row items-center gap-3 text-xs text-gray-400">
-            <span>&copy; {year} Adizes Institute. All rights reserved.</span>
-            <span className="hidden sm:inline text-gray-200">·</span>
-            <span>
-              App powered by{" "}
-              <span className="font-semibold text-gray-500">Turiyaskills</span>
-            </span>
-            <span className="hidden sm:inline text-gray-200">·</span>
-            <img src="/hil_blue.png" alt="Heartfulness Institute of Leadership" className="h-5 w-auto opacity-60" referrerPolicy="no-referrer" />
+          <div className="flex flex-col items-center sm:items-end gap-2 text-xs text-gray-400">
+            <img src="/hil_blue.png" alt="Heartfulness Institute of Leadership" className="h-9 w-auto opacity-85" referrerPolicy="no-referrer" />
+            <div className="flex flex-col sm:flex-row items-center gap-2">
+              <span>&copy; {year} Adizes Institute. All rights reserved.</span>
+              <span className="hidden sm:inline text-gray-200">·</span>
+              <span>App powered by <span className="font-semibold text-gray-500">Turiyaskills</span></span>
+            </div>
           </div>
         </div>
       </div>

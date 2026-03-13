@@ -117,13 +117,9 @@ export function Landing() {
       {/* Right side - Auth */}
       <div className="flex w-full lg:w-[45%] flex-col items-center justify-center p-8 sm:p-12 lg:p-16">
         <div className="w-full max-w-md">
-          <div className="lg:hidden flex items-center gap-3 mb-12 justify-center">
-            <img
-              src="/logo.png"
-              alt="Adizes Institute"
-              className="h-14 w-auto"
-              referrerPolicy="no-referrer"
-            />
+          <div className="lg:hidden flex flex-col items-center gap-4 mb-12">
+            <img src="/logo.png" alt="Adizes Institute" className="h-16 w-auto" referrerPolicy="no-referrer" />
+            <img src="/hil_blue.png" alt="Heartfulness Institute of Leadership" className="h-10 w-auto opacity-90" referrerPolicy="no-referrer" />
           </div>
 
           <motion.div
@@ -222,8 +218,8 @@ export function Landing() {
           <p className="text-center text-xs text-gray-400">
             &copy; {new Date().getFullYear()} Adizes Institute &middot; Powered by <span className="font-medium text-gray-500">Turiyaskills</span>
           </p>
-          <div className="mt-4 flex justify-center">
-            <img src="/hil_blue.png" alt="Heartfulness Institute of Leadership" className="h-7 w-auto opacity-70" referrerPolicy="no-referrer" />
+          <div className="mt-5 flex justify-center">
+            <img src="/hil_blue.png" alt="Heartfulness Institute of Leadership" className="h-12 w-auto opacity-90" referrerPolicy="no-referrer" />
           </div>
         </div>
       </div>

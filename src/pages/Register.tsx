@@ -129,13 +129,9 @@ export function Register() {
         transition={{ duration: 0.5 }}
         className="w-full max-w-md"
       >
-        <div className="flex items-center gap-3 mb-8 justify-center">
-          <img
-            src="/logo.png"
-            alt="Adizes Institute"
-            className="h-10 w-auto"
-            referrerPolicy="no-referrer"
-          />
+        <div className="flex flex-col items-center gap-3 mb-8">
+          <img src="/logo.png" alt="Adizes Institute" className="h-14 w-auto" referrerPolicy="no-referrer" />
+          <img src="/hil_blue.png" alt="Heartfulness Institute of Leadership" className="h-9 w-auto opacity-85" referrerPolicy="no-referrer" />
         </div>
 
         {activateMode ? (
