@@ -303,6 +303,9 @@ def bulk_enroll(cohort_id: str, body: BulkEnrollRequest, admin: dict = Depends(r
     if not cohort.data:
         raise HTTPException(status_code=404, detail="Cohort not found")
 
+    cohort_name_row = supabase_admin.table("cohorts").select("name").eq("id", cohort_id).single().execute()
+    cohort_name_for_bulk = cohort_name_row.data.get("name", "") if cohort_name_row.data else ""
+
     # Build email→user map from existing auth users
     all_users = supabase_admin.auth.admin.list_users()
     email_to_user = {u.email: u for u in all_users if u.email}
@@ -380,8 +383,6 @@ def bulk_enroll(cohort_id: str, body: BulkEnrollRequest, admin: dict = Depends(r
 
             # Fire-and-forget enrollment email
             try:
-                cohort_resp = supabase_admin.table("cohorts").select("name").eq("id", cohort_id).single().execute()
-                cohort_name_val = cohort_resp.data.get("name", "") if cohort_resp.data else ""
                 meta = getattr(user, "user_metadata", None) or {}
                 user_name_val = (entry.name or meta.get("name", "")) or email
 
@@ -389,7 +390,7 @@ def bulk_enroll(cohort_id: str, body: BulkEnrollRequest, admin: dict = Depends(r
                     send_template_email("cohort_enrollment_existing", email, {
                         "user_name": user_name_val,
                         "user_email": email,
-                        "cohort_name": cohort_name_val,
+                        "cohort_name": cohort_name_for_bulk,
                         "platform_name": "Adizes India",
                         "platform_url": settings.frontend_url,
                     })
@@ -397,7 +398,7 @@ def bulk_enroll(cohort_id: str, body: BulkEnrollRequest, admin: dict = Depends(r
                     send_template_email("user_enrolled", email, {
                         "user_name": user_name_val,
                         "user_email": email,
-                        "cohort_name": cohort_name_val,
+                        "cohort_name": cohort_name_for_bulk,
                         "invite_link": invite_link_val,
                         "platform_name": "Adizes India",
                         "platform_url": settings.frontend_url,
