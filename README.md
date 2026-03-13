@@ -79,9 +79,9 @@ adizes-frontend/
       auth.ts          # login, register, setPassword (invite token), saveInviteProfile
       client.ts        # Axios instance with JWT interceptor + 401 redirect
       profile.ts       # getProfile, updateProfile, changePassword
-      assessment.ts    # questions, submit
-      results.ts       # getResult, getMyAssessments (downloadPdf removed — PDFs served from S3 via pdf_url)
-      admin.ts         # cohort CRUD, member management, user management
+      assessment.ts    # getQuestions; submitAssessment(cohort_id, answers) — cohort_id required
+      results.ts       # getResult, getMyAssessments → CohortAssessmentHistory[] (downloadPdf removed — PDFs served from S3 via pdf_url)
+      admin.ts         # cohort CRUD, member management, user management; getRespondent(userId, cohortId)
       settings.ts      # SMTP + email template CRUD
     components/
       layout/          # AdminSidebar, Header, Footer
@@ -90,21 +90,23 @@ adizes-frontend/
       jwt.ts           # decodeJwt() — base64url JWT payload decoder (no signature verify)
       utils.ts         # cn() Tailwind class merge helper
     pages/
-      Login.tsx        # Login page
-      Register.tsx     # Self-registration (Normal mode) + invite acceptance (Activate mode)
-      SetPassword.tsx  # Redirect shim → /register (for old invite email links)
-      Dashboard.tsx    # PAEI results tabs + My Assessments list
-      Assessment.tsx   # 36-question assessment flow
-      Results.tsx      # Full PAEI results + PDF download (S3 url state machine: null→"Generating…"+check-again, set→window.open)
+      Login.tsx               # Login page
+      Register.tsx            # Self-registration (Normal mode) + invite acceptance (Activate mode)
+      SetPassword.tsx         # Redirect shim → /register (for old invite email links)
+      Dashboard.tsx           # PAEI results tabs + My Assessments list; all "Begin Assessment" CTAs pass ?cohort_id=
+      Assessment.tsx          # 36-question flow; reads cohort_id from query param; redirects to /dashboard if missing
+      Results.tsx             # Full PAEI results + PDF download (S3 url state machine: null→"Generating…"+check-again, set→window.open)
       AdminDashboard.tsx
       AdminCohortList.tsx
-      AdminCohortDetail.tsx   # Cohort members + resend invite
+      AdminCohortDetail.tsx   # Cohort members + resend invite; "View Results" link includes ?cohort_id=
+      AdminRespondent.tsx     # Respondent detail; reads cohort_id from ?cohort_id= query param; shows pending state if no result
       AdminSettings.tsx       # SMTP config + email template editor
       PolicyPage.tsx
     store/
-      authStore.ts     # Zustand auth state (JWT, user, role)
+      authStore.ts       # Zustand auth state (JWT, user, role)
+      assessmentStore.ts # Assessment session state including cohortId (set from ?cohort_id= query param)
     types/
-      api.ts           # Shared API types (AuthResponse, MyAssessmentItem, etc.)
+      api.ts             # Shared API types (AuthResponse, CohortAssessmentHistory, etc.)
 ```
 
 ## Pages & Routes
@@ -115,7 +117,7 @@ adizes-frontend/
 | `/register` | `Register` | Self-registration **or** invite acceptance (auto-detected from URL hash) |
 | `/set-password` | `SetPassword` | Redirect shim — forwards old email links to `/register` |
 | `/dashboard` | `Dashboard` | PAEI results (inline) + My Assessments tab |
-| `/assessment` | `Assessment` | 36-question flow |
+| `/assessment?cohort_id=<uuid>` | `Assessment` | 36-question flow. `cohort_id` query param required — redirects to `/dashboard` if missing. |
 | `/results/:id` | `Results` | Full results + PDF |
 | `/admin` | `AdminDashboard` | Admin overview |
 | `/admin/cohorts` | `AdminCohortList` | Cohort list |
