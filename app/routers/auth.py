@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, status, Depends
 from app.schemas.auth import (
     LoginRequest, RegisterRequest, AuthResponse,
     ProfileResponse, UpdateProfileRequest, ChangePasswordRequest,
-    MyAssessmentItem,
+    CohortAssessmentHistory,
 )
 from app.database import supabase, supabase_admin
 from app.auth import get_current_user
@@ -160,43 +160,47 @@ def change_password(body: ChangePasswordRequest, current_user: dict = Depends(ge
 
 # ─── My Assessments ───────────────────────────────────────────────────────────
 
-@router.get("/my-assessments", response_model=list[MyAssessmentItem])
+@router.get("/my-assessments", response_model=list[CohortAssessmentHistory])
 def my_assessments(current_user: dict = Depends(get_current_user)):
-    """Return all cohort enrollments for the current user with assessment status."""
+    """Return all cohort enrollments for the current user with per-cohort assessment status."""
     user_id = current_user["sub"]
 
     members = (
         supabase_admin.table("cohort_members")
         .select("cohort_id, enrolled_at, cohorts(id, name)")
         .eq("user_id", user_id)
+        .order("enrolled_at", desc=True)
         .execute()
     )
-
-    # Fetch latest assessment for this user once (any status)
-    assessment_resp = (
-        supabase_admin.table("assessments")
-        .select("id, completed_at, interpretation, status")
-        .eq("user_id", user_id)
-        .order("completed_at", desc=True)
-        .limit(1)
-        .execute()
-    )
-    latest = assessment_resp.data[0] if assessment_resp.data else None
-    latest_status = latest.get("status", "pending") if latest else "pending"
-    dominant = None
-    if latest_status == "completed" and latest and latest.get("interpretation"):
-        dominant = "".join(latest["interpretation"].get("dominant_roles", []))
 
     result = []
     for m in (members.data or []):
         cohort = m.get("cohorts") or {}
-        result.append(MyAssessmentItem(
-            cohort_id=m["cohort_id"],
+        cohort_id = m["cohort_id"]
+
+        # Fetch this user's assessment for this specific cohort
+        assessment_resp = (
+            supabase_admin.table("assessments")
+            .select("id, completed_at, interpretation, status")
+            .eq("user_id", user_id)
+            .eq("cohort_id", cohort_id)
+            .limit(1)
+            .execute()
+        )
+        a = assessment_resp.data[0] if assessment_resp.data else None
+        a_status = a.get("status", "pending") if a else "pending"
+
+        dominant = None
+        if a_status == "completed" and a and a.get("interpretation"):
+            dominant = "".join(a["interpretation"].get("dominant_roles", []))
+
+        result.append(CohortAssessmentHistory(
+            cohort_id=cohort_id,
             cohort_name=cohort.get("name", ""),
             enrolled_at=m.get("enrolled_at"),
-            status=latest_status,
-            result_id=latest["id"] if latest_status == "completed" and latest else None,
-            completed_at=latest["completed_at"] if latest_status == "completed" and latest else None,
+            status=a_status,
+            result_id=a["id"] if a_status == "completed" and a else None,
+            completed_at=a["completed_at"] if a_status == "completed" and a else None,
             dominant_style=dominant,
         ))
 
