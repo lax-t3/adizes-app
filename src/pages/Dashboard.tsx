@@ -21,7 +21,7 @@ import {
 } from "recharts";
 import { motion } from "motion/react";
 import { getResult, getMyAssessments } from "@/api/results";
-import type { ResultResponse, MyAssessmentItem } from "@/types/api";
+import type { ResultResponse, CohortAssessmentHistory } from "@/types/api";
 
 // ─── Tab bar ──────────────────────────────────────────────────────────────────
 
@@ -323,7 +323,7 @@ function ResultsDashboard({ resultId }: { resultId: string }) {
 
 // ─── No-assessment CTA ────────────────────────────────────────────────────────
 
-function NoAssessmentCTA({ hasEnrollments }: { hasEnrollments: boolean }) {
+function NoAssessmentCTA({ hasEnrollments, cohortId }: { hasEnrollments: boolean; cohortId: string | null }) {
   const navigate = useNavigate();
   return (
     <div className="flex flex-col items-center justify-center py-20 text-center">
@@ -336,7 +336,7 @@ function NoAssessmentCTA({ hasEnrollments }: { hasEnrollments: boolean }) {
           <p className="text-gray-500 max-w-sm mb-6">
             You're enrolled in an assessment cohort. Complete your AMSI assessment to see your PAEI dashboard here.
           </p>
-          <Button onClick={() => navigate("/assessment")}>
+          <Button onClick={() => navigate(cohortId ? `/assessment?cohort_id=${cohortId}` : "/dashboard")}>
             Start Assessment <ArrowRight className="ml-2 h-4 w-4" />
           </Button>
         </>
@@ -354,7 +354,7 @@ function NoAssessmentCTA({ hasEnrollments }: { hasEnrollments: boolean }) {
 
 // ─── Expired assessment CTA ───────────────────────────────────────────────────
 
-function ExpiredAssessmentCTA() {
+function ExpiredAssessmentCTA({ cohortId }: { cohortId: string | null }) {
   const navigate = useNavigate();
   return (
     <div className="text-center py-12 px-6">
@@ -367,7 +367,7 @@ function ExpiredAssessmentCTA() {
       <p className="text-gray-500 mb-6 max-w-md mx-auto">
         The assessment has been updated to a new ranking format. Please retake to see your results.
       </p>
-      <Button onClick={() => navigate("/assessment")}>
+      <Button onClick={() => navigate(cohortId ? `/assessment?cohort_id=${cohortId}` : "/dashboard")}>
         Begin Assessment
         <ArrowRight className="ml-2 h-4 w-4" />
       </Button>
@@ -381,7 +381,7 @@ function MyAssessmentsTab({
   items,
   loading,
 }: {
-  items: MyAssessmentItem[];
+  items: CohortAssessmentHistory[];
   loading: boolean;
 }) {
   const navigate = useNavigate();
@@ -473,9 +473,9 @@ function MyAssessmentsTab({
                       </Button>
                     </>
                   ) : (
-                    <Button size="sm" onClick={() => navigate("/assessment")}>
+                    <Button size="sm" onClick={() => navigate(`/assessment?cohort_id=${item.cohort_id}`)}>
                       <PlayCircle className="mr-1.5 h-3.5 w-3.5" />
-                      Start
+                      {item.status === "expired" ? "Retake" : "Start"}
                     </Button>
                   )}
                 </div>
@@ -488,7 +488,7 @@ function MyAssessmentsTab({
   );
 }
 
-function StatusBadge({ status }: { status: MyAssessmentItem["status"] }) {
+function StatusBadge({ status }: { status: CohortAssessmentHistory["status"] }) {
   if (status === "completed") {
     return (
       <span className="inline-flex items-center gap-1 text-xs font-medium text-green-700 bg-green-50 border border-green-200 px-2 py-0.5 rounded-full">
@@ -517,7 +517,7 @@ export function Dashboard() {
   const { user } = useAuthStore();
   const { resultId } = useAssessmentStore();
   const [activeTab, setActiveTab] = useState<Tab>("dashboard");
-  const [myAssessments, setMyAssessments] = useState<MyAssessmentItem[]>([]);
+  const [myAssessments, setMyAssessments] = useState<CohortAssessmentHistory[]>([]);
   const [loadingAssessments, setLoadingAssessments] = useState(true);
 
   useEffect(() => {
@@ -532,6 +532,8 @@ export function Dashboard() {
   const expiredItem = myAssessments.find((a) => a.status === "expired");
   const activeResultId = completedItem?.result_id ?? resultId;
   const hasEnrollments = myAssessments.length > 0;
+  const pendingItem = myAssessments.find((a) => a.status === "pending");
+  const pendingCohortId = pendingItem?.cohort_id ?? null;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -561,9 +563,9 @@ export function Dashboard() {
               ) : activeResultId ? (
                 <ResultsDashboard resultId={activeResultId} />
               ) : expiredItem ? (
-                <ExpiredAssessmentCTA />
+                <ExpiredAssessmentCTA cohortId={expiredItem.cohort_id} />
               ) : (
-                <NoAssessmentCTA hasEnrollments={hasEnrollments} />
+                <NoAssessmentCTA hasEnrollments={hasEnrollments} cohortId={pendingCohortId} />
               )}
             </>
           )}
