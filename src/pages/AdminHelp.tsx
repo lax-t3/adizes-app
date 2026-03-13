@@ -24,7 +24,7 @@ function FAQSection({ title, icon: Icon, color, items }: {
               onClick={() => setOpen(open === i ? null : i)}
               className="w-full flex items-center justify-between px-5 py-4 text-left bg-white hover:bg-gray-50 transition-colors"
             >
-              <span className="text-sm font-medium text-gray-900 pr-4">{item.q}</span>
+              <span className="text-sm font-medium text-gray-900 pr-4 overflow-hidden break-words">{item.q}</span>
               {open === i
                 ? <ChevronUp className="h-4 w-4 text-gray-400 flex-shrink-0" />
                 : <ChevronDown className="h-4 w-4 text-gray-400 flex-shrink-0" />}
@@ -226,7 +226,7 @@ const contactInfo = [
 
 export function AdminHelp() {
   return (
-    <div className="p-8 max-w-4xl mx-auto">
+    <div className="p-4 sm:p-8 max-w-4xl mx-auto">
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-2">
           <HelpCircle className="h-7 w-7 text-primary" />
@@ -264,7 +264,7 @@ export function AdminHelp() {
           <Mail className="h-6 w-6 text-[#1D3557]" />
           <h2 className="text-lg font-semibold text-gray-900">Contact & Support</h2>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {contactInfo.map((c, i) => (
             <div key={i} className="border border-gray-200 rounded-xl p-5 bg-white">
               <div className="text-2xl mb-3">{c.icon}</div>
