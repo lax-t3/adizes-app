@@ -85,10 +85,12 @@ cd /Users/vrln/adizes-backend && supabase start
 supabase status -o env   # copy ANON_KEY + SERVICE_ROLE_KEY into .env
 
 # 3. Apply DB migrations (REQUIRED after every supabase start — DB resets)
-docker exec -i supabase_db_adizes-backend psql -U postgres -d postgres \
-  < migrations/001_initial_schema.sql
-docker exec -i supabase_db_adizes-backend psql -U postgres -d postgres \
-  < migrations/002_seed_questions.sql
+docker exec -i supabase_db_adizes-backend psql -U postgres -d postgres < migrations/001_initial_schema.sql
+docker exec -i supabase_db_adizes-backend psql -U postgres -d postgres < migrations/002_seed_questions.sql
+docker exec -i supabase_db_adizes-backend psql -U postgres -d postgres < migrations/003_add_user_name.sql
+docker exec -i supabase_db_adizes-backend psql -U postgres -d postgres < migrations/004_email_settings.sql
+docker exec -i supabase_db_adizes-backend psql -U postgres -d postgres < migrations/005_ranking_scoring.sql
+docker exec -i supabase_db_adizes-backend psql -U postgres -d postgres < migrations/006_cohort_scoped_assessments.sql
 
 # 4. Create test users (REQUIRED after every supabase start — users reset)
 SK="<SUPABASE_SERVICE_ROLE_KEY from .env>"
@@ -171,6 +173,13 @@ cd /Users/vrln/adizes-frontend && npm run dev
 - Admin role set via Supabase custom JWT claim `app_metadata.role: admin`
 - `docker-compose.yml` overrides `SUPABASE_URL` to `http://host.docker.internal:54321`
   so the container can reach local Supabase (127.0.0.1 in .env is host-only)
+- **Cohort-scoped assessments** (migration 006): every assessment row has a `cohort_id NOT NULL FK`.
+  Assessments are keyed on `(user_id, cohort_id)` — one per enrollment. All backend queries
+  scope to this pair. Frontend passes `?cohort_id=<uuid>` on `/assessment` and the assessment
+  store carries `cohortId` through to `submitAssessment(cohort_id, answers)`.
+- **Enrollment email — three cases**: `enroll_user` / `bulk_enroll` / `resend_enrollment_invite`
+  check `email_confirmed_at`: new/unactivated users get `user_enrolled` (invite/recovery link);
+  already-activated users get `cohort_enrollment_existing` (dashboard link only).
 
 ## Known Gotchas (Local Dev)
 
