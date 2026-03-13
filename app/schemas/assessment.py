@@ -51,7 +51,14 @@ class AnswerInput(BaseModel):
 
 
 class SubmitRequest(BaseModel):
+    cohort_id: str
     answers: List[AnswerInput]
+
+    @model_validator(mode="after")
+    def validate_cohort_id(self) -> "SubmitRequest":
+        if not self.cohort_id or not self.cohort_id.strip():
+            raise ValueError("cohort_id must not be empty")
+        return self
 
 
 class SubmitResponse(BaseModel):

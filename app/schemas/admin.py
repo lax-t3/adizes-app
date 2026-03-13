@@ -76,3 +76,14 @@ class CohortDetailResponse(BaseModel):
     description: Optional[str] = None
     respondents: List[RespondentSummary]
     team_scores: Optional[TeamScores] = None
+
+
+class RespondentDetail(BaseModel):
+    user_id: str
+    name: str
+    email: str
+    cohort_id: str
+    scaled_scores: Optional[dict] = None
+    profile: Optional[dict] = None
+    interpretation: Optional[dict] = None
+    assessment_status: str  # "pending" | "completed" | "expired"

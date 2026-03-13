@@ -40,7 +40,7 @@ class ChangePasswordRequest(BaseModel):
     new_password: str
 
 
-class MyAssessmentItem(BaseModel):
+class CohortAssessmentHistory(BaseModel):
     cohort_id: str
     cohort_name: str
     enrolled_at: Optional[str] = None
@@ -48,3 +48,7 @@ class MyAssessmentItem(BaseModel):
     result_id: Optional[str] = None
     completed_at: Optional[str] = None
     dominant_style: Optional[str] = None
+
+
+# Backward-compatible alias — remove once Task 5 (auth router) updates the import
+MyAssessmentItem = CohortAssessmentHistory
