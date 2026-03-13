@@ -176,11 +176,24 @@ export function Assessment() {
       navigate("/dashboard");
       return;
     }
+
+    // Validate every question has all 4 ranks filled in
+    const totalQuestionCount = sections.reduce((acc, s) => acc + s.questions.length, 0);
+    const allComplete =
+      Object.keys(answers).length === totalQuestionCount &&
+      Object.values(answers).every((rankMap) => isRankMapComplete(rankMap));
+    if (!allComplete) {
+      setError("Please rank all options for every question before submitting.");
+      return;
+    }
+
     setSubmitting(true);
     try {
       const answerPayload = Object.entries(answers).map(([idx, rankMap]) => ({
         question_index: Number(idx),
-        ranks: rankMap as Record<string, number>,
+        ranks: Object.fromEntries(
+          Object.entries(rankMap).filter(([, v]) => v !== null)
+        ) as Record<string, number>,
       }));
       const result = await submitAssessment(cohortId, answerPayload);
       setResultId(result.result_id);
