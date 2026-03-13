@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAssessmentStore } from "@/store/assessmentStore";
 import type { RankMap } from "@/store/assessmentStore";
 import { Button } from "@/components/ui/Button";
@@ -47,13 +47,26 @@ export function Assessment() {
     prevQuestion,
     nextSection,
     setResultId,
+    cohortId,
+    setCohortId,
   } = useAssessmentStore();
+
+  const [searchParams] = useSearchParams();
 
   const [showIntro, setShowIntro] = useState(true);
   const [loadingQuestions, setLoadingQuestions] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const autoAdvanceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    const paramCohortId = searchParams.get("cohort_id");
+    if (!paramCohortId) {
+      navigate("/dashboard");
+      return;
+    }
+    setCohortId(paramCohortId);
+  }, []);
 
   useEffect(() => {
     if (sections.length === 0) {
@@ -159,13 +172,17 @@ export function Assessment() {
   };
 
   const handleSubmit = async () => {
+    if (!cohortId) {
+      navigate("/dashboard");
+      return;
+    }
     setSubmitting(true);
     try {
       const answerPayload = Object.entries(answers).map(([idx, rankMap]) => ({
         question_index: Number(idx),
         ranks: rankMap as Record<string, number>,
       }));
-      const result = await submitAssessment(answerPayload);
+      const result = await submitAssessment(cohortId, answerPayload);
       setResultId(result.result_id);
       useAssessmentStore.getState().reset();
       navigate(`/results?id=${result.result_id}`);
