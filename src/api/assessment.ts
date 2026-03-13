@@ -7,7 +7,7 @@ export async function getQuestions(): Promise<QuestionsResponse> {
 }
 
 export async function submitAssessment(
-  answers: Array<{ question_index: number; option_key: string }>
+  answers: Array<{ question_index: number; ranks: Record<string, number> }>
 ): Promise<SubmitResponse> {
   const { data } = await apiClient.post<SubmitResponse>("/assessment/submit", { answers });
   return data;
