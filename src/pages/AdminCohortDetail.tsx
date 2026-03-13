@@ -666,7 +666,7 @@ export function AdminCohortDetail() {
                         <td className="px-6 py-4 text-right">
                           <div className="flex items-center justify-end gap-2">
                             {r.status === "completed" && (
-                              <Link to={`/admin/respondents/${r.user_id}`} className="font-medium text-primary hover:text-primary-dark text-sm">
+                              <Link to={`/admin/respondents/${r.user_id}?cohort_id=${id}`} className="font-medium text-primary hover:text-primary-dark text-sm">
                                 View Results
                               </Link>
                             )}
