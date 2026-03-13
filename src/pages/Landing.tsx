@@ -115,7 +115,7 @@ export function Landing() {
       </div>
 
       {/* Right side - Auth */}
-      <div className="flex w-full lg:w-[45%] flex-col items-center justify-center p-8 sm:p-12 lg:p-16">
+      <div className="flex w-full lg:w-[45%] flex-col items-center justify-center min-h-screen p-6 sm:p-8 lg:p-16 pb-safe">
         <div className="w-full max-w-md">
           <div className="lg:hidden flex flex-col items-center gap-4 mb-12">
             <img src="/logo.png" alt="Adizes Institute" className="h-16 w-auto" referrerPolicy="no-referrer" />

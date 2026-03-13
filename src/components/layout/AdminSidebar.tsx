@@ -1,11 +1,13 @@
+import { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { useAuthStore } from "@/store/authStore";
-import { LayoutDashboard, Users, LogOut, ShieldCheck, Settings, HelpCircle } from "lucide-react";
+import { LayoutDashboard, Users, LogOut, ShieldCheck, Settings, HelpCircle, Menu } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export function AdminSidebar() {
   const { logout } = useAuthStore();
   const navigate = useNavigate();
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   const handleLogout = () => {
     logout();
@@ -20,8 +22,8 @@ export function AdminSidebar() {
     { name: "Help & FAQs", to: "/admin/help", icon: HelpCircle },
   ];
 
-  return (
-    <div className="flex h-screen w-64 flex-col border-r border-gray-200 bg-white">
+  const sidebarContent = (
+    <div className="flex h-full flex-col">
       <div className="flex h-20 items-center border-b border-gray-200 px-6">
         <div className="flex items-center gap-2">
           <img
@@ -39,6 +41,7 @@ export function AdminSidebar() {
             <NavLink
               key={item.name}
               to={item.to}
+              onClick={() => setMobileOpen(false)}
               className={({ isActive }) =>
                 cn(
                   "group flex items-center rounded-md px-3 py-2 text-sm font-medium transition-colors",
@@ -80,5 +83,37 @@ export function AdminSidebar() {
         </div>
       </div>
     </div>
+  );
+
+  return (
+    <>
+      {/* Hamburger button — mobile only */}
+      <button
+        onClick={() => setMobileOpen(true)}
+        className="lg:hidden fixed top-4 left-4 z-50 flex h-10 w-10 items-center justify-center rounded-md bg-white border border-gray-200 shadow-sm text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition-colors"
+        aria-label="Open navigation"
+      >
+        <Menu className="h-5 w-5" />
+      </button>
+
+      {/* Backdrop — mobile only */}
+      {mobileOpen && (
+        <div
+          className="fixed inset-0 z-30 bg-black/40 lg:hidden"
+          onClick={() => setMobileOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+
+      {/* Sidebar — drawer on mobile, static on desktop */}
+      <div
+        className={cn(
+          "fixed inset-y-0 left-0 z-40 w-64 transform transition-transform duration-200 border-r border-gray-200 bg-white lg:static lg:translate-x-0 lg:h-screen",
+          mobileOpen ? "translate-x-0" : "-translate-x-full"
+        )}
+      >
+        {sidebarContent}
+      </div>
+    </>
   );
 }

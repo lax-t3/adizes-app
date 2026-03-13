@@ -353,7 +353,7 @@ export function Register() {
 
       {/* Footer — only shown in Normal mode (not Activate mode) */}
       {!activateMode && (
-        <div className="w-full mt-8">
+        <div className="w-full mt-6 pb-8">
           <Footer />
         </div>
       )}

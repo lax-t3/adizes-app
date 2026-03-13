@@ -32,7 +32,7 @@ export function Navbar() {
 
   return (
     <nav className="sticky top-0 z-50 w-full border-b border-gray-200 bg-white/80 backdrop-blur-md">
-      <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto flex h-16 sm:h-20 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         <div className="flex items-center gap-2">
           <Link to="/dashboard" className="flex items-center gap-2">
             <img
@@ -57,7 +57,7 @@ export function Navbar() {
             </button>
 
             {open && (
-              <div className="absolute right-0 mt-2 w-52 rounded-xl border border-gray-100 bg-white shadow-lg py-1.5 z-50">
+              <div className="absolute right-0 mt-2 w-52 max-w-[calc(100vw-2rem)] rounded-xl border border-gray-100 bg-white shadow-lg py-1.5 z-50">
                 {/* User info header */}
                 <div className="px-4 py-2.5 border-b border-gray-100">
                   <p className="text-sm font-semibold text-gray-900 truncate">{user.name}</p>
