@@ -32,6 +32,7 @@ interface RespondentData {
     id: string;
     user_name: string;
     completed_at: string;
+    status: "pending" | "in_progress" | "completed" | "expired";
     profile: { is: string; should: string; want: string };
     scaled_scores: { is: ScoreSet; should: ScoreSet; want: ScoreSet };
     gaps: GapDetail[];
@@ -195,6 +196,14 @@ export function AdminRespondent() {
           </div>
         </div>
 
+        {result.status === "expired" ? (
+          <div className="flex items-center gap-3 px-4 py-3 bg-orange-50 border border-orange-200 rounded-lg text-orange-700 text-sm font-medium">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+            </svg>
+            Expired — awaiting retake under the new ranking format
+          </div>
+        ) : (
         <div className="grid gap-6 lg:grid-cols-2">
           {/* Radar Chart */}
           <Card className="h-full shadow-sm border-t-4 border-t-primary">
@@ -213,7 +222,7 @@ export function AdminRespondent() {
                   <RadarChart cx="50%" cy="50%" outerRadius="70%" data={radarData}>
                     <PolarGrid stroke="#e5e7eb" />
                     <PolarAngleAxis dataKey="subject" tick={{ fill: "#4b5563", fontSize: 12, fontWeight: 500 }} />
-                    <PolarRadiusAxis angle={30} domain={[0, 50]} tick={{ fill: "#9ca3af" }} />
+                    <PolarRadiusAxis angle={30} domain={[12, 48]} tick={{ fill: "#9ca3af" }} />
                     <Radar name="Is" dataKey="is" stroke="#C8102E" fill="#C8102E" fillOpacity={0.4} />
                     <Radar name="Should" dataKey="should" stroke="#1D3557" fill="#1D3557" fillOpacity={0.4} />
                     <Radar name="Want" dataKey="want" stroke="#E87722" fill="#E87722" fillOpacity={0.4} />
@@ -241,7 +250,7 @@ export function AdminRespondent() {
                 <ResponsiveContainer width="99%" height="100%" debounce={50}>
                   <BarChart data={gapChartData} layout="vertical" margin={{ top: 5, right: 30, left: 40, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f3f4f6" />
-                    <XAxis type="number" domain={[0, 50]} tick={{ fill: "#9ca3af" }} />
+                    <XAxis type="number" domain={[12, 48]} tick={{ fill: "#9ca3af" }} />
                     <YAxis dataKey="name" type="category" tick={{ fill: "#4b5563", fontSize: 12, fontWeight: 500 }} width={100} />
                     <Tooltip cursor={{ fill: "#f9fafb" }} contentStyle={{ borderRadius: "8px", border: "none", boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)" }} />
                     <Legend />
@@ -335,6 +344,7 @@ export function AdminRespondent() {
             </Card>
           </div>
         </div>
+        )}
       </motion.div>
     </div>
   );
