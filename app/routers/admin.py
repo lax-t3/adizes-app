@@ -71,7 +71,6 @@ def list_cohorts(admin: dict = Depends(require_admin)):
     results = []
     for c in rows.data:
         members = c.get("cohort_members", [])
-        member_ids = [m["user_id"] for m in members]
         comp_rows = (
             supabase_admin.table("assessments")
             .select("user_id")
