@@ -368,6 +368,19 @@ function TemplateEditor({ templateId, onBack }: { templateId: string; onBack: ()
         <p className="text-xs text-gray-400 mt-1">Click any variable to copy it.</p>
       </div>
 
+      {/* Logo tip */}
+      {tmpl.variables.includes("platform_url") && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg px-4 py-3 text-xs text-blue-700 space-y-1">
+          <p className="font-semibold">Logo images in email</p>
+          <p>The default template uses logos hosted on your platform. Use these <code className="bg-blue-100 px-1 rounded">{"<img>"}</code> tags to reference them:</p>
+          <div className="mt-1 space-y-0.5 font-mono text-[11px] text-blue-600 break-all">
+            <p>{`<img src="{{platform_url}}/logo.png" alt="Adizes Institute" width="150" />`}</p>
+            <p>{`<img src="{{platform_url}}/hil_blue.png" alt="HIL" width="110" />`}</p>
+          </div>
+          <p className="text-blue-500 mt-1">Email clients block images by default until the recipient allows them. Always include descriptive <code className="bg-blue-100 px-1 rounded">alt</code> text.</p>
+        </div>
+      )}
+
       {/* Subject */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">Subject Line</label>
