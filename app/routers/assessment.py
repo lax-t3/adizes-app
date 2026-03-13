@@ -156,6 +156,7 @@ def submit_assessment(body: SubmitRequest, background_tasks: BackgroundTasks, us
         "profile": scores["profile"],
         "gaps": [g for g in gaps],
         "interpretation": interp,
+        "status": "completed",
     }).execute()
 
     # Persist individual answers
@@ -163,7 +164,8 @@ def submit_assessment(body: SubmitRequest, background_tasks: BackgroundTasks, us
         {
             "assessment_id": result_id,
             "question_index": a["question_index"],
-            "option_key": a["option_key"],
+            "option_key": next(k for k, v in a["ranks"].items() if v == 1),
+            "ranks": a["ranks"],
         }
         for a in answers_dicts
     ]
