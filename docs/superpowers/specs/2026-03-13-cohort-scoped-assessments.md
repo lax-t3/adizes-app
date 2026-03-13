@@ -261,7 +261,7 @@ When `attempts.length > 1`, an **attempt selector** renders above the charts:
 
 - Tabs or a segmented control, one tab per attempt, newest last (so latest is rightmost / default)
 - Each tab label: `Attempt N · DD Mon YYYY · <dominant_style>`
-- Selecting a tab fetches (or uses cached) full scores for that `result_id` via `GET /admin/results/{result_id}`
+- Selecting a tab fetches (or uses cached) full scores for that `result_id` via `GET /results/{result_id}` (existing endpoint, already supports admin access — no new endpoint needed)
 - If only one attempt, no selector rendered (existing single-view layout)
 
 The admin cohort respondents list (`RespondentSummary`) is unchanged in shape — still shows latest attempt's status and dominant style.
