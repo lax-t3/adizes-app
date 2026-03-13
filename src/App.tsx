@@ -16,6 +16,7 @@ import { AdminCohortDetail } from "./pages/AdminCohortDetail";
 import { AdminRespondent } from "./pages/AdminRespondent";
 import { AdminUsers } from "./pages/AdminUsers";
 import { AdminSettings } from "./pages/AdminSettings";
+import { AdminHelp } from "./pages/AdminHelp";
 import { SetPassword } from "./pages/SetPassword";
 import { PolicyPage } from "./pages/PolicyPage";
 import { Navbar } from "./components/layout/Navbar";
@@ -52,6 +53,7 @@ function AdminLayout() {
           <Route path="/respondents/:id" element={<AdminRespondent />} />
           <Route path="/users" element={<AdminUsers />} />
           <Route path="/settings" element={<AdminSettings />} />
+          <Route path="/help" element={<AdminHelp />} />
         </Routes>
       </main>
     </div>

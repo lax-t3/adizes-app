@@ -1,6 +1,6 @@
 import { NavLink, useNavigate } from "react-router-dom";
 import { useAuthStore } from "@/store/authStore";
-import { LayoutDashboard, Users, Download, LogOut, ShieldCheck, Settings } from "lucide-react";
+import { LayoutDashboard, Users, LogOut, ShieldCheck, Settings, HelpCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export function AdminSidebar() {
@@ -17,6 +17,7 @@ export function AdminSidebar() {
     { name: "Cohorts", to: "/admin/cohorts", icon: Users },
     { name: "Administrators", to: "/admin/users", icon: ShieldCheck },
     { name: "Settings", to: "/admin/settings", icon: Settings },
+    { name: "Help & FAQs", to: "/admin/help", icon: HelpCircle },
   ];
 
   return (
