@@ -1,13 +1,38 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAssessmentStore } from "@/store/assessmentStore";
+import type { RankMap } from "@/store/assessmentStore";
 import { Button } from "@/components/ui/Button";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { Card, CardContent } from "@/components/ui/Card";
-import { CheckCircle2, ArrowRight, ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowRight, ArrowLeft, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "motion/react";
 import { getQuestions, submitAssessment } from "@/api/assessment";
+
+const ORDINALS = ["1st", "2nd", "3rd", "4th"];
+
+// Opacity levels for rank badges: rank 1 = full, rank 4 = lightest
+const RANK_BADGE_STYLES: Record<number, string> = {
+  1: "bg-primary text-white",
+  2: "bg-primary/75 text-white",
+  3: "bg-primary/45 text-white",
+  4: "bg-primary/25 text-primary",
+};
+const RANK_CARD_STYLES: Record<number, string> = {
+  1: "border-primary bg-primary/10",
+  2: "border-primary/60 bg-primary/6",
+  3: "border-primary/35 bg-primary/3",
+  4: "border-primary/20 bg-gray-50",
+};
+
+function isRankMapComplete(rankMap: RankMap): boolean {
+  return Object.values(rankMap).every((v) => v !== null);
+}
+
+function initRankMap(optionKeys: string[]): RankMap {
+  return Object.fromEntries(optionKeys.map((k) => [k, null]));
+}
 
 export function Assessment() {
   const navigate = useNavigate();
@@ -17,20 +42,19 @@ export function Assessment() {
     currentSection,
     currentQuestion,
     answers,
-    saveAnswer,
+    saveRanks,
     nextQuestion,
     prevQuestion,
     nextSection,
     setResultId,
-    reset,
   } = useAssessmentStore();
 
   const [showIntro, setShowIntro] = useState(true);
   const [loadingQuestions, setLoadingQuestions] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const autoAdvanceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Load questions on mount if not already loaded
   useEffect(() => {
     if (sections.length === 0) {
       setLoadingQuestions(true);
@@ -40,6 +64,13 @@ export function Assessment() {
         .finally(() => setLoadingQuestions(false));
     }
   }, []);
+
+  // Clear any pending auto-advance when question changes
+  useEffect(() => {
+    return () => {
+      if (autoAdvanceTimer.current) clearTimeout(autoAdvanceTimer.current);
+    };
+  }, [currentSection, currentQuestion]);
 
   if (loadingQuestions) {
     return (
@@ -73,46 +104,84 @@ export function Assessment() {
   const totalQuestions = sections.reduce((acc, s) => acc + s.questions.length, 0);
   const answeredSoFar = currentSection * totalPerSection + currentQuestion;
   const progress = (answeredSoFar / totalQuestions) * 100;
-  const currentAnswer = answers[question.question_index];
   const isLastSection = currentSection === sections.length - 1;
   const isLastQuestion = currentQuestion === totalPerSection - 1;
 
-  const handleOptionSelect = (optionKey: string) => {
-    saveAnswer(question.question_index, optionKey);
+  const optionKeys = question.options.map((o) => o.key);
+  const currentRankMap: RankMap =
+    answers[question.question_index] ?? initRankMap(optionKeys);
+  const rankedCount = Object.values(currentRankMap).filter((v) => v !== null).length;
+  const isComplete = rankedCount === 4;
+  const nextRankOrdinal = ORDINALS[rankedCount] ?? "";
+
+  const handleOptionClick = (optionKey: string) => {
+    const currentRank = currentRankMap[optionKey];
+
+    if (currentRank !== null) {
+      // Clear this rank and all ranks greater than it
+      const newMap: RankMap = { ...currentRankMap };
+      for (const [k, v] of Object.entries(newMap)) {
+        if (v !== null && v >= currentRank) newMap[k] = null;
+      }
+      saveRanks(question.question_index, newMap);
+      if (autoAdvanceTimer.current) clearTimeout(autoAdvanceTimer.current);
+    } else {
+      const nextRank = rankedCount + 1;
+      const newMap: RankMap = { ...currentRankMap, [optionKey]: nextRank };
+
+      // Auto-assign rank 4 to the last unranked option when 3 are done
+      if (nextRank === 3) {
+        const lastUnranked = optionKeys.find((k) => newMap[k] === null && k !== optionKey);
+        if (lastUnranked) newMap[lastUnranked] = 4;
+      }
+
+      saveRanks(question.question_index, newMap);
+
+      const willBeComplete = nextRank === 3 || nextRank === 4;
+      if (willBeComplete) {
+        autoAdvanceTimer.current = setTimeout(() => handleNext(newMap), 400);
+      }
+    }
   };
 
-  const handleNext = async () => {
+  const handleNext = (completedMap?: RankMap) => {
+    const map = completedMap ?? currentRankMap;
+    if (!isRankMapComplete(map)) return;
+
     if (!isLastQuestion) {
       nextQuestion();
     } else if (!isLastSection) {
       nextSection();
       setShowIntro(true);
     } else {
-      // Submit all answers
-      setSubmitting(true);
-      try {
-        const answerPayload = Object.entries(answers).map(([idx, key]) => ({
-          question_index: Number(idx),
-          option_key: key,
-        }));
-        const result = await submitAssessment(answerPayload);
-        setResultId(result.result_id);
-        navigate(`/results?id=${result.result_id}`);
-      } catch {
-        setError("Failed to submit assessment. Please try again.");
-        setSubmitting(false);
-      }
+      handleSubmit();
+    }
+  };
+
+  const handleSubmit = async () => {
+    setSubmitting(true);
+    try {
+      const answerPayload = Object.entries(answers).map(([idx, rankMap]) => ({
+        question_index: Number(idx),
+        ranks: rankMap as Record<string, number>,
+      }));
+      const result = await submitAssessment(answerPayload);
+      setResultId(result.result_id);
+      navigate(`/results?id=${result.result_id}`);
+    } catch {
+      setError("Failed to submit assessment. Please try again.");
+      setSubmitting(false);
     }
   };
 
   const handleBack = () => {
+    if (autoAdvanceTimer.current) clearTimeout(autoAdvanceTimer.current);
     if (currentQuestion > 0) {
       prevQuestion();
     } else if (currentSection > 0) {
-      // Go back to previous section's last question
       useAssessmentStore.setState((state) => ({
         currentSection: (state.currentSection - 1) as 0 | 1 | 2,
-        currentQuestion: sections[currentSection - 1].questions.length - 1,
+        currentQuestion: sections[state.currentSection - 1].questions.length - 1,
       }));
     }
   };
@@ -137,7 +206,11 @@ export function Assessment() {
                 Section {currentSection + 1} of 3: {section.label}
               </h2>
               <p className="text-xl text-gray-600 mb-4">{section.description}</p>
-              <p className="text-sm text-gray-400 mb-8 sm:mb-12">{totalPerSection} questions</p>
+              <p className="text-sm text-gray-400 mb-4">{totalPerSection} questions</p>
+              <p className="text-sm text-gray-500 mb-8 sm:mb-12 max-w-md mx-auto">
+                For each question, click the options in order of preference — <strong>1st</strong> for most like you,
+                through to <strong>4th</strong> for least like you.
+              </p>
               <Button size="lg" onClick={() => setShowIntro(false)} className="w-full sm:w-auto px-12 text-lg h-14">
                 Begin Section <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
@@ -189,37 +262,51 @@ export function Assessment() {
               exit={{ opacity: 0, x: -20 }}
               transition={{ duration: 0.3 }}
             >
-              <h2 className="font-display text-2xl sm:text-3xl md:text-4xl font-medium text-gray-900 mb-6 sm:mb-10 text-center leading-tight">
+              <h2 className="font-display text-2xl sm:text-3xl md:text-4xl font-medium text-gray-900 mb-4 text-center leading-tight">
                 {question.text}
               </h2>
 
-              <div className="space-y-4">
+              {/* Rank prompt */}
+              <p className="text-center text-sm font-medium text-gray-500 mb-6">
+                {isComplete ? (
+                  <span className="text-primary">All ranked — advancing…</span>
+                ) : (
+                  <>Select your <strong className="text-gray-800">{nextRankOrdinal}</strong> choice — {4 - rankedCount} remaining</>
+                )}
+              </p>
+
+              <div className="space-y-3">
                 {question.options.map((option) => {
-                  const isSelected = currentAnswer === option.key;
+                  const rank = currentRankMap[option.key];
+                  const isRanked = rank !== null;
                   return (
                     <button
                       key={option.key}
-                      onClick={() => handleOptionSelect(option.key)}
+                      onClick={() => handleOptionClick(option.key)}
                       className={cn(
-                        "w-full text-left p-4 sm:p-6 rounded-xl border-2 transition-all duration-200 flex items-center justify-between group",
-                        isSelected
-                          ? "border-primary bg-primary text-white shadow-md scale-[1.02]"
-                          : "border-gray-200 bg-white hover:border-primary-light hover:bg-primary-light/30 text-gray-700"
+                        "w-full text-left p-4 sm:p-5 rounded-xl border-2 transition-all duration-200 flex items-center gap-4",
+                        isRanked
+                          ? RANK_CARD_STYLES[rank as number]
+                          : "border-gray-200 bg-white hover:border-primary/40 hover:bg-primary/5 text-gray-700"
                       )}
                     >
-                      <span className={cn("text-lg font-medium", isSelected ? "text-white" : "text-gray-900")}>
-                        {option.text}
-                      </span>
+                      {/* Rank badge */}
                       <div
                         className={cn(
-                          "flex h-6 w-6 items-center justify-center rounded-full border-2 transition-colors flex-shrink-0 ml-4",
-                          isSelected
-                            ? "border-white bg-white text-primary"
-                            : "border-gray-300 group-hover:border-primary-light"
+                          "flex-shrink-0 h-8 w-8 rounded-full flex items-center justify-center font-bold text-sm transition-all",
+                          isRanked
+                            ? RANK_BADGE_STYLES[rank as number]
+                            : "border-2 border-gray-300 text-gray-400"
                         )}
                       >
-                        {isSelected && <CheckCircle2 className="h-4 w-4" />}
+                        {isRanked ? rank : ""}
                       </div>
+                      <span className={cn(
+                        "text-base font-medium flex-1",
+                        isRanked ? "text-gray-800" : "text-gray-700"
+                      )}>
+                        {option.text}
+                      </span>
                     </button>
                   );
                 })}
@@ -238,18 +325,17 @@ export function Assessment() {
               <ArrowLeft className="mr-2 h-4 w-4" /> Back
             </Button>
 
-            <Button
-              onClick={handleNext}
-              disabled={!currentAnswer}
-              size="lg"
-              className={cn(
-                "px-8 transition-all",
-                currentAnswer ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 pointer-events-none"
-              )}
-            >
-              {isLastQuestion && isLastSection ? "Complete Assessment" : "Next Question"}
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
+            {/* Manual advance — shown only when complete, as a fallback if auto-advance stalls */}
+            {isComplete && (
+              <Button
+                onClick={() => handleNext()}
+                size="lg"
+                className="px-8"
+              >
+                {isLastQuestion && isLastSection ? "Complete Assessment" : "Next Question"}
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            )}
           </div>
         </div>
       </main>
