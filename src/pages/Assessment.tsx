@@ -56,7 +56,8 @@ export function Assessment() {
   const [showIntro, setShowIntro] = useState(true);
   const [loadingQuestions, setLoadingQuestions] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState("");
+  const [loadError, setLoadError] = useState("");   // full-page error (load failure)
+  const [submitError, setSubmitError] = useState(""); // inline error (submit failure)
   const autoAdvanceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -73,7 +74,7 @@ export function Assessment() {
       setLoadingQuestions(true);
       getQuestions()
         .then((data) => setSections(data.sections))
-        .catch(() => setError("Failed to load questions. Please refresh the page."))
+        .catch(() => setLoadError("Failed to load questions. Please refresh the page."))
         .finally(() => setLoadingQuestions(false));
     }
   }, []);
@@ -96,12 +97,12 @@ export function Assessment() {
     );
   }
 
-  if (error) {
+  if (loadError) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <Card className="max-w-md w-full border-red-200">
           <CardContent className="p-8 text-center">
-            <p className="text-red-600 font-medium mb-4">{error}</p>
+            <p className="text-red-600 font-medium mb-4">{loadError}</p>
             <Button onClick={() => window.location.reload()}>Retry</Button>
           </CardContent>
         </Card>
@@ -150,8 +151,11 @@ export function Assessment() {
 
       saveRanks(question.question_index, newMap);
 
+      // Auto-advance on completion — but NOT on the last question of the last section.
+      // There the user must click "Complete Assessment" deliberately.
       const willBeComplete = nextRank === 3 || nextRank === 4;
-      if (willBeComplete) {
+      const isLastQ = isLastQuestion && isLastSection;
+      if (willBeComplete && !isLastQ) {
         autoAdvanceTimer.current = setTimeout(() => handleNext(newMap), 400);
       }
     }
@@ -177,13 +181,15 @@ export function Assessment() {
       return;
     }
 
+    setSubmitError("");
+
     // Validate every question has all 4 ranks filled in
     const totalQuestionCount = sections.reduce((acc, s) => acc + s.questions.length, 0);
     const allComplete =
       Object.keys(answers).length === totalQuestionCount &&
       Object.values(answers).every((rankMap) => isRankMapComplete(rankMap));
     if (!allComplete) {
-      setError("Please rank all options for every question before submitting.");
+      setSubmitError("Some questions are incomplete. Please go back and rank all options before submitting.");
       return;
     }
 
@@ -200,7 +206,7 @@ export function Assessment() {
       useAssessmentStore.getState().reset();
       navigate(`/results?id=${result.result_id}`);
     } catch {
-      setError("Failed to submit assessment. Please try again.");
+      setSubmitError("Failed to submit assessment. Please try again.");
       setSubmitting(false);
     }
   };
@@ -346,27 +352,45 @@ export function Assessment() {
           </AnimatePresence>
 
           {/* Footer Controls */}
-          <div className="mt-8 sm:mt-12 flex flex-wrap items-center justify-between gap-4">
-            <Button
-              variant="ghost"
-              onClick={handleBack}
-              disabled={isAtStart}
-              className="text-gray-500"
-            >
-              <ArrowLeft className="mr-2 h-4 w-4" /> Back
-            </Button>
-
-            {/* Manual advance — shown only when complete, as a fallback if auto-advance stalls */}
-            {isComplete && (
-              <Button
-                onClick={() => handleNext()}
-                size="lg"
-                className="px-8"
-              >
-                {isLastQuestion && isLastSection ? "Complete Assessment" : "Next Question"}
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
+          <div className="mt-8 sm:mt-12 space-y-4">
+            {submitError && (
+              <p className="text-sm text-red-600 text-center font-medium">{submitError}</p>
             )}
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <Button
+                variant="ghost"
+                onClick={handleBack}
+                disabled={isAtStart}
+                className="text-gray-500"
+              >
+                <ArrowLeft className="mr-2 h-4 w-4" /> Back
+              </Button>
+
+              {/* On last question: always show submit button (no auto-advance).
+                  On other questions: show Next only when complete (fallback if auto-advance stalls). */}
+              {isLastQuestion && isLastSection ? (
+                <Button
+                  onClick={() => handleNext()}
+                  size="lg"
+                  className="px-8"
+                  disabled={!isComplete}
+                >
+                  Complete Assessment
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              ) : (
+                isComplete && (
+                  <Button
+                    onClick={() => handleNext()}
+                    size="lg"
+                    className="px-8"
+                  >
+                    Next Question
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                )
+              )}
+            </div>
           </div>
         </div>
       </main>
