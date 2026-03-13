@@ -510,6 +510,7 @@ def invite_admin(body: InviteAdminRequest, admin: dict = Depends(require_admin))
             "admin_email": body.email,
             "invite_link": invite_link_val,
             "platform_name": "Adizes India",
+            "platform_url": settings.frontend_url,
         })
     except Exception:
         pass  # Non-fatal — link is still valid even if SMTP fails

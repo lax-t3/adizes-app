@@ -12,104 +12,157 @@ from email import encoders
 from app.database import supabase_admin
 
 
+_EMAIL_WRAPPER_OPEN = """\
+<!DOCTYPE html>
+<html lang="en" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<!--[if mso]><noscript><xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml></noscript><![endif]-->
+<title>{{platform_name}}</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f0f0f0;-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f0f0f0;">
+<tr><td align="center" style="padding:40px 16px 40px;">
+<!--[if mso]><table role="presentation" width="600" align="center" cellpadding="0" cellspacing="0"><tr><td><![endif]-->
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;background:#ffffff;">
+  <!-- Red accent bar -->
+  <tr><td style="background-color:#C8102E;height:5px;font-size:1px;line-height:1px;" bgcolor="#C8102E">&nbsp;</td></tr>
+  <!-- Logo header -->
+  <tr>
+    <td align="center" style="padding:32px 48px 28px;border-bottom:1px solid #e8e8e8;" bgcolor="#ffffff">
+      <img src="{{platform_url}}/logo.png" alt="Adizes Institute" width="150" height="auto" style="display:block;margin:0 auto 14px;border:0;max-width:150px;" />
+      <img src="{{platform_url}}/hil_blue.png" alt="Heartfulness Institute of Leadership" width="110" height="auto" style="display:block;margin:0 auto;border:0;max-width:110px;" />
+    </td>
+  </tr>"""
+
+_EMAIL_WRAPPER_CLOSE = """\
+  <!-- Footer -->
+  <tr>
+    <td style="padding:0;background-color:#f8f8f8;border-top:1px solid #e8e8e8;" bgcolor="#f8f8f8">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr><td align="center" style="padding:20px 48px 12px;">
+          <img src="{{platform_url}}/hil_blue.png" alt="Heartfulness Institute of Leadership" width="80" height="auto" style="display:block;margin:0 auto;border:0;max-width:80px;" />
+        </td></tr>
+        <tr><td align="center" style="padding:0 48px 24px;">
+          <p style="margin:8px 0 0;font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#aaaaaa;line-height:1.6;">This email was sent to {{recipient_email}}</p>
+          <p style="margin:4px 0 0;font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#aaaaaa;">&copy; {{platform_name}} &middot; Powered by Turiyaskills</p>
+        </td></tr>
+      </table>
+    </td>
+  </tr>
+  <!-- Bottom red accent -->
+  <tr><td style="background-color:#C8102E;height:3px;font-size:1px;line-height:1px;" bgcolor="#C8102E">&nbsp;</td></tr>
+</table>
+<!--[if mso]></td></tr></table><![endif]-->
+</td></tr>
+</table>
+</body>
+</html>"""
+
+_CTA_BUTTON = """\
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin:0 auto;">
+  <tr>
+    <td align="center" bgcolor="#C8102E" style="background-color:#C8102E;border-radius:3px;">
+      <!--[if mso]><v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="{url}" style="height:50px;v-text-anchor:middle;width:240px;" arcsize="5%%" stroke="f" fillcolor="#C8102E"><w:anchorlock/><center style="color:#ffffff;font-family:Arial,sans-serif;font-size:15px;font-weight:600;">{label}</center></v:roundrect><![endif]-->
+      <!--[if !mso]><!--><a href="{url}" style="display:inline-block;padding:15px 40px;font-family:Arial,Helvetica,sans-serif;font-size:15px;font-weight:600;color:#ffffff;text-decoration:none;border-radius:3px;mso-hide:all;">{label}</a><!--<![endif]-->
+    </td>
+  </tr>
+</table>"""
+
+
+def _cta(url_var: str, label: str) -> str:
+    return _CTA_BUTTON.format(url=url_var, label=label)
+
+
+def _build_template(recipient_var: str, body_rows: str) -> str:
+    """Assemble a full email HTML string, substituting the recipient email variable."""
+    wrapper_close = _EMAIL_WRAPPER_CLOSE.replace("{{recipient_email}}", f"{{{{{recipient_var}}}}}")
+    return _EMAIL_WRAPPER_OPEN + body_rows + wrapper_close
+
+
+def _enrolled_html() -> str:
+    cta = _cta("{{invite_link}}", "Accept Invitation &amp; Set Password")
+    body = f"""
+  <!-- Body -->
+  <tr>
+    <td style="padding:40px 48px 36px;" bgcolor="#ffffff">
+      <p style="margin:0 0 20px;font-family:Georgia,'Times New Roman',serif;font-size:22px;color:#1a1a1a;font-weight:400;line-height:1.35;">Hello {{{{user_name}}}},</p>
+      <p style="margin:0 0 16px;font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#444444;line-height:1.75;">You have been enrolled in the <strong style="color:#1a1a1a;">{{{{cohort_name}}}}</strong> cohort for the <strong style="color:#1a1a1a;">Adizes Management Style Assessment (AMSI)</strong>.</p>
+      <p style="margin:0 0 32px;font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#444444;line-height:1.75;">Please click the button below to activate your account and set your password. This link is valid for <strong>1 hour</strong>.</p>
+      {cta}
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:32px 0 24px;"><tr><td style="border-top:1px solid #e8e8e8;font-size:1px;line-height:1px;">&nbsp;</td></tr></table>
+      <p style="margin:0 0 12px;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#666666;line-height:1.7;">Already have an account? Sign in at <a href="{{{{platform_url}}}}" style="color:#C8102E;text-decoration:none;">{{{{platform_url}}}}</a></p>
+      <p style="margin:0 0 6px;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#999999;line-height:1.6;">If the button above does not work, copy and paste this link into your browser:</p>
+      <p style="margin:0;font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#bbbbbb;word-break:break-all;">{{{{invite_link}}}}</p>
+    </td>
+  </tr>"""
+    return _build_template("user_email", body)
+
+
+def _admin_invite_html() -> str:
+    cta = _cta("{{invite_link}}", "Set Password &amp; Access Admin Panel")
+    body = f"""
+  <!-- Body -->
+  <tr>
+    <td style="padding:40px 48px 36px;" bgcolor="#ffffff">
+      <p style="margin:0 0 20px;font-family:Georgia,'Times New Roman',serif;font-size:22px;color:#1a1a1a;font-weight:400;line-height:1.35;">Hello {{{{admin_name}}}},</p>
+      <p style="margin:0 0 16px;font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#444444;line-height:1.75;">You have been invited to join <strong style="color:#1a1a1a;">{{{{platform_name}}}}</strong> as an <strong style="color:#1a1a1a;">Administrator</strong>.</p>
+      <p style="margin:0 0 32px;font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#444444;line-height:1.75;">Click the button below to activate your administrator account and set your password. This link is valid for <strong>1 hour</strong>.</p>
+      {cta}
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:32px 0 24px;"><tr><td style="border-top:1px solid #e8e8e8;font-size:1px;line-height:1px;">&nbsp;</td></tr></table>
+      <p style="margin:0 0 6px;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#999999;line-height:1.6;">If the button above does not work, copy and paste this link into your browser:</p>
+      <p style="margin:0;font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#bbbbbb;word-break:break-all;">{{{{invite_link}}}}</p>
+    </td>
+  </tr>"""
+    return _build_template("admin_email", body)
+
+
+def _assessment_complete_html() -> str:
+    cta = _cta("{{platform_url}}", "View My Results")
+    body = f"""
+  <!-- Body -->
+  <tr>
+    <td style="padding:40px 48px 36px;" bgcolor="#ffffff">
+      <p style="margin:0 0 20px;font-family:Georgia,'Times New Roman',serif;font-size:22px;color:#1a1a1a;font-weight:400;line-height:1.35;">Congratulations, {{{{user_name}}}}.</p>
+      <p style="margin:0 0 16px;font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#444444;line-height:1.75;">You have successfully completed the <strong style="color:#1a1a1a;">Adizes Management Style Assessment (AMSI)</strong> for the <strong style="color:#1a1a1a;">{{{{cohort_name}}}}</strong> cohort.</p>
+      <!-- Result highlight box -->
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:24px 0;">
+        <tr>
+          <td style="padding:18px 20px;background-color:#fdf5f5;border-left:4px solid #C8102E;">
+            <p style="margin:0 0 4px;font-family:Arial,Helvetica,sans-serif;font-size:11px;font-weight:600;color:#C8102E;text-transform:uppercase;letter-spacing:1px;">Your Dominant Style</p>
+            <p style="margin:0;font-family:Georgia,'Times New Roman',serif;font-size:20px;color:#1a1a1a;font-weight:400;">{{{{dominant_style}}}}</p>
+          </td>
+        </tr>
+      </table>
+      <p style="margin:0 0 32px;font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#444444;line-height:1.75;">Your full personalised report is <strong>attached to this email as a PDF</strong>. You may also log in to the platform to view your interactive dashboard and results.</p>
+      {cta}
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:32px 0 24px;"><tr><td style="border-top:1px solid #e8e8e8;font-size:1px;line-height:1px;">&nbsp;</td></tr></table>
+      <p style="margin:0;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#666666;line-height:1.75;">Thank you for your participation. Your results contribute to a richer collective picture of your team's management style.</p>
+    </td>
+  </tr>"""
+    return _build_template("user_email", body)
+
+
 DEFAULT_TEMPLATES = {
     "user_enrolled": {
         "id": "user_enrolled",
         "name": "User Enrollment Confirmation",
         "subject": "You've been enrolled in {{cohort_name}} — {{platform_name}}",
-        "html_body": """<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"><style>
-  body{font-family:Arial,sans-serif;background:#f5f5f5;margin:0;padding:0}
-  .wrap{max-width:600px;margin:40px auto;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08)}
-  .header{background:#C8102E;padding:32px 40px;text-align:center}
-  .header h1{color:#fff;margin:0;font-size:22px;font-weight:700}
-  .body{padding:36px 40px;color:#333;font-size:15px;line-height:1.6}
-  .body h2{color:#1a1a1a;font-size:20px;margin-top:0}
-  .btn{display:inline-block;margin:24px 0;padding:14px 32px;background:#C8102E;color:#fff;text-decoration:none;border-radius:6px;font-weight:600;font-size:15px}
-  .footer{padding:20px 40px;background:#f9f9f9;border-top:1px solid #eee;color:#888;font-size:12px;text-align:center}
-</style></head>
-<body>
-<div class="wrap">
-  <div class="header"><h1>{{platform_name}}</h1></div>
-  <div class="body">
-    <h2>Hello {{user_name}},</h2>
-    <p>You have been enrolled in the <strong>{{cohort_name}}</strong> cohort for the Adizes Management Style Assessment.</p>
-    <p>Please click the button below to set your password and access the platform:</p>
-    <a href="{{invite_link}}" class="btn">Accept Invitation &amp; Set Password</a>
-    <p>If you already have an account, you can log in directly at <a href="{{platform_url}}">{{platform_url}}</a>.</p>
-    <p>If the button doesn't work, copy and paste this link into your browser:<br><small>{{invite_link}}</small></p>
-  </div>
-  <div class="footer">{{platform_name}} · This email was sent to {{user_email}}</div>
-</div>
-</body>
-</html>""",
+        "html_body": _enrolled_html(),
     },
     "admin_invite": {
         "id": "admin_invite",
         "name": "Administrator Invite",
         "subject": "You've been invited to administer {{platform_name}}",
-        "html_body": """<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"><style>
-  body{font-family:Arial,sans-serif;background:#f5f5f5;margin:0;padding:0}
-  .wrap{max-width:600px;margin:40px auto;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08)}
-  .header{background:#1D3557;padding:32px 40px;text-align:center}
-  .header h1{color:#fff;margin:0;font-size:22px;font-weight:700}
-  .body{padding:36px 40px;color:#333;font-size:15px;line-height:1.6}
-  .body h2{color:#1a1a1a;font-size:20px;margin-top:0}
-  .btn{display:inline-block;margin:24px 0;padding:14px 32px;background:#1D3557;color:#fff;text-decoration:none;border-radius:6px;font-weight:600;font-size:15px}
-  .footer{padding:20px 40px;background:#f9f9f9;border-top:1px solid #eee;color:#888;font-size:12px;text-align:center}
-</style></head>
-<body>
-<div class="wrap">
-  <div class="header"><h1>{{platform_name}} Admin</h1></div>
-  <div class="body">
-    <h2>Hello {{admin_name}},</h2>
-    <p>You have been invited to administer <strong>{{platform_name}}</strong>.</p>
-    <p>Click the button below to set your password and access the admin panel:</p>
-    <a href="{{invite_link}}" class="btn">Set Password &amp; Sign In</a>
-    <p>If the button doesn't work, copy and paste this link into your browser:<br><small>{{invite_link}}</small></p>
-  </div>
-  <div class="footer">{{platform_name}} · This email was sent to {{admin_email}}</div>
-</div>
-</body>
-</html>""",
+        "html_body": _admin_invite_html(),
     },
     "assessment_complete": {
         "id": "assessment_complete",
         "name": "Assessment Completion — Thank You",
-        "subject": "Thank you for completing your PAEI assessment — {{platform_name}}",
-        "html_body": """<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"><style>
-  body{font-family:Arial,sans-serif;background:#f5f5f5;margin:0;padding:0}
-  .wrap{max-width:600px;margin:40px auto;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08)}
-  .header{background:#C8102E;padding:32px 40px;text-align:center}
-  .header h1{color:#fff;margin:0;font-size:22px;font-weight:700}
-  .body{padding:36px 40px;color:#333;font-size:15px;line-height:1.6}
-  .body h2{color:#1a1a1a;font-size:20px;margin-top:0}
-  .result-box{background:#f9f9f9;border-left:4px solid #C8102E;padding:16px 20px;border-radius:0 6px 6px 0;margin:20px 0}
-  .btn{display:inline-block;margin:24px 0;padding:14px 32px;background:#C8102E;color:#fff;text-decoration:none;border-radius:6px;font-weight:600;font-size:15px}
-  .footer{padding:20px 40px;background:#f9f9f9;border-top:1px solid #eee;color:#888;font-size:12px;text-align:center}
-</style></head>
-<body>
-<div class="wrap">
-  <div class="header"><h1>{{platform_name}}</h1></div>
-  <div class="body">
-    <h2>Congratulations, {{user_name}}!</h2>
-    <p>You have successfully completed the <strong>Adizes PAEI Management Style Assessment</strong> for the <strong>{{cohort_name}}</strong> cohort.</p>
-    <div class="result-box">
-      <p style="margin:0"><strong>Your dominant style: {{dominant_style}}</strong></p>
-    </div>
-    <p>Your full personalised report is attached to this email as a PDF. You can also view your results by logging in to the platform.</p>
-    <a href="{{platform_url}}" class="btn">View My Results</a>
-    <p>Thank you for participating. Your results will help build a richer picture of your team's collective management style.</p>
-  </div>
-  <div class="footer">{{platform_name}} · This email was sent to {{user_email}}</div>
-</div>
-</body>
-</html>""",
+        "subject": "Your AMSI results are ready — {{platform_name}}",
+        "html_body": _assessment_complete_html(),
     },
 }
 
