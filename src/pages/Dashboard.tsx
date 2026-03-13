@@ -33,7 +33,7 @@ function TabBar({ active, onChange }: { active: Tab; onChange: (t: Tab) => void 
     { id: "my-assessments", label: "My Assessments", icon: <ClipboardList className="h-4 w-4" /> },
   ];
   return (
-    <div className="flex gap-1 bg-gray-100 p-1 rounded-xl w-fit mb-8">
+    <div className="flex flex-nowrap gap-1 bg-gray-100 p-1 rounded-xl w-full overflow-x-auto mb-8">
       {tabs.map((t) => (
         <button
           key={t.id}
@@ -134,7 +134,7 @@ function ResultsDashboard({ resultId }: { resultId: string }) {
   return (
     <div className="space-y-8 pb-8">
       {/* Header band */}
-      <div className="bg-gray-900 text-white rounded-2xl p-6 sm:p-8">
+      <div className="bg-gray-900 text-white rounded-2xl p-4 sm:p-6 md:p-8">
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div>
             <h2 className="text-2xl font-display font-bold tracking-tight mb-1">
@@ -164,17 +164,17 @@ function ResultsDashboard({ resultId }: { resultId: string }) {
       </div>
 
       {/* Charts row */}
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-6 md:grid-cols-2">
         {/* Radar */}
         <Card className="shadow-sm border-t-4 border-t-primary">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
               Style Comparison <Info className="h-4 w-4 text-gray-400" />
             </CardTitle>
             <CardDescription>Visual representation of your Is, Should, and Want profiles.</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="h-[360px] w-full">
+            <div className="h-[260px] sm:h-[360px] w-full">
               <ResponsiveContainer width="99%" height="100%" debounce={50}>
                 <RadarChart cx="50%" cy="50%" outerRadius="70%" data={radarData}>
                   <PolarGrid stroke="#e5e7eb" />
@@ -194,7 +194,7 @@ function ResultsDashboard({ resultId }: { resultId: string }) {
         {/* Gap Analysis */}
         <Card className="shadow-sm">
           <CardHeader>
-            <CardTitle>Gap Analysis</CardTitle>
+            <CardTitle className="text-lg sm:text-xl">Gap Analysis</CardTitle>
             <CardDescription>Differences between your current behavior (Is) and job demands (Should).</CardDescription>
           </CardHeader>
           <CardContent>
@@ -242,7 +242,7 @@ function ResultsDashboard({ resultId }: { resultId: string }) {
           )}
         </CardHeader>
         <CardContent>
-          <div className="grid gap-6 md:grid-cols-3">
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             <div className="space-y-3">
               <div className="flex items-center gap-2 text-green-700 font-medium text-sm">
                 <div className="h-7 w-7 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
@@ -431,7 +431,7 @@ function MyAssessmentsTab({
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 sm:flex-shrink-0">
+                <div className="flex flex-wrap items-center gap-2 sm:flex-shrink-0">
                   {item.status === "completed" && item.result_id ? (
                     <>
                       <Button
@@ -510,7 +510,7 @@ export function Dashboard() {
           transition={{ duration: 0.4 }}
         >
           <div className="mb-6">
-            <h1 className="text-3xl font-display font-bold text-gray-900">
+            <h1 className="text-2xl sm:text-3xl font-display font-bold text-gray-900">
               Welcome, {user?.name}
             </h1>
             <p className="mt-1 text-gray-500">

@@ -129,7 +129,7 @@ export function Assessment() {
           className="w-full max-w-2xl"
         >
           <Card className="border-t-4 border-t-primary shadow-lg">
-            <CardContent className="p-12 text-center">
+            <CardContent className="p-6 sm:p-12 text-center">
               <div className="mb-6 inline-flex h-16 w-16 items-center justify-center rounded-full bg-primary-light text-primary">
                 <span className="font-display text-2xl font-bold">{currentSection + 1}</span>
               </div>
@@ -137,7 +137,7 @@ export function Assessment() {
                 Section {currentSection + 1} of 3: {section.label}
               </h2>
               <p className="text-xl text-gray-600 mb-4">{section.description}</p>
-              <p className="text-sm text-gray-400 mb-12">{totalPerSection} questions</p>
+              <p className="text-sm text-gray-400 mb-8 sm:mb-12">{totalPerSection} questions</p>
               <Button size="lg" onClick={() => setShowIntro(false)} className="w-full sm:w-auto px-12 text-lg h-14">
                 Begin Section <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
@@ -179,7 +179,7 @@ export function Assessment() {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 flex items-center justify-center p-4 py-12">
+      <main className="flex-1 flex items-center justify-center p-4 py-8 sm:py-12">
         <div className="w-full max-w-3xl">
           <AnimatePresence mode="wait">
             <motion.div
@@ -189,7 +189,7 @@ export function Assessment() {
               exit={{ opacity: 0, x: -20 }}
               transition={{ duration: 0.3 }}
             >
-              <h2 className="font-display text-3xl sm:text-4xl font-medium text-gray-900 mb-10 text-center leading-tight">
+              <h2 className="font-display text-2xl sm:text-3xl md:text-4xl font-medium text-gray-900 mb-6 sm:mb-10 text-center leading-tight">
                 {question.text}
               </h2>
 
@@ -201,7 +201,7 @@ export function Assessment() {
                       key={option.key}
                       onClick={() => handleOptionSelect(option.key)}
                       className={cn(
-                        "w-full text-left p-6 rounded-xl border-2 transition-all duration-200 flex items-center justify-between group",
+                        "w-full text-left p-4 sm:p-6 rounded-xl border-2 transition-all duration-200 flex items-center justify-between group",
                         isSelected
                           ? "border-primary bg-primary text-white shadow-md scale-[1.02]"
                           : "border-gray-200 bg-white hover:border-primary-light hover:bg-primary-light/30 text-gray-700"
@@ -228,7 +228,7 @@ export function Assessment() {
           </AnimatePresence>
 
           {/* Footer Controls */}
-          <div className="mt-12 flex items-center justify-between">
+          <div className="mt-8 sm:mt-12 flex flex-wrap items-center justify-between gap-4">
             <Button
               variant="ghost"
               onClick={handleBack}

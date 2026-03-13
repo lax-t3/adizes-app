@@ -330,9 +330,9 @@ function TemplateEditor({ templateId, onBack }: { templateId: string; onBack: ()
         ← Back to templates
       </button>
 
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-lg font-semibold text-gray-900">{tmpl.name}</h2>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button variant="outline" size="sm" onClick={handleReset} disabled={resetting}>
             {resetting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RotateCcw className="mr-1.5 h-3.5 w-3.5" />}
             Reset to Default
@@ -399,7 +399,7 @@ function TemplateEditor({ templateId, onBack }: { templateId: string; onBack: ()
           <textarea
             value={htmlBody}
             onChange={e => setHtmlBody(e.target.value)}
-            rows={24}
+            rows={12}
             spellCheck={false}
             className="w-full rounded-md border border-gray-300 px-3 py-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-primary resize-y"
           />
@@ -479,7 +479,7 @@ export function AdminSettings() {
   const [tab, setTab] = useState<"smtp" | "templates">("smtp");
 
   return (
-    <div className="p-8">
+    <div className="p-4 sm:p-8">
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
         <div className="mb-8">
           <h1 className="text-3xl font-display font-bold text-gray-900">Settings</h1>

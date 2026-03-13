@@ -97,13 +97,13 @@ export function AdminCohorts() {
   };
 
   return (
-    <div className="p-8">
+    <div className="p-4 sm:p-8">
       {showCreate && (
         <CreateCohortModal onClose={() => setShowCreate(false)} onCreated={handleCreated} />
       )}
 
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-8">
           <h1 className="text-3xl font-display font-bold text-gray-900">Cohorts</h1>
           <Button onClick={() => setShowCreate(true)}>
             <Plus className="mr-2 h-4 w-4" /> New Cohort
@@ -147,14 +147,14 @@ export function AdminCohorts() {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-8">
+                <div className="flex flex-wrap items-center gap-4 sm:gap-8">
                   <div className="text-right">
                     <p className="text-sm font-medium text-gray-900">
                       {cohort.completed_count} / {cohort.member_count}
                     </p>
                     <p className="text-xs text-gray-500">Completed</p>
                   </div>
-                  <div className="w-32 h-2 bg-gray-100 rounded-full overflow-hidden">
+                  <div className="w-24 sm:w-32 h-2 bg-gray-100 rounded-full overflow-hidden">
                     <div
                       className="h-full bg-primary transition-all"
                       style={{ width: `${cohort.completion_pct}%` }}

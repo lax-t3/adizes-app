@@ -96,7 +96,7 @@ export function AdminRespondent() {
 
   if (error || !data) {
     return (
-      <div className="p-8">
+      <div className="p-4 sm:p-8">
         <Link to="/admin/cohorts" className="inline-flex items-center text-sm font-medium text-gray-500 hover:text-gray-900 mb-4 transition-colors">
           <ArrowLeft className="mr-2 h-4 w-4" /> Back to Cohorts
         </Link>
@@ -136,7 +136,7 @@ export function AdminRespondent() {
   const displayName = user.name || result.user_name || user.email;
 
   return (
-    <div className="p-8 pb-24">
+    <div className="p-4 sm:p-8 pb-24">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -146,7 +146,7 @@ export function AdminRespondent() {
           <Link to="/admin/cohorts" className="inline-flex items-center text-sm font-medium text-gray-500 hover:text-gray-900 mb-4 transition-colors">
             <ArrowLeft className="mr-2 h-4 w-4" /> Back to Cohorts
           </Link>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <h1 className="text-3xl font-display font-bold text-gray-900">
                 {displayName}
@@ -157,7 +157,7 @@ export function AdminRespondent() {
             </div>
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
-                <div className="flex gap-1.5">
+                <div className="flex flex-wrap gap-1.5">
                   {profileBadges.map(({ role, char, isDominant }) =>
                     isDominant ? (
                       <Badge key={role} variant={role} className="text-lg px-2 py-0.5">{char}</Badge>
@@ -208,7 +208,7 @@ export function AdminRespondent() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="h-[400px] w-full">
+              <div className="h-[260px] sm:h-[400px] w-full">
                 <ResponsiveContainer width="99%" height="100%" debounce={50}>
                   <RadarChart cx="50%" cy="50%" outerRadius="70%" data={radarData}>
                     <PolarGrid stroke="#e5e7eb" />
@@ -237,7 +237,7 @@ export function AdminRespondent() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="h-[280px] w-full mb-6">
+              <div className="h-[200px] sm:h-[280px] w-full mb-6">
                 <ResponsiveContainer width="99%" height="100%" debounce={50}>
                   <BarChart data={gapChartData} layout="vertical" margin={{ top: 5, right: 30, left: 40, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f3f4f6" />
@@ -250,13 +250,13 @@ export function AdminRespondent() {
                   </BarChart>
                 </ResponsiveContainer>
               </div>
-              <div className="space-y-3">
+              <div className="space-y-3 overflow-x-auto">
                 <h4 className="font-medium text-gray-900 text-sm uppercase tracking-wider mb-4 flex items-center gap-1.5">
                   Gap Severity
                   <InfoTooltip text="Ext = External gap (Is vs Should). Int = Internal gap (Should vs Want). Both scored on 0–50 scale. Positive = 'Is' exceeds 'Should'; Negative = 'Is' falls short." />
                 </h4>
                 {gaps.map((g) => (
-                  <div key={g.role} className="flex items-center justify-between p-3 rounded-lg bg-gray-50 border border-gray-100">
+                  <div key={g.role} className="flex items-center justify-between p-3 rounded-lg bg-gray-50 border border-gray-100 min-w-[260px]">
                     <span className="font-medium text-gray-700">{g.role_name}</span>
                     <div className="flex items-center gap-2">
                       <span className="text-xs text-gray-500">Ext: <GapBadge gap={g.external_gap} /></span>
@@ -287,7 +287,7 @@ export function AdminRespondent() {
                 )}
               </CardHeader>
               <CardContent>
-                <div className="grid gap-8 md:grid-cols-3">
+                <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
                   <div className="space-y-4">
                     <div className="flex items-center gap-2 text-green-700 font-medium">
                       <div className="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center">

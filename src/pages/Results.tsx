@@ -117,7 +117,7 @@ export function Results() {
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
       {/* Header Band */}
-      <div className="bg-gray-900 text-white py-12 px-4 sm:px-6 lg:px-8">
+      <div className="bg-gray-900 text-white py-8 sm:py-12 px-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -156,8 +156,8 @@ export function Results() {
         </div>
       </div>
 
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 -mt-8">
-        <div className="grid gap-8 lg:grid-cols-2">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 -mt-4 sm:-mt-8">
+        <div className="grid gap-6 sm:gap-8 lg:grid-cols-2">
 
           {/* Radar Chart */}
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.1 }}>
@@ -172,7 +172,7 @@ export function Results() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="h-[400px] w-full">
+                <div className="h-[280px] sm:h-[400px] w-full">
                   <ResponsiveContainer width="99%" height="100%" debounce={50}>
                     <RadarChart cx="50%" cy="50%" outerRadius="70%" data={radarData}>
                       <PolarGrid stroke="#e5e7eb" />
@@ -203,7 +203,7 @@ export function Results() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="h-[280px] w-full mb-6">
+                <div className="h-[200px] sm:h-[280px] w-full mb-4 sm:mb-6 overflow-x-auto">
                   <ResponsiveContainer width="99%" height="100%" debounce={50}>
                     <BarChart data={gapChartData} layout="vertical" margin={{ top: 5, right: 30, left: 40, bottom: 5 }}>
                       <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f3f4f6" />
@@ -254,7 +254,7 @@ export function Results() {
                 )}
               </CardHeader>
               <CardContent>
-                <div className="grid gap-8 md:grid-cols-3">
+                <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                   <div className="space-y-4">
                     <div className="flex items-center gap-2 text-green-700 font-medium">
                       <div className="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center">
@@ -308,8 +308,8 @@ export function Results() {
       </div>
 
       {/* Sticky Bottom Bar */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 shadow-[0_-4px_6px_-1px_rgb(0,0,0,0.05)] z-50">
-        <div className="mx-auto max-w-7xl flex items-center justify-between px-4 sm:px-6 lg:px-8">
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 pt-3 pb-4 shadow-[0_-4px_6px_-1px_rgb(0,0,0,0.05)] z-50" style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}>
+        <div className="mx-auto max-w-7xl flex items-center justify-between gap-4 px-0 sm:px-2">
           <div className="hidden sm:block">
             <p className="text-sm font-medium text-gray-900">Your PDF report</p>
             {pdfUrl

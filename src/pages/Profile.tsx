@@ -115,7 +115,7 @@ function PersonalInfoSection() {
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
       {/* Avatar */}
-      <div className="flex items-center gap-4 pb-2">
+      <div className="flex flex-wrap items-center gap-4 pb-2">
         <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary text-white text-xl font-bold select-none flex-shrink-0">
           {initials}
         </div>
@@ -166,7 +166,7 @@ function PersonalInfoSection() {
       </div>
 
       <div className="pt-2">
-        <Button type="submit" disabled={saving}>
+        <Button type="submit" disabled={saving} className="w-full sm:w-auto">
           {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
           Save Changes
         </Button>
@@ -308,7 +308,7 @@ function PasswordSection() {
       </div>
 
       <div className="pt-2">
-        <Button type="submit" disabled={saving}>
+        <Button type="submit" disabled={saving} className="w-full sm:w-auto">
           {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <KeyRound className="mr-2 h-4 w-4" />}
           Change Password
         </Button>
@@ -322,7 +322,7 @@ function PasswordSection() {
 export function Profile() {
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="mx-auto max-w-2xl px-4 sm:px-6 lg:px-8 py-12">
+      <div className="mx-auto max-w-2xl px-4 sm:px-6 lg:px-8 py-6 sm:py-12">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}

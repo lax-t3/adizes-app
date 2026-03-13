@@ -36,9 +36,9 @@ export function AdminDashboard() {
   };
 
   return (
-    <div className="p-8">
+    <div className="p-4 sm:p-8">
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-8">
           <h1 className="text-3xl font-display font-bold text-gray-900">Admin Dashboard</h1>
           <Link to="/admin/users">
             <Button>
@@ -102,19 +102,17 @@ export function AdminDashboard() {
                 ) : (
                   <div className="space-y-4">
                     {stats.recent_completions.map((item, i) => (
-                      <div key={i} className="flex items-center justify-between border-b border-gray-100 last:border-0 pb-4 last:pb-0">
-                        <div className="flex items-center gap-3">
-                          <div className="h-8 w-8 rounded-full bg-gray-100 flex items-center justify-center text-sm font-medium text-gray-600">
-                            {(item.user_name || "U").charAt(0).toUpperCase()}
-                          </div>
-                          <div>
-                            <p className="text-sm font-medium text-gray-900">
-                              {item.user_name || "Anonymous user"}
-                            </p>
-                            <p className="text-xs text-gray-500">completed assessment</p>
-                          </div>
+                      <div key={i} className="flex items-start gap-3 border-b border-gray-100 last:border-0 pb-4 last:pb-0">
+                        <div className="h-8 w-8 flex-shrink-0 rounded-full bg-gray-100 flex items-center justify-center text-sm font-medium text-gray-600">
+                          {(item.user_name || "U").charAt(0).toUpperCase()}
                         </div>
-                        <span className="text-xs text-gray-400">{formatTime(item.completed_at)}</span>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-medium text-gray-900 truncate">
+                            {item.user_name || "Anonymous user"}
+                          </p>
+                          <p className="text-xs text-gray-500">completed assessment</p>
+                        </div>
+                        <span className="text-xs text-gray-400 flex-shrink-0">{formatTime(item.completed_at)}</span>
                       </div>
                     ))}
                   </div>

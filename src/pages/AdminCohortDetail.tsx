@@ -208,7 +208,7 @@ function BulkEnrollModal({
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+      <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl mx-4 sm:mx-auto max-h-[90vh] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b flex-shrink-0">
           <div>
@@ -267,7 +267,7 @@ function BulkEnrollModal({
                 Review the list below. Remove any rows you don't want to enroll, then click <strong>Enroll All</strong>.
               </p>
               <div className="overflow-x-auto rounded-lg border border-gray-200">
-                <table className="w-full text-sm text-left">
+                <table className="w-full min-w-[400px] text-sm text-left">
                   <thead className="bg-gray-50 text-xs text-gray-500 uppercase border-b border-gray-200">
                     <tr>
                       <th className="px-4 py-2">Email</th>
@@ -476,7 +476,7 @@ export function AdminCohortDetail() {
 
   if (error || !cohort) {
     return (
-      <div className="p-8 flex flex-col items-center justify-center min-h-[60vh]">
+      <div className="p-4 sm:p-8 flex flex-col items-center justify-center min-h-[60vh]">
         <div className="max-w-md text-center">
           <div className="text-5xl mb-4">🔍</div>
           <h2 className="text-xl font-semibold text-gray-900 mb-2">Cohort not found</h2>
@@ -513,7 +513,7 @@ export function AdminCohortDetail() {
   const completedCount = cohort.respondents.filter(r => r.status === "completed").length;
 
   return (
-    <div className="p-8">
+    <div className="p-4 sm:p-8">
       {showEnroll && id && (
         <EnrollUserModal
           cohortId={id}
@@ -534,7 +534,7 @@ export function AdminCohortDetail() {
           <Link to="/admin/cohorts" className="inline-flex items-center text-sm font-medium text-gray-500 hover:text-gray-900 mb-4 transition-colors">
             <ArrowLeft className="mr-2 h-4 w-4" /> Back to Cohorts
           </Link>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <h1 className="text-3xl font-display font-bold text-gray-900">{cohort.name}</h1>
               {cohort.description && <p className="text-gray-500 mt-1">{cohort.description}</p>}
@@ -542,7 +542,7 @@ export function AdminCohortDetail() {
                 {cohort.respondents.length} members · {completedCount} completed
               </p>
             </div>
-            <div className="flex gap-3">
+            <div className="flex flex-wrap gap-2">
               <Button variant="outline" onClick={() => setShowEnroll(true)}>
                 <UserPlus className="mr-2 h-4 w-4" /> Enroll User
               </Button>
@@ -636,7 +636,7 @@ export function AdminCohortDetail() {
               </div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full text-sm text-left text-gray-500">
+                <table className="w-full min-w-[600px] text-sm text-left text-gray-500">
                   <thead className="text-xs text-gray-700 uppercase bg-gray-50 border-b border-gray-200">
                     <tr>
                       <th className="px-6 py-3 font-medium">Name</th>

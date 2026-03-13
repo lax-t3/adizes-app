@@ -218,7 +218,7 @@ export function AdminUsers() {
   };
 
   return (
-    <div className="p-8">
+    <div className="p-4 sm:p-8">
       {showInvite && (
         <InviteModal onClose={() => setShowInvite(false)} onInvited={fetchUsers} />
       )}
@@ -227,7 +227,7 @@ export function AdminUsers() {
       )}
 
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-wrap items-start justify-between gap-3 mb-8">
           <div>
             <h1 className="text-3xl font-display font-bold text-gray-900">Administrators</h1>
             <p className="text-gray-500 mt-1">Manage who has access to this admin panel.</p>
@@ -262,7 +262,7 @@ export function AdminUsers() {
                 </div>
               ) : (
                 <div className="overflow-x-auto">
-                  <table className="w-full text-sm text-left text-gray-500">
+                  <table className="w-full min-w-[640px] text-sm text-left text-gray-500">
                     <thead className="text-xs text-gray-700 uppercase bg-gray-50 border-b border-gray-200">
                       <tr>
                         <th className="px-6 py-3 font-medium">Name</th>
@@ -293,7 +293,7 @@ export function AdminUsers() {
                                 <button
                                   onClick={() => handleResend(u)}
                                   disabled={resendingId === u.id}
-                                  className="flex items-center gap-1 text-xs text-gray-500 hover:text-primary transition-colors"
+                                  className="flex items-center gap-1 text-xs text-gray-500 hover:text-primary transition-colors whitespace-nowrap"
                                   title="Resend invite email"
                                 >
                                   {resendingId === u.id
@@ -305,7 +305,7 @@ export function AdminUsers() {
                               )}
                               <button
                                 onClick={() => setChangePwUser(u)}
-                                className="flex items-center gap-1 text-xs text-gray-500 hover:text-primary transition-colors"
+                                className="flex items-center gap-1 text-xs text-gray-500 hover:text-primary transition-colors whitespace-nowrap"
                                 title="Change password"
                               >
                                 <KeyRound className="h-3.5 w-3.5" /> Password
