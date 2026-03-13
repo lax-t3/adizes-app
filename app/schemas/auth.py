@@ -49,6 +49,3 @@ class CohortAssessmentHistory(BaseModel):
     completed_at: Optional[str] = None
     dominant_style: Optional[str] = None
 
-
-# Backward-compatible alias — remove once Task 5 (auth router) updates the import
-MyAssessmentItem = CohortAssessmentHistory
