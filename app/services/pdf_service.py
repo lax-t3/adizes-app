@@ -31,5 +31,4 @@ def generate_pdf(assessment_data: dict) -> bytes:
 
 
 def _get_user_name(data: dict) -> str:
-    users = data.get("users") or {}
-    return users.get("name", "Participant")
+    return data.get("user_name") or "Participant"

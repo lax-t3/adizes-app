@@ -222,7 +222,17 @@ def submit_assessment(body: SubmitRequest, background_tasks: BackgroundTasks, us
                 "gaps": [g for g in gaps],
                 "interpretation": interp,
             }
-            pdf_bytes = generate_pdf(assessment_data)
+
+            # Generate PDF — failure is non-fatal, email still sends without attachment
+            pdf_attachment = None
+            try:
+                pdf_bytes = generate_pdf(assessment_data)
+                pdf_attachment = [{
+                    "filename": f"PAEI_Report_{result_id[:8]}.pdf",
+                    "data": pdf_bytes,
+                }]
+            except Exception as pdf_err:
+                logger.error(f"[assessment] PDF generation failed for {result_id}: {pdf_err}")
 
             send_template_email("assessment_complete", user_email, {
                 "user_name": user_name or user_email,
@@ -231,12 +241,9 @@ def submit_assessment(body: SubmitRequest, background_tasks: BackgroundTasks, us
                 "dominant_style": dominant,
                 "platform_name": "Adizes India",
                 "platform_url": settings.frontend_url,
-            }, attachments=[{
-                "filename": f"PAEI_Report_{result_id[:8]}.pdf",
-                "data": pdf_bytes,
-            }])
+            }, attachments=pdf_attachment or [])
     except Exception as e:
-        print(f"[assessment] Completion email failed (non-fatal): {e}")
+        logger.error(f"[assessment] Completion email failed (non-fatal): {e}")
 
     # Trigger async PDF generation in Lambda (non-blocking)
     pdf_payload = _build_pdf_payload(result_id, user_name, now, scores, gaps, interp)
