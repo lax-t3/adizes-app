@@ -17,6 +17,7 @@ import { AdminRespondent } from "./pages/AdminRespondent";
 import { AdminUsers } from "./pages/AdminUsers";
 import { AdminSettings } from "./pages/AdminSettings";
 import { AdminHelp } from "./pages/AdminHelp";
+import { UserHelp } from "./pages/UserHelp";
 import { SetPassword } from "./pages/SetPassword";
 import { PolicyPage } from "./pages/PolicyPage";
 import { Navbar } from "./components/layout/Navbar";
@@ -34,6 +35,7 @@ function UserLayout() {
           <Route path="/assessment" element={<Assessment />} />
           <Route path="/results" element={<Results />} />
           <Route path="/profile" element={<Profile />} />
+          <Route path="/help" element={<UserHelp />} />
         </Routes>
       </main>
       <Footer />

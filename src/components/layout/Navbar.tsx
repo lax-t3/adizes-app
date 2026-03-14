@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuthStore } from "@/store/authStore";
-import { LogOut, User, Settings } from "lucide-react";
+import { LogOut, User, HelpCircle } from "lucide-react";
 
 export function Navbar() {
   const { user, logout } = useAuthStore();
@@ -71,6 +71,15 @@ export function Navbar() {
                 >
                   <User className="h-4 w-4 text-gray-400" />
                   My Profile
+                </Link>
+
+                <Link
+                  to="/help"
+                  onClick={() => setOpen(false)}
+                  className="flex items-center gap-2.5 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  <HelpCircle className="h-4 w-4 text-gray-400" />
+                  Help & FAQs
                 </Link>
 
                 <div className="border-t border-gray-100 mt-1 pt-1">
