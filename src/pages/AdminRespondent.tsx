@@ -304,7 +304,7 @@ export function AdminRespondent() {
 
           {/* Interpretation */}
           <div className="lg:col-span-2">
-            <Card className="shadow-sm bg-white overflow-hidden">
+            <Card className="shadow-sm bg-white">
               <CardHeader>
                 <div className="flex items-center gap-3 mb-1">
                   <span className="inline-block bg-primary text-white text-sm font-bold px-3 py-1 rounded-full">
@@ -328,6 +328,7 @@ export function AdminRespondent() {
                         <CheckCircle2 className="h-5 w-5" />
                       </div>
                       Strengths
+                      <InfoTooltip text="The natural advantages of this person's dominant PAEI style — behaviours and qualities that come easily and add value to their team." />
                     </div>
                     <p className="text-gray-600 text-sm leading-relaxed">{interpretation.strengths}</p>
                   </div>
@@ -337,6 +338,7 @@ export function AdminRespondent() {
                         <Info className="h-5 w-5" />
                       </div>
                       Blind Spots
+                      <InfoTooltip text="Typical pitfalls of this style — patterns that can undermine effectiveness if left unchecked. Use as coaching input, not criticism." />
                     </div>
                     <p className="text-gray-600 text-sm leading-relaxed">{interpretation.blind_spots}</p>
                   </div>
@@ -346,6 +348,7 @@ export function AdminRespondent() {
                         <Users className="h-5 w-5" />
                       </div>
                       Working with Others
+                      <InfoTooltip text="How this person tends to collaborate with the other three PAEI styles. Useful for team composition and conflict-prevention coaching." />
                     </div>
                     <p className="text-gray-600 text-sm leading-relaxed">{interpretation.working_with_others}</p>
                   </div>
@@ -353,8 +356,9 @@ export function AdminRespondent() {
 
                 {interpretation.mismanagement_risks.length > 0 && (
                   <div className="mt-8 pt-6 border-t border-gray-100">
-                    <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">
+                    <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-1.5">
                       Mismanagement Risk Under Stress
+                      <InfoTooltip text="The dysfunctional extreme each dominant style can slide into under prolonged stress. Awareness helps managers and coaches intervene early." />
                     </h4>
                     <div className="space-y-2">
                       {interpretation.mismanagement_risks.map((risk, i) => (

@@ -239,7 +239,7 @@ export function Results() {
 
           {/* Interpretation */}
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.3 }} className="lg:col-span-2">
-            <Card className="shadow-md bg-white overflow-hidden">
+            <Card className="shadow-md bg-white">
               <CardHeader>
                 <div className="flex items-center gap-3 mb-1">
                   <span className="inline-block bg-primary text-white text-sm font-bold px-3 py-1 rounded-full">
@@ -291,8 +291,9 @@ export function Results() {
 
                 {interpretation.mismanagement_risks.length > 0 && (
                   <div className="mt-8 pt-6 border-t border-gray-100">
-                    <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">
+                    <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-1.5">
                       Mismanagement Risk Under Stress
+                      <InfoTooltip text="The dysfunctional extreme your dominant style can slide into under prolonged stress. Awareness is the first step to avoiding it." />
                     </h4>
                     <div className="space-y-2">
                       {interpretation.mismanagement_risks.map((risk, i) => (

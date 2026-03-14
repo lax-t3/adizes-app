@@ -1,5 +1,6 @@
 import type { ScoreSet } from "@/types/api";
 import { cn } from "@/lib/utils";
+import { InfoTooltip } from "@/components/ui/InfoTooltip";
 
 interface Props {
   scaled_scores: { is: ScoreSet; should: ScoreSet; want: ScoreSet };
@@ -23,9 +24,12 @@ const ROWS: { label: string; key: keyof Props["scaled_scores"] }[] = [
 export function ScoresTable({ scaled_scores }: Props) {
   return (
     <div className="mt-4 pt-4 border-t border-gray-100">
-      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-        Raw Scores (12–48)
-      </p>
+      <div className="flex items-center gap-1.5 mb-2">
+        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+          Raw Scores (12–48)
+        </p>
+        <InfoTooltip text="Each role score ranges from 12 (always ranked last) to 48 (always ranked first). A score above 30 is considered dominant (shown as a capital letter in your profile). Is = how you currently behave. Should = what your role demands. Want = your natural preference." />
+      </div>
       <table className="w-full text-sm text-center border-collapse">
         <thead>
           <tr>
