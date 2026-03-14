@@ -187,10 +187,12 @@ def submit_assessment(body: SubmitRequest, background_tasks: BackgroundTasks, us
     ]
     supabase_admin.table("answers").insert(answer_rows).execute()
 
-    # Send completion email with PDF attachment (non-fatal if it fails)
+    # Send completion email (non-fatal if it fails).
+    # PDF is generated asynchronously by the Lambda function and uploaded to S3 —
+    # it is NOT attached here. The email contains a link to the Results page where
+    # the user can download the Lambda-generated PDF once it is ready.
     try:
         from app.services.email_service import send_template_email, smtp_configured
-        from app.services.pdf_service import generate_pdf
         if smtp_configured():
             user_email = (user.get("email") or
                           (supabase_admin.auth.admin.get_user_by_id(user_id).user.email) or "")
@@ -209,30 +211,7 @@ def submit_assessment(body: SubmitRequest, background_tasks: BackgroundTasks, us
                 pass
 
             dominant = "".join(interp.get("dominant_roles", []))
-
-            # Build assessment data dict for PDF
-            assessment_data = {
-                "id": result_id,
-                "user_id": user_id,
-                "user_name": user_name,
-                "completed_at": now,
-                "raw_scores": scores["raw"],
-                "scaled_scores": scores["scaled"],
-                "profile": scores["profile"],
-                "gaps": [g for g in gaps],
-                "interpretation": interp,
-            }
-
-            # Generate PDF — failure is non-fatal, email still sends without attachment
-            pdf_attachment = None
-            try:
-                pdf_bytes = generate_pdf(assessment_data)
-                pdf_attachment = [{
-                    "filename": f"PAEI_Report_{result_id[:8]}.pdf",
-                    "data": pdf_bytes,
-                }]
-            except Exception as pdf_err:
-                logger.error(f"[assessment] PDF generation failed for {result_id}: {pdf_err}")
+            results_url = f"{settings.frontend_url}/results?id={result_id}"
 
             send_template_email("assessment_complete", user_email, {
                 "user_name": user_name or user_email,
@@ -241,7 +220,8 @@ def submit_assessment(body: SubmitRequest, background_tasks: BackgroundTasks, us
                 "dominant_style": dominant,
                 "platform_name": "Adizes India",
                 "platform_url": settings.frontend_url,
-            }, attachments=pdf_attachment or [])
+                "results_url": results_url,
+            })
     except Exception as e:
         logger.error(f"[assessment] Completion email failed (non-fatal): {e}")
 

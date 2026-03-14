@@ -120,7 +120,7 @@ def _admin_invite_html() -> str:
 
 
 def _assessment_complete_html() -> str:
-    cta = _cta("{{platform_url}}", "View My Results")
+    cta = _cta("{{results_url}}", "View My Results &amp; Download PDF")
     body = f"""
   <!-- Body -->
   <tr>
@@ -136,7 +136,7 @@ def _assessment_complete_html() -> str:
           </td>
         </tr>
       </table>
-      <p style="margin:0 0 32px;font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#444444;line-height:1.75;">Your full personalised report is <strong>attached to this email as a PDF</strong>. You may also log in to the platform to view your interactive dashboard and results.</p>
+      <p style="margin:0 0 32px;font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#444444;line-height:1.75;">Your full personalised PDF report is being generated and will be available on your results page within a few minutes. Click the button below to view your interactive dashboard and download your report.</p>
       {cta}
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:32px 0 24px;"><tr><td style="border-top:1px solid #e8e8e8;font-size:1px;line-height:1px;">&nbsp;</td></tr></table>
       <p style="margin:0;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#666666;line-height:1.75;">Thank you for your participation. Your results contribute to a richer collective picture of your team's management style.</p>
