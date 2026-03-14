@@ -14,6 +14,7 @@ import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
 } from "recharts";
 import { motion } from "motion/react";
+import { ScoresTable } from "@/components/ui/ScoresTable";
 import { getResult } from "@/api/results";
 import type { ResultResponse } from "@/types/api";
 
@@ -186,6 +187,7 @@ export function Results() {
                     </RadarChart>
                   </ResponsiveContainer>
                 </div>
+                <ScoresTable scaled_scores={scaled_scores} />
               </CardContent>
             </Card>
           </motion.div>

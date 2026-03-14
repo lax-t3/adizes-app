@@ -8,6 +8,7 @@ import { InfoTooltip } from "@/components/ui/InfoTooltip";
 import { Users, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { motion } from "motion/react";
+import { ScoresTable } from "@/components/ui/ScoresTable";
 import {
   Radar,
   RadarChart,
@@ -254,6 +255,7 @@ export function AdminRespondent() {
                   </RadarChart>
                 </ResponsiveContainer>
               </div>
+              <ScoresTable scaled_scores={scaled_scores} />
             </CardContent>
           </Card>
 
