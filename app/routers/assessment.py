@@ -37,12 +37,29 @@ def _trigger_pdf_lambda(assessment_id: str, payload: dict) -> None:
         logger.info(f"[pdf-lambda] AWS credentials not configured — skipping trigger for {assessment_id}")
         return
     try:
-        client = boto3.client(
-            "lambda",
+        base_kwargs = dict(
             region_name=settings.aws_region,
             aws_access_key_id=settings.aws_access_key_id,
             aws_secret_access_key=settings.aws_secret_access_key,
         )
+
+        if settings.lambda_invoke_role_arn:
+            # Assume the invoke role — user has sts:AssumeRole permission only
+            sts = boto3.client("sts", **base_kwargs)
+            creds = sts.assume_role(
+                RoleArn=settings.lambda_invoke_role_arn,
+                RoleSessionName="adizes-pdf-invoke",
+            )["Credentials"]
+            lambda_kwargs = dict(
+                region_name=settings.aws_region,
+                aws_access_key_id=creds["AccessKeyId"],
+                aws_secret_access_key=creds["SecretAccessKey"],
+                aws_session_token=creds["SessionToken"],
+            )
+        else:
+            lambda_kwargs = base_kwargs
+
+        client = boto3.client("lambda", **lambda_kwargs)
         client.invoke(
             FunctionName=settings.pdf_lambda_function_name,
             InvocationType="Event",

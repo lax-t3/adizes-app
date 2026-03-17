@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     aws_access_key_id: str = ""
     aws_secret_access_key: str = ""
     pdf_lambda_function_name: str = "adizes-pdf-generator"
+    lambda_invoke_role_arn: str = ""  # If set, assume this role before invoking Lambda
 
     class Config:
         env_file = ".env"
