@@ -26,6 +26,9 @@ with st.sidebar:
 # ── Initialise session state ──────────────────────────────────────────────────
 if "compare_stateful_agent" not in st.session_state:
     st.session_state["compare_stateful_agent"] = StatefulAgent(provider)
+else:
+    # Update provider if user changed it in the sidebar
+    st.session_state["compare_stateful_agent"].provider = provider
 if "compare_history" not in st.session_state:
     st.session_state["compare_history"] = []
 
@@ -50,16 +53,16 @@ SAMPLE_QUERIES = [
 
 st.markdown("**💡 Suggested queries (click to use):**")
 chip_cols = st.columns(len(SAMPLE_QUERIES))
-selected_query = st.session_state.get("compare_chip_query", "")
 for i, q in enumerate(SAMPLE_QUERIES):
     if chip_cols[i].button(q, key=f"chip_{i}", use_container_width=True):
-        st.session_state["compare_chip_query"] = q
+        # Write directly into the text input's own session state key
+        # so the widget is populated on the next rerun
+        st.session_state["compare_query_input"] = q
         st.rerun()
 
 # ── Shared query input ────────────────────────────────────────────────────────
 query = st.text_input(
     "Or type your own question:",
-    value=selected_query,
     key="compare_query_input",
     placeholder="e.g. What is AI?",
 )
@@ -79,7 +82,6 @@ if ask and query.strip():
     st.session_state["compare_det_intent"] = det_intent
     st.session_state["compare_stat_resp"] = stat_resp
     st.session_state["compare_last_query"] = q
-    st.session_state["compare_chip_query"] = ""
     st.session_state["compare_history"].append({
         "Query": q,
         "LLM Response": llm_resp,

@@ -28,6 +28,9 @@ with st.sidebar:
 # ── Initialise agent and chat display in session state (once per session) ─────
 if "stateful_agent" not in st.session_state:
     st.session_state["stateful_agent"] = StatefulAgent(provider)
+else:
+    # Update provider if user changed it in the sidebar
+    st.session_state["stateful_agent"].provider = provider
 
 if "stateful_chat_display" not in st.session_state:
     st.session_state["stateful_chat_display"] = []
