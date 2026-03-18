@@ -6,7 +6,6 @@ All three providers use the same input format (OpenAI-style messages list).
 """
 
 import os
-import sys
 import streamlit as st
 
 
@@ -109,7 +108,7 @@ def _call_ollama(messages: list[dict]) -> str:
         import ollama
         model = _get_secret("OLLAMA_MODEL", "llama3.2")
         response = ollama.chat(model=model, messages=messages)
-        return response["message"]["content"]
+        return response.message.content
     except Exception as e:
         error_str = str(e)
         if "connect" in error_str.lower() or "refused" in error_str.lower():
