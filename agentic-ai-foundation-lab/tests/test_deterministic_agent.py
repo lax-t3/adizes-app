@@ -63,6 +63,11 @@ class TestGetResponse:
         _, intent_upper = get_response("WHAT IS AI")
         assert intent_lower == intent_upper == "what_is_ai"
 
+    def test_what_is_ai_agent_matches_agent_not_ai(self):
+        """Ordering: 'what is ai agent' should hit what_is_agent, not what_is_ai."""
+        _, intent = get_response("what is ai agent")
+        assert intent == "what_is_agent"
+
 
 class TestGetRulesTable:
     def test_returns_list_of_dicts(self):

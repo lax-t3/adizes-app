@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """
 Deterministic Agent — Rule-Based System
 ========================================
@@ -39,19 +41,19 @@ INTENTS = [
         "response": "Goodbye! Remember: I'll give you the exact same answer next time you say bye!",
     },
     {
-        "label": "what_is_ai",
-        "keywords": ["what is ai", "what is artificial intelligence", "define ai"],
-        "response": (
-            "AI (Artificial Intelligence) is the simulation of human intelligence in machines. "
-            "It includes machine learning, reasoning, and problem-solving."
-        ),
-    },
-    {
         "label": "what_is_agent",
         "keywords": ["what is an agent", "what is ai agent", "define agent"],
         "response": (
             "An AI agent is a system that perceives its environment, makes decisions, "
             "and takes actions to achieve a goal. I am an example of a simple rule-based agent!"
+        ),
+    },
+    {
+        "label": "what_is_ai",
+        "keywords": ["what is ai", "what is artificial intelligence", "define ai"],
+        "response": (
+            "AI (Artificial Intelligence) is the simulation of human intelligence in machines. "
+            "It includes machine learning, reasoning, and problem-solving."
         ),
     },
     {
@@ -89,6 +91,7 @@ INTENTS = [
     },
     {
         "label": "name_tell",
+        # Single keyword intentional — teaches the boundary of pattern matching
         "keywords": ["my name is"],
         "response": (
             "Nice to meet you! But I'm stateless — I won't remember your name. "
