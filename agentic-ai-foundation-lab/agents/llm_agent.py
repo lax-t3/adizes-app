@@ -1,4 +1,3 @@
-from __future__ import annotations
 """
 LLM Agent — Pure Stateless Language Model Call
 ================================================
@@ -17,6 +16,7 @@ This agent has:
 
 It just sends your message to the language model and returns the answer.
 """
+from __future__ import annotations
 
 import sys
 import os

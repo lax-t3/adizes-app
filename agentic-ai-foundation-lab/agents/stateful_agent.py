@@ -1,4 +1,3 @@
-from __future__ import annotations
 """
 Stateful Agent — Memory-Enabled LLM Wrapper
 =============================================
@@ -23,6 +22,7 @@ It does NOT handle display, session management, or UI. Those are
 the Streamlit page's responsibility. Clean role separation makes
 each piece of code easier to understand, test, and change independently.
 """
+from __future__ import annotations
 
 import sys
 import os
@@ -81,8 +81,14 @@ class StatefulAgent:
         # if we told it our name two turns ago.
         response_text = _llm_call(self.history, self.provider)
 
-        # Step 3: Save the assistant's response to history for future context.
-        self.history.append({"role": "assistant", "content": response_text})
+        # TEACHING NOTE: If the LLM call returned an error string (e.g., missing API key),
+        # we do NOT save it to history — an error message is not a real assistant turn.
+        # Saving errors to history would corrupt future context with garbage.
+        if not response_text.startswith("Error:") and not response_text.startswith("⚠️"):
+            self.history.append({"role": "assistant", "content": response_text})
+        else:
+            # Pop the user message we just added — this turn effectively didn't happen
+            self.history.pop()
 
         return response_text
 

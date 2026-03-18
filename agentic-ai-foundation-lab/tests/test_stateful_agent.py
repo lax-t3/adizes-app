@@ -62,3 +62,11 @@ class TestStatefulAgent:
         h = self.agent.get_history()
         h.clear()
         assert len(self.agent.get_history()) == 2  # still has user + assistant
+
+    def test_error_response_not_saved_to_history(self):
+        """LLM error strings must not corrupt conversation history."""
+        with patch("agents.stateful_agent._llm_call", return_value="Error: API down"):
+            result = self.agent.chat("hello")
+        assert result == "Error: API down"
+        # History should be empty — error turns are not recorded
+        assert self.agent.get_history() == []
