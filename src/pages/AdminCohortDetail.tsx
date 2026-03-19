@@ -450,7 +450,9 @@ export function AdminCohortDetail() {
 
   useEffect(() => {
     fetchCohort();
-    listCohortOrgs(id!).then(setLinkedOrgs).catch(() => {});
+    if (id && UUID_RE.test(id)) {
+      listCohortOrgs(id).then(setLinkedOrgs).catch(() => {});
+    }
     listOrganizations().then(setAllOrgs).catch(() => {});
   }, [id]);
 
@@ -766,8 +768,12 @@ export function AdminCohortDetail() {
                   <button
                     onClick={async () => {
                       if (!confirm(`Unlink ${lo.name}?`)) return;
-                      await unlinkOrgFromCohort(id!, lo.org_id);
-                      setLinkedOrgs((prev) => prev.filter((o) => o.org_id !== lo.org_id));
+                      try {
+                        await unlinkOrgFromCohort(id!, lo.org_id);
+                        setLinkedOrgs((prev) => prev.filter((o) => o.org_id !== lo.org_id));
+                      } catch {
+                        alert('Failed to unlink organisation. Please try again.');
+                      }
                     }}
                     className="text-xs text-gray-400 hover:text-red-600"
                   >
@@ -932,7 +938,7 @@ export function AdminCohortDetail() {
                           type="checkbox"
                           checked={enrolUserIds.includes(emp.user_id)}
                           onChange={(e) => setEnrolUserIds((ids) =>
-                            e.target.checked ? [...ids, emp.user_id] : ids.filter((id) => id !== emp.user_id)
+                            e.target.checked ? [...ids, emp.user_id] : ids.filter((uid) => uid !== emp.user_id)
                           )}
                         />
                         <span className="flex-1">{emp.name}</span>
@@ -974,6 +980,8 @@ export function AdminCohortDetail() {
                       user_ids: enrolUserIds.length > 0 ? enrolUserIds : undefined,
                     });
                     setEnrolResult(result);
+                  } catch {
+                    alert('Enrolment failed. Please try again.');
                   } finally { setEnrolling(false); }
                 }}
                 className="px-4 py-2 text-sm bg-[#C8102E] text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
