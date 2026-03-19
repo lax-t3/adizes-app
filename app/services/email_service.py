@@ -224,6 +224,7 @@ DEFAULT_TEMPLATES = {
     },
     "org_welcome": {
         "id": "org_welcome",
+        "name": "Org Employee Welcome",
         "subject": "You've been added to {{org_name}} on the Adizes PAEI Platform",
         "html_body": _org_welcome_html(),
     },
