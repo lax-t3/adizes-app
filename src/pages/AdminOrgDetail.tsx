@@ -235,6 +235,7 @@ export function AdminOrgDetail() {
               onClick={() => setShowOrgHelp(true)}
               className="text-gray-400 hover:text-gray-600 transition-colors"
               title="How to build your org structure"
+              aria-label="How to build your org structure"
             >
               <HelpCircle className="h-4 w-4" />
             </button>
@@ -496,7 +497,7 @@ export function AdminOrgDetail() {
           <div className="bg-white rounded-xl shadow-xl w-full max-w-lg">
             {/* Header */}
             <div className="px-6 pt-5 pb-4 border-b border-gray-100">
-              <p className="text-base font-bold text-gray-900">How to build your org structure</p>
+              <h2 className="text-base font-bold text-gray-900">How to build your org structure</h2>
               <p className="text-xs text-gray-500 mt-0.5">A step-by-step guide</p>
             </div>
 
