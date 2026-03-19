@@ -76,59 +76,79 @@ on Netlify instead of returning 404.
 adizes-frontend/
   src/
     api/
-      auth.ts          # login, register, setPassword (invite token), saveInviteProfile
+      auth.ts          # login, register, setPassword (invite token), saveInviteProfile, forgotPassword
       client.ts        # Axios instance with JWT interceptor + 401 redirect
       profile.ts       # getProfile, updateProfile, changePassword
       assessment.ts    # getQuestions; submitAssessment(cohort_id, answers) — cohort_id required
       results.ts       # getResult, getMyAssessments → CohortAssessmentHistory[] (downloadPdf removed — PDFs served from S3 via pdf_url)
-      admin.ts         # cohort CRUD, member management, user management; getRespondent(userId, cohortId)
+      admin.ts         # cohort CRUD, member management, user management; getRespondent(userId, cohortId);
+                       #   organisation CRUD, org node management, org employee management, cohort↔org linking
       settings.ts      # SMTP + email template CRUD
     components/
-      layout/          # AdminSidebar, Header, Footer
+      layout/          # AdminSidebar (includes Organizations link), Header, Footer
       ui/              # Button, Card, Badge, Spinner, Modal
     lib/
       jwt.ts           # decodeJwt() — base64url JWT payload decoder (no signature verify)
       utils.ts         # cn() Tailwind class merge helper
     pages/
-      Login.tsx               # Login page
+      Landing.tsx             # Login page; "Forgot password?" links to /forgot-password;
+                              #   shows green banner on ?message=password-updated redirect
       Register.tsx            # Self-registration (Normal mode) + invite acceptance (Activate mode)
       SetPassword.tsx         # Redirect shim → /register (for old invite email links)
+      ForgotPassword.tsx      # Forgot-password flow: email input → sent/not_activated/error states
+      ResetPassword.tsx       # Reset-password flow: reads recovery token from URL hash → set new password
       Dashboard.tsx           # PAEI results tabs + My Assessments list; all "Begin Assessment" CTAs pass ?cohort_id=
       Assessment.tsx          # 36-question flow; reads cohort_id from query param; redirects to /dashboard if missing
       Results.tsx             # Full PAEI results + PDF download (S3 url state machine: null→"Generating…"+check-again, set→window.open)
       AdminDashboard.tsx
       AdminCohortList.tsx
-      AdminCohortDetail.tsx   # Cohort members + resend invite; "View Results" link includes ?cohort_id=
+      AdminCohortDetail.tsx   # Cohort members + resend invite; linked organisations panel; enrol from org modal
+      AdminOrganizations.tsx  # Organisation list + create org
+      AdminOrgDetail.tsx      # Org tree (nodes), employee management per node, link to cohorts
       AdminRespondent.tsx     # Respondent detail; reads cohort_id from ?cohort_id= query param; shows pending state if no result
       AdminSettings.tsx       # SMTP config + email template editor
+      AdminHelp.tsx           # Admin FAQ including Employee Activation & Password Reset section
       PolicyPage.tsx
     store/
       authStore.ts       # Zustand auth state (JWT, user, role)
       assessmentStore.ts # Assessment session state including cohortId (set from ?cohort_id= query param)
     types/
-      api.ts             # Shared API types (AuthResponse, CohortAssessmentHistory, etc.)
+      api.ts             # Shared API types (AuthResponse, CohortAssessmentHistory, Organisation, OrgNode, etc.)
 ```
 
 ## Pages & Routes
 
-| Route | Component | Notes |
-|-------|-----------|-------|
-| `/` | `Login` | Email + password login |
-| `/register` | `Register` | Self-registration **or** invite acceptance (auto-detected from URL hash) |
-| `/set-password` | `SetPassword` | Redirect shim — forwards old email links to `/register` |
-| `/dashboard` | `Dashboard` | PAEI results (inline) + My Assessments tab |
-| `/assessment?cohort_id=<uuid>` | `Assessment` | 36-question flow. `cohort_id` query param required — redirects to `/dashboard` if missing. |
-| `/results/:id` | `Results` | Full results + PDF |
-| `/admin` | `AdminDashboard` | Admin overview |
-| `/admin/cohorts` | `AdminCohortList` | Cohort list |
-| `/admin/cohorts/:id` | `AdminCohortDetail` | Members + resend invite |
-| `/admin/settings` | `AdminSettings` | SMTP + email templates |
+| Route | Component | Auth | Notes |
+|-------|-----------|------|-------|
+| `/` | `Landing` | Public | Login form; "Forgot password?" link; `?message=password-updated` success banner |
+| `/register` | `Register` | Public | Self-registration **or** invite acceptance (auto-detected from URL hash) |
+| `/set-password` | `SetPassword` | Public | Redirect shim — forwards old email links to `/register` |
+| `/forgot-password` | `ForgotPassword` | Public | Email input → `POST /auth/forgot-password` → sent/not_activated/error states |
+| `/reset-password` | `ResetPassword` | Public | Reads `#access_token=...&type=recovery` from hash; set new password |
+| `/dashboard` | `Dashboard` | JWT | PAEI results (inline) + My Assessments tab |
+| `/assessment?cohort_id=<uuid>` | `Assessment` | JWT | 36-question flow. `cohort_id` query param required — redirects to `/dashboard` if missing. |
+| `/results/:id` | `Results` | JWT | Full results + PDF |
+| `/admin` | `AdminDashboard` | Admin | Admin overview |
+| `/admin/cohorts` | `AdminCohortList` | Admin | Cohort list |
+| `/admin/cohorts/:id` | `AdminCohortDetail` | Admin | Members + resend invite; linked orgs panel; enrol from org |
+| `/admin/organizations` | `AdminOrganizations` | Admin | Organisation list + create |
+| `/admin/organizations/:id` | `AdminOrgDetail` | Admin | Org tree, node management, employee management |
+| `/admin/settings` | `AdminSettings` | Admin | SMTP + email templates |
+| `/admin/help` | `AdminHelp` | Admin | Admin FAQ including Employee Activation & Password Reset |
 
 ## Invite / Activate Account Flow
 
-When an invited user clicks their email link, Supabase redirects to:
+Two independent activation paths both land on `/register`:
+
+**Cohort direct enrolment** — admin enrolls user into a cohort:
 ```
 /register#access_token=<token>&type=invite
+```
+
+**Org employee activation** — admin adds employee to an org node:
+```
+/register#access_token=<token>&type=invite   (new user)
+/register#access_token=<token>&type=recovery  (previously invited, not activated)
 ```
 
 `Register.tsx` detects the hash on mount and switches to **Activate mode**:
@@ -139,6 +159,29 @@ When an invited user clicks their email link, Supabase redirects to:
 - On success: 2-second delay → redirect to `/` (login), hash cleared from history
 
 Old invite links pointing to `/set-password` still work — `SetPassword.tsx` is a redirect shim that forwards them to `/register` with the hash intact.
+
+## Forgot Password / Reset Password Flow
+
+1. User clicks **"Forgot password?"** on login page → `/forgot-password`
+2. Enters email → `POST /auth/forgot-password`
+   - Not activated → amber "activate your account first" message (no email sent)
+   - Activated / unknown → green "check your inbox" message
+3. Email contains a Supabase recovery link → redirects to `/reset-password#access_token=...&type=recovery`
+4. `ResetPassword.tsx` reads the token from the hash, validates `type === "recovery"`
+   - Invalid / missing token → shows "Link expired" error with link back to `/forgot-password`
+5. User sets new password → `POST /auth/set-password` (Bearer: recovery token)
+6. On success → `navigate('/?message=password-updated', { replace: true })`
+7. Landing.tsx shows green "Your password has been updated" banner; URL param cleared immediately
+
+## Organisation Onboarding Flow
+
+Admins manage organisations from `/admin/organizations`:
+
+1. Create an organisation → creates a root node automatically
+2. Add child nodes to build the org tree (department, region, team, etc.)
+3. Add employees to any node → employee receives `org_welcome` email with 24-hour activation link → redirects to `/register`
+4. Link the organisation to a cohort from `/admin/cohorts/:id` → **Enrol from Org** modal
+5. Enrol employees by scope (whole org / specific node + descendants) or by individual selection
 
 ## Related
 
