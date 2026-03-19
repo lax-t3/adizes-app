@@ -42,9 +42,6 @@ export function ResetPassword() {
               <CardDescription>This password reset link has expired or is invalid.</CardDescription>
             </CardHeader>
             <CardContent>
-              <div role="alert" className="rounded-md bg-red-50 border border-red-200 px-4 py-4 text-sm text-red-600 mb-6">
-                This password reset link has expired or is invalid.
-              </div>
               <Link
                 to="/forgot-password"
                 className="text-sm font-medium text-primary hover:text-primary-dark transition-colors"

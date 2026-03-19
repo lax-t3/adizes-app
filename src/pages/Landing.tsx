@@ -26,9 +26,10 @@ export function Landing() {
   // Clear the ?message query param from the URL after reading it
   useEffect(() => {
     if (showPasswordUpdated) {
+      // Clear ?message=password-updated from URL so it doesn't reappear on refresh
       navigate('/', { replace: true });
     }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [navigate, showPasswordUpdated]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
