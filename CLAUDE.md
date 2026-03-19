@@ -91,6 +91,7 @@ docker exec -i supabase_db_adizes-backend psql -U postgres -d postgres < migrati
 docker exec -i supabase_db_adizes-backend psql -U postgres -d postgres < migrations/004_email_settings.sql
 docker exec -i supabase_db_adizes-backend psql -U postgres -d postgres < migrations/005_ranking_scoring.sql
 docker exec -i supabase_db_adizes-backend psql -U postgres -d postgres < migrations/006_cohort_scoped_assessments.sql
+docker exec -i supabase_db_adizes-backend psql -U postgres -d postgres < migrations/007_organizations.sql
 
 # 4. Create test users (REQUIRED after every supabase start — users reset)
 SK="<SUPABASE_SERVICE_ROLE_KEY from .env>"
@@ -120,16 +121,20 @@ cd /Users/vrln/adizes-frontend && npm run dev
 
 ## Production Architecture
 ```
-┌─────────────────────────────────────────────────────┐
-│                   PRODUCTION                        │
-├─────────────────┬──────────────────┬────────────────┤
-│   FRONTEND      │    BACKEND       │   DATABASE     │
-│   Netlify       │  Render.com      │ Supabase Cloud │
-│                 │  (or AWS EC2)    │                │
-│ React + Vite    │  FastAPI Docker  │ PostgreSQL     │
-│ adizes-frontend │  adizes-backend  │ Auth + Storage │
-│ branch → Netlify│  branch → Render │ supabase.com   │
-└─────────────────┴──────────────────┴────────────────┘
+┌──────────────────────────────────────────────────────────────┐
+│                        PRODUCTION                            │
+├─────────────────┬──────────────────┬────────────────────────┤
+│   FRONTEND      │    BACKEND       │   DATABASE / STORAGE   │
+│   Netlify       │  AWS App Runner  │ Supabase Cloud         │
+│                 │  ← ECR image     │                        │
+│ React + Vite    │  FastAPI Docker  │ PostgreSQL             │
+│ adizes-frontend │  adizes-backend  │ Auth + Storage         │
+│ branch → Netlify│  ECR push →      │ supabase.com           │
+│                 │  App Runner      ├────────────────────────┤
+│                 │                  │   PDF STORAGE          │
+│                 │  PDF Lambda      │ S3 (adizes-pdf-reports)│
+│                 │  ← ECR image     │ Lambda writes PDF here │
+└─────────────────┴──────────────────┴────────────────────────┘
 ```
 
 ### Production Deploy Steps
@@ -139,31 +144,54 @@ cd /Users/vrln/adizes-frontend && npm run dev
 2. Set branch: `adizes-frontend`
 3. Build command: `npm run build`
 4. Publish directory: `dist`
-5. Set env var: `VITE_API_URL=https://your-render-backend.onrender.com`
+5. Set env var: `VITE_API_URL=https://<app-runner-url>`
 
-#### Backend → Render.com
-1. New Web Service → connect `lax-t3/adizes-app`, branch `adizes-backend`
-2. Docker runtime (uses `Dockerfile` automatically)
-3. Set env vars (from Supabase Cloud dashboard):
-   - `SUPABASE_URL`
-   - `SUPABASE_ANON_KEY`
-   - `SUPABASE_SERVICE_ROLE_KEY`
-   - `SUPABASE_JWT_SECRET`
-   - `FRONTEND_URL=https://your-netlify-app.netlify.app`
+#### Backend → AWS App Runner (via ECR)
+App Runner pulls the Docker image from ECR. **Git push alone does NOT redeploy** — you must
+push a new image to ECR, then App Runner auto-deploys (if auto-deploy is enabled on the service).
 
-#### Backend → AWS EC2 (alternative)
-1. Launch EC2 instance (t3.small minimum, t3.medium recommended)
-2. Install Docker: `sudo apt-get install docker.io`
-3. Pull image from Docker Hub or build on instance
-4. Run: `docker run -d -p 80:8000 --env-file .env adizes-backend`
-5. Set up Nginx as reverse proxy + SSL (Let's Encrypt)
+```bash
+# From adizes-backend directory
+AWS_ACCOUNT_ID=<your-account-id>
+AWS_REGION=ap-south-1
+ECR_REPO=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/adizes-backend
+
+# Authenticate Docker to ECR
+aws ecr get-login-password --region $AWS_REGION | \
+  docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
+
+# Build for linux/amd64 (required if building on Apple Silicon)
+docker buildx build --platform linux/amd64 --provenance=false -t $ECR_REPO:latest .
+
+# Push — App Runner auto-deploys on new image push
+docker push $ECR_REPO:latest
+```
+
+App Runner env vars (set in AWS Console → App Runner service → Configuration):
+- `SUPABASE_URL`
+- `SUPABASE_ANON_KEY`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `SUPABASE_JWT_SECRET`
+- `FRONTEND_URL=https://<netlify-app>.netlify.app`
+- `AWS_ACCESS_KEY_ID` (IAM user key to invoke PDF Lambda)
+- `AWS_SECRET_ACCESS_KEY`
+- `AWS_REGION=ap-south-1`
+- `PDF_LAMBDA_FUNCTION_NAME=adizes-pdf-generator`
+
+#### PDF Lambda → AWS Lambda (via ECR)
+```bash
+cd lambda/pdf-generator
+export SUPABASE_URL=https://your-project.supabase.co
+export SUPABASE_SERVICE_ROLE_KEY=<service-role-key>
+export S3_BUCKET_NAME=adizes-pdf-reports
+./deploy.sh
+```
 
 #### Database → Supabase Cloud
 1. Create project at supabase.com
-2. Run `migrations/001_initial_schema.sql` in SQL Editor
-3. Run `migrations/002_seed_questions.sql` in SQL Editor
-4. Copy Project URL, anon key, service role key, JWT secret to Render/EC2 env vars
-5. Set admin role: `UPDATE auth.users SET app_metadata = '{"role":"admin"}' WHERE email = 'admin@yourorg.com'`
+2. Run all migrations in SQL Editor (001 through 007)
+3. Copy Project URL, anon key, service role key, JWT secret to App Runner env vars
+4. Set admin role: `UPDATE auth.users SET app_metadata = '{"role":"admin"}' WHERE email = 'admin@yourorg.com'`
 
 ## Key Decisions
 - Frontend calls FastAPI for ALL API calls (auth, assessment, results, admin)
@@ -180,6 +208,21 @@ cd /Users/vrln/adizes-frontend && npm run dev
 - **Enrollment email — three cases**: `enroll_user` / `bulk_enroll` / `resend_enrollment_invite`
   check `email_confirmed_at`: new/unactivated users get `user_enrolled` (invite/recovery link);
   already-activated users get `cohort_enrollment_existing` (dashboard link only).
+- **Organisation module** (migration 007): four tables — `organizations`, `org_nodes`, `org_employees`,
+  `cohort_organizations`. Orgs are independent of cohorts until explicitly linked. Employees are added
+  to org nodes and receive `org_welcome` emails with activation links (`redirect_to=/register`). After
+  linking an org to a cohort, admins can enrol employees into that cohort by scope or individually.
+- **Org employee activation redirect**: `_add_employee_to_node` in `admin.py` calls
+  `generate_link(type="invite"/"recovery", options={"redirect_to": f"{settings.frontend_url}/register"})`.
+  The `redirect_to` option controls where Supabase redirects after token verification — it does NOT
+  change the magic link URL in the email itself (`lr.properties.action_link`).
+- **Forgot-password flow**: `POST /auth/forgot-password` (public, no JWT). Requires SMTP configured.
+  Uses `supabase_admin.auth.admin.list_users()` (no filter param — linear search). Returns
+  `{"status": "sent"}` for unknown emails (anti-enumeration). Returns `{"status": "not_activated"}`
+  if user exists but `email_confirmed_at is None`. For activated users: generates recovery link with
+  `redirect_to=/reset-password`, sends `password_reset` email. Frontend: `/forgot-password` page +
+  `/reset-password` page (reads `access_token` + `type=recovery` from URL hash, passes token as Bearer
+  header to `POST /auth/set-password`).
 
 ## Known Gotchas (Local Dev)
 
