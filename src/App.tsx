@@ -22,6 +22,7 @@ import { AdminOrgDetail } from "./pages/AdminOrgDetail";
 import { UserHelp } from "./pages/UserHelp";
 import { SetPassword } from "./pages/SetPassword";
 import { ForgotPassword } from "./pages/ForgotPassword";
+import { ResetPassword } from "./pages/ResetPassword";
 import { PolicyPage } from "./pages/PolicyPage";
 import { Navbar } from "./components/layout/Navbar";
 import { Footer } from "./components/layout/Footer";
@@ -75,6 +76,7 @@ export default function App() {
         <Route path="/register" element={<Register />} />
         <Route path="/set-password" element={<SetPassword />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/terms" element={<PolicyPage slug="terms" />} />
         <Route path="/privacy" element={<PolicyPage slug="privacy" />} />
         <Route path="/refund" element={<PolicyPage slug="refund" />} />

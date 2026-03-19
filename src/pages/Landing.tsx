@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { useNavigate, Link, useLocation } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { useNavigate, Link, useLocation, useSearchParams } from "react-router-dom";
 import { Footer } from "@/components/layout/Footer";
 import { useAuthStore } from "@/store/authStore";
 import { Button } from "@/components/ui/Button";
@@ -18,6 +18,17 @@ export function Landing() {
   const loginStore = useAuthStore((state) => state.login);
 
   const isAdminRoute = location.pathname === "/admin";
+  const [searchParams] = useSearchParams();
+  // Capture once into state so we can clear the URL without losing the banner
+  const [showPasswordUpdated] = useState(
+    () => searchParams.get('message') === 'password-updated'
+  );
+  // Clear the ?message query param from the URL after reading it
+  useEffect(() => {
+    if (showPasswordUpdated) {
+      navigate('/', { replace: true });
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -137,6 +148,11 @@ export function Landing() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="px-0">
+                {showPasswordUpdated && (
+                  <div role="alert" className="mb-5 rounded-md bg-green-50 border border-green-200 px-4 py-3 text-sm text-green-700">
+                    Your password has been updated. Please log in.
+                  </div>
+                )}
                 <form onSubmit={handleLogin} className="space-y-5">
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-gray-900" htmlFor="email">
@@ -157,9 +173,9 @@ export function Landing() {
                       <label className="text-sm font-medium text-gray-900" htmlFor="password">
                         Password
                       </label>
-                      <a href="#" className="text-sm font-medium text-primary hover:text-primary-dark">
+                      <Link to="/forgot-password" className="text-sm font-medium text-primary hover:text-primary-dark">
                         Forgot password?
-                      </a>
+                      </Link>
                     </div>
                     <input
                       id="password"
