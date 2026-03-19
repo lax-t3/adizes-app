@@ -128,3 +128,66 @@ export interface CohortDetailResponse {
   respondents: RespondentSummary[];
   team_scores: TeamScores | null;
 }
+
+// ── Organisation types ────────────────────────────────────────
+
+export interface OrgNode {
+  id: string;
+  org_id: string;
+  parent_id: string | null;
+  is_root: boolean;
+  path: string;
+  name: string;
+  node_type: string | null;
+  display_order: number;
+  employee_count: number;
+  children: OrgNode[];
+}
+
+export interface OrgSummary {
+  id: string;
+  name: string;
+  description: string | null;
+  node_count: number;
+  employee_count: number;
+  created_at: string;
+}
+
+export interface OrgDetail {
+  id: string;
+  name: string;
+  description: string | null;
+  created_at: string;
+  linked_cohort_count: number;
+  tree: OrgNode[];  // single root element
+}
+
+export interface OrgEmployeeSummary {
+  id: string;         // org_employees.id — use for DELETE
+  user_id: string;
+  name: string;
+  email: string;
+  title: string | null;
+  employee_id: string | null;
+  status: 'active' | 'pending';
+  node_id: string;
+  joined_at: string;
+}
+
+export interface LinkedOrgSummary {
+  org_id: string;
+  name: string;
+  employee_count: number;
+  linked_at: string;
+}
+
+export interface BulkUploadResult {
+  created: number;
+  skipped: number;
+  errors: { row: number; email: string; reason: string }[];
+}
+
+export interface EnrollFromOrgResult {
+  enrolled: number;
+  skipped: number;
+}
