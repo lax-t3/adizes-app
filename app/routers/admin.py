@@ -195,6 +195,38 @@ def get_cohort(cohort_id: str, admin: dict = Depends(require_admin)):
     )
 
 
+def _enroll_single_user(cohort_id: str, user_id: str, email: str,
+                        name: str | None, email_confirmed_at) -> None:
+    """Insert cohort_members row and send appropriate enrolment email."""
+    supabase_admin.table("cohort_members").insert(
+        {"cohort_id": cohort_id, "user_id": user_id}
+    ).execute()
+
+    cohort = supabase_admin.table("cohorts").select("name").eq("id", cohort_id).single().execute().data
+    cohort_name = cohort["name"]
+    display_name = name or email
+
+    if not smtp_configured():
+        return
+
+    if email_confirmed_at is None:
+        try:
+            lr = supabase_admin.auth.admin.generate_link({"type": "recovery", "email": email})
+            invite_link = lr.properties.action_link
+        except Exception:
+            invite_link = settings.frontend_url
+        send_template_email("user_enrolled", email, {
+            "user_name": display_name, "cohort_name": cohort_name,
+            "platform_name": "Adizes India", "platform_url": settings.frontend_url,
+            "invite_link": invite_link,
+        })
+    else:
+        send_template_email("cohort_enrollment_existing", email, {
+            "user_name": display_name, "cohort_name": cohort_name,
+            "platform_name": "Adizes India", "platform_url": settings.frontend_url,
+        })
+
+
 @router.post("/cohorts/{cohort_id}/members", status_code=status.HTTP_201_CREATED)
 def enroll_user(cohort_id: str, body: EnrollUserRequest, admin: dict = Depends(require_admin)):
     """Enroll a user into a cohort by email. If they have no account, invite them first."""
@@ -238,58 +270,25 @@ def enroll_user(cohort_id: str, body: EnrollUserRequest, admin: dict = Depends(r
     if existing.data:
         raise HTTPException(status_code=409, detail="User is already a member of this cohort")
 
-    supabase_admin.table("cohort_members").insert({
-        "cohort_id": cohort_id,
-        "user_id": str(target.id),
-    }).execute()
-
-    # Determine activation state for existing users
-    is_activated = False
-    if not invited_new:
+    # Determine email_confirmed_at for new vs existing users
+    if invited_new:
+        email_confirmed_at = None
+    else:
         try:
             fetched = supabase_admin.auth.admin.get_user_by_id(str(target.id)).user
-            is_activated = getattr(fetched, "email_confirmed_at", None) is not None
+            email_confirmed_at = getattr(fetched, "email_confirmed_at", None)
         except Exception:
-            pass
+            email_confirmed_at = None
 
-        if not is_activated:
-            # User exists but hasn't completed activation — send fresh recovery link
-            try:
-                lr = supabase_admin.auth.admin.generate_link({
-                    "type": "recovery",
-                    "email": body.email,
-                    "options": {"redirect_to": f"{settings.frontend_url}/register"},
-                })
-                invite_link_val = lr.properties.action_link
-            except Exception:
-                pass
+    meta = getattr(target, "user_metadata", None) or {}
+    user_name_val = meta.get("name", "") or None
 
-    # Fire-and-forget enrollment email
     try:
-        _cohort_name_resp = supabase_admin.table("cohorts").select("name").eq("id", cohort_id).single().execute()
-        cohort_name_val = (_cohort_name_resp.data.get("name", "") if _cohort_name_resp.data else "")
-        meta = getattr(target, "user_metadata", None) or {}
-        user_name_val = meta.get("name", "") or body.email
-
-        if is_activated:
-            # Activated user: dashboard link only (no invite_link needed)
-            send_template_email("cohort_enrollment_existing", body.email, {
-                "user_name": user_name_val,
-                "user_email": body.email,
-                "cohort_name": cohort_name_val,
-                "platform_name": "Adizes India",
-                "platform_url": settings.frontend_url,
-            })
-        else:
-            # New or not-yet-activated user: activation/invite link
-            send_template_email("user_enrolled", body.email, {
-                "user_name": user_name_val,
-                "user_email": body.email,
-                "cohort_name": cohort_name_val,
-                "invite_link": invite_link_val,
-                "platform_name": "Adizes India",
-                "platform_url": settings.frontend_url,
-            })
+        _enroll_single_user(
+            cohort_id=cohort_id, user_id=str(target.id),
+            email=body.email, name=user_name_val,
+            email_confirmed_at=email_confirmed_at,
+        )
     except Exception:
         pass  # Non-fatal — enrollment succeeded regardless
 
@@ -1163,3 +1162,132 @@ def remove_employee(org_id: str, org_employee_id: str, admin: dict = Depends(req
     """Remove employee from org. Does NOT delete auth user or cohort memberships."""
     supabase_admin.table("org_employees").delete()\
         .eq("id", org_employee_id).eq("org_id", org_id).execute()
+
+
+# ─────────────────────────────────────────────────────────────
+# Cohort ↔ Organisation linking
+# ─────────────────────────────────────────────────────────────
+
+@router.get("/cohorts/{cohort_id}/organizations", response_model=list[LinkedOrgSummary])
+def list_cohort_orgs(cohort_id: str, admin: dict = Depends(require_admin)):
+    rows = (
+        supabase_admin.table("cohort_organizations").select("org_id, linked_at")
+        .eq("cohort_id", cohort_id).execute().data or []
+    )
+    result = []
+    for r in rows:
+        org = supabase_admin.table("organizations").select("name").eq("id", r["org_id"]).single().execute().data
+        emp_count = len(
+            supabase_admin.table("org_employees").select("id").eq("org_id", r["org_id"]).execute().data or []
+        )
+        result.append(LinkedOrgSummary(
+            org_id=r["org_id"], name=org["name"],
+            employee_count=emp_count, linked_at=str(r["linked_at"]),
+        ))
+    return result
+
+
+@router.post("/cohorts/{cohort_id}/organizations", status_code=201)
+def link_org_to_cohort(cohort_id: str, body: LinkOrgRequest, admin: dict = Depends(require_admin)):
+    try:
+        supabase_admin.table("cohort_organizations").insert(
+            {"cohort_id": cohort_id, "org_id": body.org_id}
+        ).execute()
+    except Exception as e:
+        if "duplicate" in str(e).lower() or "unique" in str(e).lower():
+            raise HTTPException(status_code=409, detail="Organisation already linked to this cohort")
+        raise HTTPException(status_code=400, detail=str(e))
+    return {"linked": True}
+
+
+@router.delete("/cohorts/{cohort_id}/organizations/{org_id}", status_code=204)
+def unlink_org_from_cohort(cohort_id: str, org_id: str, admin: dict = Depends(require_admin)):
+    supabase_admin.table("cohort_organizations").delete()\
+        .eq("cohort_id", cohort_id).eq("org_id", org_id).execute()
+
+
+@router.get("/organizations/{org_id}/cohorts", response_model=list[LinkedCohortSummary])
+def list_org_cohorts(org_id: str, admin: dict = Depends(require_admin)):
+    rows = (
+        supabase_admin.table("cohort_organizations").select("cohort_id, linked_at")
+        .eq("org_id", org_id).execute().data or []
+    )
+    result = []
+    for r in rows:
+        cohort = supabase_admin.table("cohorts").select("name").eq("id", r["cohort_id"]).single().execute().data
+        result.append(LinkedCohortSummary(
+            cohort_id=r["cohort_id"], name=cohort["name"], linked_at=str(r["linked_at"]),
+        ))
+    return result
+
+
+# ─────────────────────────────────────────────────────────────
+# Enrol from Org
+# ─────────────────────────────────────────────────────────────
+
+@router.post("/cohorts/{cohort_id}/enroll-from-org", response_model=EnrollFromOrgResult)
+def enroll_from_org(cohort_id: str, body: EnrollFromOrgRequest, admin: dict = Depends(require_admin)):
+    # Resolve which user_ids to enrol
+    if body.user_ids:
+        target_user_ids = body.user_ids
+    else:
+        # Resolve by scope
+        if body.node_id and body.include_descendants:
+            node = (
+                supabase_admin.table("org_nodes").select("path")
+                .eq("id", body.node_id).single().execute()
+            )
+            node_path = node.data["path"]
+            subtree_ids = [
+                n["id"] for n in (
+                    supabase_admin.table("org_nodes").select("id")
+                    .eq("org_id", body.org_id)
+                    .or_(f"id.eq.{body.node_id},path.like.{node_path}/%")
+                    .execute().data or []
+                )
+            ]
+            emp_rows = (
+                supabase_admin.table("org_employees").select("user_id")
+                .in_("node_id", subtree_ids).execute().data or []
+            )
+        elif body.node_id and not body.include_descendants:
+            emp_rows = (
+                supabase_admin.table("org_employees").select("user_id")
+                .eq("node_id", body.node_id).execute().data or []
+            )
+        else:
+            # Entire org
+            emp_rows = (
+                supabase_admin.table("org_employees").select("user_id")
+                .eq("org_id", body.org_id).execute().data or []
+            )
+        target_user_ids = [e["user_id"] for e in emp_rows]
+
+    if not target_user_ids:
+        return EnrollFromOrgResult(enrolled=0, skipped=0)
+
+    # Check existing cohort members
+    existing = {
+        m["user_id"] for m in (
+            supabase_admin.table("cohort_members").select("user_id")
+            .eq("cohort_id", cohort_id).in_("user_id", target_user_ids).execute().data or []
+        )
+    }
+
+    to_enrol = [uid for uid in target_user_ids if uid not in existing]
+    skipped = len(target_user_ids) - len(to_enrol)
+    enrolled = 0
+
+    for user_id in to_enrol:
+        try:
+            u = supabase_admin.auth.admin.get_user_by_id(user_id).user
+            if not u:
+                continue
+            _enroll_single_user(cohort_id=cohort_id, user_id=user_id,
+                                email=u.email, name=None,
+                                email_confirmed_at=u.email_confirmed_at)
+            enrolled += 1
+        except Exception as e:
+            logger.error(f"[enroll-from-org] Failed for user {user_id}: {e}")
+
+    return EnrollFromOrgResult(enrolled=enrolled, skipped=skipped)
