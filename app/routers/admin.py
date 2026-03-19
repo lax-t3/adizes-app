@@ -1038,6 +1038,7 @@ def _add_employee_to_node(
                 "type": "invite",
                 "email": email,
                 "data": {"name": name},
+                "options": {"redirect_to": f"{settings.frontend_url}/register"},
             })
             activation_url = lr.properties.action_link
             target = supabase_admin.auth.admin.get_user_by_id(lr.user.id).user
@@ -1049,6 +1050,7 @@ def _add_employee_to_node(
             lr = supabase_admin.auth.admin.generate_link({
                 "type": "recovery",
                 "email": email,
+                "options": {"redirect_to": f"{settings.frontend_url}/register"},
             })
             activation_url = lr.properties.action_link
         except Exception:
