@@ -172,8 +172,26 @@ def _org_welcome_html() -> str:
       <p style="margin:0 0 16px;font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#444444;line-height:1.75;"><strong style="color:#1a1a1a;">{{{{org_name}}}}</strong> has registered you on the <strong style="color:#1a1a1a;">Adizes PAEI Assessment Platform</strong>.</p>
       <p style="margin:0 0 32px;font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#444444;line-height:1.75;">Click the button below to activate your account and set your password. Your administrator will invite you to an assessment cohort separately.</p>
       {cta}
+      <p style="margin:32px 0 0;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#666666;line-height:1.75;">This activation link expires in <strong>24 hours</strong>. If it has expired, please contact your administrator and ask them to resend your welcome email from the platform. Once your account is activated, you can reset your password at any time from the login page.</p>
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:32px 0 24px;"><tr><td style="border-top:1px solid #e8e8e8;font-size:1px;line-height:1px;">&nbsp;</td></tr></table>
       <p style="margin:0;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#666666;line-height:1.75;">If you did not expect this email, you can safely ignore it.</p>
+    </td>
+  </tr>"""
+    return _build_template("user_email", body)
+
+
+def _password_reset_html() -> str:
+    cta = _cta("{{reset_link}}", "Set New Password")
+    body = f"""
+  <!-- Body -->
+  <tr>
+    <td style="padding:40px 48px 36px;" bgcolor="#ffffff">
+      <p style="margin:0 0 20px;font-family:Georgia,'Times New Roman',serif;font-size:22px;color:#1a1a1a;font-weight:400;line-height:1.35;">Hello {{{{user_name}}}},</p>
+      <p style="margin:0 0 16px;font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#444444;line-height:1.75;">We received a request to reset the password for your account on <strong style="color:#1a1a1a;">{{{{platform_name}}}}</strong>.</p>
+      <p style="margin:0 0 32px;font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#444444;line-height:1.75;">Click the button below to set a new password. This link is valid for <strong>1 hour</strong>.</p>
+      {cta}
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:32px 0 24px;"><tr><td style="border-top:1px solid #e8e8e8;font-size:1px;line-height:1px;">&nbsp;</td></tr></table>
+      <p style="margin:0;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#666666;line-height:1.75;">If you did not request a password reset, you can safely ignore this email. Your password will not be changed.</p>
     </td>
   </tr>"""
     return _build_template("user_email", body)
@@ -208,6 +226,12 @@ DEFAULT_TEMPLATES = {
         "id": "org_welcome",
         "subject": "You've been added to {{org_name}} on the Adizes PAEI Platform",
         "html_body": _org_welcome_html(),
+    },
+    "password_reset": {
+        "id": "password_reset",
+        "name": "Password Reset",
+        "subject": "Reset your {{platform_name}} password",
+        "html_body": _password_reset_html(),
     },
 }
 
