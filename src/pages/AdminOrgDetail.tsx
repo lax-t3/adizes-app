@@ -190,10 +190,12 @@ export function AdminOrgDetail() {
 
   const downloadTemplate = () => {
     const csv = 'name,email,title,employee_id,node_path\nJane Smith,jane@example.com,Manager,E001,\n';
+    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
     const a = document.createElement('a');
-    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+    a.href = url;
     a.download = 'employee_upload_template.csv';
     a.click();
+    URL.revokeObjectURL(url);
   };
 
   const selectedNode = currentOrg && selectedNodeId
@@ -586,7 +588,7 @@ export function AdminOrgDetail() {
 
               {/* Column table */}
               <div>
-                <p className="text-xs font-bold text-gray-900 mb-2">Required columns</p>
+                <p className="text-xs font-bold text-gray-900 mb-2">CSV columns</p>
                 <table className="w-full text-xs border-collapse">
                   <thead>
                     <tr className="bg-gray-50">
