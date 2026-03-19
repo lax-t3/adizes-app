@@ -13,6 +13,14 @@ from app.services.export_service import generate_cohort_csv
 from app.services.email_service import send_template_email, smtp_configured
 import uuid
 import io
+from app.schemas.org import (
+    CreateOrgRequest, UpdateOrgRequest, OrgSummary, OrgDetail, OrgNode,
+    CreateNodeRequest, UpdateNodeRequest,
+    AddEmployeeRequest, OrgEmployeeSummary, BulkUploadResult,
+    LinkOrgRequest, LinkedOrgSummary, LinkedCohortSummary,
+    EnrollFromOrgRequest, EnrollFromOrgResult,
+)
+import csv, io as _io
 
 router = APIRouter()
 
@@ -704,3 +712,223 @@ def _compute_team_scores(all_scaled: list) -> TeamScores:
                 dist[r] += 1
 
     return TeamScores(average_scaled=avg, style_distribution=dist)
+
+
+# ─────────────────────────────────────────────────────────────
+# Org module helpers
+# ─────────────────────────────────────────────────────────────
+
+def _build_org_tree(flat_nodes: list[dict], employee_counts: dict) -> list[dict]:
+    """Convert flat node list into nested tree. Returns list with single root element."""
+    node_map = {}
+    for n in flat_nodes:
+        node_map[n["id"]] = {**n, "employee_count": employee_counts.get(n["id"], 0), "children": []}
+
+    roots = []
+    for n in flat_nodes:
+        entry = node_map[n["id"]]
+        if n["parent_id"] is None:
+            roots.append(entry)
+        else:
+            parent = node_map.get(n["parent_id"])
+            if parent:
+                parent["children"].append(entry)
+
+    # Sort children by display_order
+    def _sort(node):
+        node["children"].sort(key=lambda x: x["display_order"])
+        for child in node["children"]:
+            _sort(child)
+    for r in roots:
+        _sort(r)
+    return roots
+
+
+def _resolve_node_path(node_path: str, flat_nodes: list[dict]) -> str | None:
+    """
+    Resolve a "/"-separated name chain to a node id.
+    e.g. "North India Division/Sales" -> "dep-uuid"
+    Matching is case-insensitive and trimmed. Root node is excluded from the path.
+    Returns None if not found or path is empty.
+    """
+    if not node_path or not node_path.strip():
+        return None
+    parts = [p.strip().lower() for p in node_path.strip("/").split("/")]
+    # Build parent→children map
+    children_map: dict[str | None, list[dict]] = {}
+    for n in flat_nodes:
+        children_map.setdefault(n["parent_id"], []).append(n)
+
+    # Root's children are the first level
+    root = next((n for n in flat_nodes if n["is_root"]), None)
+    if not root:
+        return None
+
+    current_candidates = children_map.get(root["id"], [])
+    current_id = None
+    for part in parts:
+        match = next(
+            (n for n in sorted(current_candidates, key=lambda x: x["display_order"])
+             if n["name"].strip().lower() == part),
+            None,
+        )
+        if not match:
+            return None
+        current_id = match["id"]
+        current_candidates = children_map.get(current_id, [])
+    return current_id
+
+
+# ─────────────────────────────────────────────────────────────
+# Organization CRUD
+# ─────────────────────────────────────────────────────────────
+
+@router.get("/organizations", response_model=list[OrgSummary])
+def list_organizations(admin: dict = Depends(require_admin)):
+    orgs = supabase_admin.table("organizations").select("*").order("created_at", desc=True).execute()
+    result = []
+    for org in (orgs.data or []):
+        node_count = len(
+            supabase_admin.table("org_nodes").select("id").eq("org_id", org["id"]).execute().data or []
+        )
+        emp_count = len(
+            supabase_admin.table("org_employees").select("id").eq("org_id", org["id"]).execute().data or []
+        )
+        result.append(OrgSummary(
+            id=org["id"], name=org["name"], description=org.get("description"),
+            node_count=node_count, employee_count=emp_count, created_at=org["created_at"],
+        ))
+    return result
+
+
+@router.post("/organizations", response_model=OrgDetail, status_code=201)
+def create_organization(body: CreateOrgRequest, admin: dict = Depends(require_admin)):
+    org = supabase_admin.table("organizations").insert(
+        {"name": body.name, "description": body.description}
+    ).execute().data[0]
+
+    org_id = org["id"]
+    root_id = str(uuid.uuid4())
+    root_path = f"{org_id}/{root_id}"
+    supabase_admin.table("org_nodes").insert({
+        "id": root_id, "org_id": org_id, "parent_id": None,
+        "is_root": True, "path": root_path,
+        "name": body.name, "node_type": "company", "display_order": 0,
+    }).execute()
+
+    return _get_org_detail(org_id)
+
+
+@router.get("/organizations/{org_id}", response_model=OrgDetail)
+def get_organization(org_id: str, admin: dict = Depends(require_admin)):
+    org = supabase_admin.table("organizations").select("*").eq("id", org_id).maybe_single().execute()
+    if not org.data:
+        raise HTTPException(status_code=404, detail="Organisation not found")
+    return _get_org_detail(org_id)
+
+
+@router.put("/organizations/{org_id}", response_model=OrgDetail)
+def update_organization(org_id: str, body: UpdateOrgRequest, admin: dict = Depends(require_admin)):
+    update_data = {k: v for k, v in body.model_dump().items() if v is not None}
+    if not update_data:
+        raise HTTPException(status_code=400, detail="Nothing to update")
+    supabase_admin.table("organizations").update(update_data).eq("id", org_id).execute()
+    return _get_org_detail(org_id)
+
+
+@router.delete("/organizations/{org_id}", status_code=204)
+def delete_organization(org_id: str, admin: dict = Depends(require_admin)):
+    emp_check = supabase_admin.table("org_employees").select("id").eq("org_id", org_id).limit(1).execute()
+    if emp_check.data:
+        raise HTTPException(status_code=400, detail="Remove all employees before deleting this organisation")
+    supabase_admin.table("organizations").delete().eq("id", org_id).execute()
+
+
+# NOTE: _get_org_detail is called by create_organization (above) and the GET/PUT endpoints.
+# Python resolves module-level names at call time — forward references are fine as long as
+# all these functions are in the same file.
+def _get_org_detail(org_id: str) -> OrgDetail:
+    """Shared helper: fetch org + full tree + linked cohort count."""
+    org = supabase_admin.table("organizations").select("*").eq("id", org_id).single().execute().data
+    flat_nodes = (
+        supabase_admin.table("org_nodes").select("*")
+        .eq("org_id", org_id).order("display_order").execute().data or []
+    )
+    emp_rows = (
+        supabase_admin.table("org_employees").select("id, node_id")
+        .eq("org_id", org_id).execute().data or []
+    )
+    emp_counts: dict[str, int] = {}
+    for e in emp_rows:
+        emp_counts[e["node_id"]] = emp_counts.get(e["node_id"], 0) + 1
+
+    cohort_count = len(
+        supabase_admin.table("cohort_organizations").select("cohort_id")
+        .eq("org_id", org_id).execute().data or []
+    )
+    tree = _build_org_tree(flat_nodes, emp_counts)
+    return OrgDetail(
+        id=org["id"], name=org["name"], description=org.get("description"),
+        created_at=org["created_at"], linked_cohort_count=cohort_count, tree=tree,
+    )
+
+
+# ─────────────────────────────────────────────────────────────
+# Node Management
+# ─────────────────────────────────────────────────────────────
+
+@router.post("/organizations/{org_id}/nodes", status_code=201)
+def create_node(org_id: str, body: CreateNodeRequest, admin: dict = Depends(require_admin)):
+    parent = (
+        supabase_admin.table("org_nodes").select("*")
+        .eq("id", body.parent_id).eq("org_id", org_id).maybe_single().execute()
+    )
+    if not parent.data:
+        raise HTTPException(status_code=404, detail="Parent node not found in this organisation")
+    new_id = str(uuid.uuid4())
+    new_path = f"{parent.data['path']}/{new_id}"
+    supabase_admin.table("org_nodes").insert({
+        "id": new_id, "org_id": org_id, "parent_id": body.parent_id,
+        "is_root": False, "path": new_path, "name": body.name,
+        "node_type": body.node_type, "display_order": body.display_order,
+    }).execute()
+    return {"id": new_id, "path": new_path}
+
+
+@router.put("/organizations/{org_id}/nodes/{node_id}")
+def update_node(org_id: str, node_id: str, body: UpdateNodeRequest, admin: dict = Depends(require_admin)):
+    update_data = {k: v for k, v in body.model_dump().items() if v is not None}
+    if not update_data:
+        raise HTTPException(status_code=400, detail="Nothing to update")
+    supabase_admin.table("org_nodes").update(update_data).eq("id", node_id).eq("org_id", org_id).execute()
+    return {"updated": True}
+
+
+@router.delete("/organizations/{org_id}/nodes/{node_id}", status_code=204)
+def delete_node(org_id: str, node_id: str, admin: dict = Depends(require_admin)):
+    node = (
+        supabase_admin.table("org_nodes").select("*")
+        .eq("id", node_id).eq("org_id", org_id).maybe_single().execute()
+    )
+    if not node.data:
+        raise HTTPException(status_code=404, detail="Node not found")
+    if node.data["is_root"]:
+        raise HTTPException(status_code=400, detail="Cannot delete the root node of an organisation")
+
+    # Check this node and all descendants for employees
+    node_path = node.data["path"]
+    subtree_ids = [
+        n["id"] for n in (
+            supabase_admin.table("org_nodes").select("id")
+            .eq("org_id", org_id)
+            .or_(f"id.eq.{node_id},path.like.{node_path}/%")
+            .execute().data or []
+        )
+    ]
+    emp_check = (
+        supabase_admin.table("org_employees").select("id")
+        .in_("node_id", subtree_ids).limit(1).execute()
+    )
+    if emp_check.data:
+        raise HTTPException(status_code=400, detail="Node or sub-nodes contain employees — remove them first")
+    supabase_admin.table("org_nodes").delete().eq("id", node_id).execute()
