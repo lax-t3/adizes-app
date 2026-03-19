@@ -36,6 +36,7 @@ docker exec -i $DB psql -U postgres -d postgres < migrations/003_add_user_name.s
 docker exec -i $DB psql -U postgres -d postgres < migrations/004_email_settings.sql
 docker exec -i $DB psql -U postgres -d postgres < migrations/005_ranking_scoring.sql
 docker exec -i $DB psql -U postgres -d postgres < migrations/006_cohort_scoped_assessments.sql
+docker exec -i $DB psql -U postgres -d postgres < migrations/007_organizations.sql
 
 # 3. Copy and edit env (use http://127.0.0.1:54321 for local Supabase)
 cp .env.example .env
@@ -208,12 +209,13 @@ adizes-backend/
     auth.py                    # JWT validation dependency
     routers/
       auth.py                  # Login, register, set-password, profile CRUD,
-                               #   change password, GET /auth/my-assessments
+                               #   change password, forgot-password, GET /auth/my-assessments
       assessment.py            # GET /assessment/questions, POST /assessment/submit
                                #   (fires PDF completion email + triggers Lambda PDF as BackgroundTask)
       results.py               # GET /results/:id (includes pdf_url), GET /results/:id/pdf (WeasyPrint fallback)
       admin.py                 # Cohorts, members (enroll/bulk/resend-invite/remove),
-                               #   respondents, CSV export, admin user management
+                               #   respondents, CSV export, admin user management,
+                               #   organisations + org nodes + org employees
       settings.py              # SMTP config CRUD, email template CRUD + reset
     services/
       scoring.py               # PAEI scoring engine (36-question key)
@@ -222,12 +224,14 @@ adizes-backend/
       pdf_service.py           # WeasyPrint HTML→PDF
       export_service.py        # CSV generation for admin
       email_service.py         # smtplib SMTP sending; template rendering;
-                               #   DEFAULT_TEMPLATES for 3 built-in email types
+                               #   DEFAULT_TEMPLATES for 5 built-in email types
     schemas/
-      auth.py                  # Login, register, profile, password, CohortAssessmentHistory
+      auth.py                  # Login, register, profile, password, CohortAssessmentHistory,
+                               #   ForgotPasswordRequest, ForgotPasswordResponse
       assessment.py            # Questions, submit (requires cohort_id), options
       results.py               # ResultResponse (includes pdf_url), GapDetail, Interpretation
-      admin.py                 # Cohorts, members, bulk enroll, admin users, RespondentDetail
+      admin.py                 # Cohorts, members, bulk enroll, admin users, RespondentDetail,
+                               #   Organisation, OrgNode, OrgEmployee schemas
       settings.py              # SmtpConfig, EmailTemplate CRUD
   migrations/
     001_initial_schema.sql              # Full DB schema + RLS policies
@@ -236,10 +240,16 @@ adizes-backend/
     004_email_settings.sql              # app_settings + email_templates tables
     005_ranking_scoring.sql             # Ranking-based scoring engine changes
     006_cohort_scoped_assessments.sql   # Adds cohort_id NOT NULL FK to assessments (clean-slate migration)
+    007_organizations.sql               # organisations, org_nodes, org_employees, cohort_organizations tables
+  supabase/migrations/
+    20260319000007_organizations.sql    # Supabase CLI-tracked copy of 007 (applied to cloud via supabase db push)
   tests/
     test_scoring.py
     test_gap_analysis.py
     test_api_assessment.py
+    test_org_module.py                  # Organisation CRUD, node management, employee management
+    test_forgot_password.py             # ForgotPasswordRequest/Response schema validation
+    test_email_templates.py             # password_reset and org_welcome template rendering
   templates/
     report.html                # Jinja2 PDF report template
 ```
@@ -256,6 +266,7 @@ adizes-backend/
 | GET | `/auth/profile` | JWT | Get current user profile |
 | PUT | `/auth/profile` | JWT | Update name, email, phone |
 | PUT | `/auth/password` | JWT | Change password (verifies current) |
+| POST | `/auth/forgot-password` | — | Request password reset link. Returns `{status: "sent"}` or `{status: "not_activated"}`. Always 200 (anti-enumeration). Requires SMTP configured. |
 | GET | `/auth/my-assessments` | JWT | List user's cohort enrollments + statuses |
 
 ### Assessment (`/assessment`)
@@ -287,6 +298,28 @@ adizes-backend/
 | GET | `/admin/respondents/{uid}?cohort_id=<uuid>` | Admin | Respondent results for a specific cohort. `cohort_id` query param required (400 if missing). Returns `result: null` if user hasn't submitted yet. |
 | GET | `/admin/export/{cohort_id}` | Admin | CSV export |
 
+### Admin — Organisations (`/admin`)
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET | `/admin/organizations` | Admin | List all organisations |
+| POST | `/admin/organizations` | Admin | Create organisation |
+| GET | `/admin/organizations/{id}` | Admin | Organisation detail (with root node) |
+| PUT | `/admin/organizations/{id}` | Admin | Update organisation name/description |
+| DELETE | `/admin/organizations/{id}` | Admin | Delete organisation |
+| GET | `/admin/organizations/{id}/nodes` | Admin | List all nodes in tree order |
+| POST | `/admin/organizations/{id}/nodes` | Admin | Create node (specify `parent_node_id` for non-root) |
+| PUT | `/admin/organizations/{id}/nodes/{nid}` | Admin | Rename node |
+| DELETE | `/admin/organizations/{id}/nodes/{nid}` | Admin | Delete node (cascades employees) |
+| GET | `/admin/organizations/{id}/nodes/{nid}/employees` | Admin | List employees in a node |
+| POST | `/admin/organizations/{id}/nodes/{nid}/employees` | Admin | Add employee to node (sends org_welcome email with activation link) |
+| DELETE | `/admin/organizations/{id}/nodes/{nid}/employees/{uid}` | Admin | Remove employee from node |
+| POST | `/admin/organizations/{id}/nodes/{nid}/employees/{uid}/resend-welcome` | Admin | Resend welcome activation email |
+| GET | `/admin/cohorts/{id}/organizations` | Admin | List orgs linked to a cohort |
+| POST | `/admin/cohorts/{id}/organizations` | Admin | Link org to cohort |
+| DELETE | `/admin/cohorts/{id}/organizations/{oid}` | Admin | Unlink org from cohort |
+| POST | `/admin/cohorts/{id}/enroll-from-org` | Admin | Enrol org employees into cohort (by scope or individual list) |
+
 ### Admin — Users (`/admin`)
 
 | Method | Path | Auth | Description |
@@ -311,24 +344,39 @@ adizes-backend/
 
 ## Email Templates
 
-Three built-in templates (stored in `app_settings` / `email_templates` tables, editable via admin UI):
+Five built-in templates (stored in `app_settings` / `email_templates` tables, editable via admin UI):
 
 | Template ID | Trigger | Variables |
 |-------------|---------|-----------|
 | `user_enrolled` | New or not-yet-activated user enrolled into a cohort | `user_name`, `user_email`, `cohort_name`, `invite_link`, `platform_name`, `platform_url` |
-| `cohort_enrollment_existing` | Already-activated user enrolled into a cohort (dashboard link only, no activation link) | `user_name`, `user_email`, `cohort_name`, `platform_name`, `platform_url` |
+| `cohort_enrollment_existing` | Already-activated user enrolled into a cohort (dashboard link only) | `user_name`, `user_email`, `cohort_name`, `platform_name`, `platform_url` |
 | `admin_invite` | New admin account invited | `admin_name`, `admin_email`, `invite_link`, `platform_name`, `platform_url` |
 | `assessment_complete` | User submits assessment | `user_name`, `user_email`, `cohort_name`, `dominant_style`, `platform_name`, `platform_url` (+ PDF attachment) |
+| `org_welcome` | Employee added to an org node | `user_name`, `org_name`, `activation_link`, `platform_name`, `platform_url` |
+| `password_reset` | Employee requests password reset via `/forgot-password` | `user_name`, `reset_link`, `platform_name`, `platform_url` |
 
 ### Enrollment email three-case logic
 
-All three enrollment endpoints (`enroll_user`, `bulk_enroll`, `resend_enrollment_invite`) apply the same branching:
+All three cohort enrollment endpoints (`enroll_user`, `bulk_enroll`, `resend_enrollment_invite`) apply the same branching:
 
 | Case | Condition | Email sent |
 |------|-----------|-----------|
-| New user | No account existed | `user_enrolled` with `type=invite` link |
-| Invited, not activated | Account exists, `email_confirmed_at is None` | `user_enrolled` with `type=recovery` link |
+| New user | No account existed | `user_enrolled` with `type=invite` link → redirects to `/register` |
+| Invited, not activated | Account exists, `email_confirmed_at is None` | `user_enrolled` with `type=recovery` link → redirects to `/register` |
 | Already activated | Account exists, `email_confirmed_at` set | `cohort_enrollment_existing` (dashboard link only) |
+
+### Org employee activation flow
+
+When an admin adds an employee to an org node, `_add_employee_to_node` sends `org_welcome` with a `generate_link(type="invite" or "recovery", redirect_to=/register)` activation link. After the employee sets their password, they are fully activated (`email_confirmed_at` set) and can use self-service password reset.
+
+### Password reset flow
+
+`POST /auth/forgot-password` (public, no JWT):
+1. SMTP must be configured — returns 400 otherwise
+2. Searches all users linearly for the email (supabase-py has no filter on `list_users()`)
+3. Unknown email → `{"status": "sent"}` (silent, anti-enumeration)
+4. Found, not activated → `{"status": "not_activated"}` (no email sent)
+5. Found, activated → `generate_link(type="recovery", redirect_to=/reset-password)` → sends `password_reset` email → `{"status": "sent"}`
 
 ## Running Tests
 
