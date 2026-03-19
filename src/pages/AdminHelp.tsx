@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronDown, ChevronUp, HelpCircle, Users, ShieldCheck, BookOpen, FileText, Mail } from "lucide-react";
+import { ChevronDown, ChevronUp, HelpCircle, Users, ShieldCheck, BookOpen, FileText, Mail, KeyRound } from "lucide-react";
 
 type FAQItem = { q: string; a: string | string[] };
 
@@ -209,6 +209,30 @@ const userFAQs: FAQItem[] = [
   },
 ];
 
+const employeeActivationFAQs: FAQItem[] = [
+  {
+    q: "How does employee account activation work?",
+    a: [
+      "When you add an employee to an organisation, they receive a welcome email with an activation link valid for 24 hours.",
+      "They click the link, set their name and password, and their account becomes active.",
+      "If they miss the 24-hour window, go to the employee's node in the Organisations page and click 'Resend Welcome Email' to generate a fresh link.",
+    ],
+  },
+  {
+    q: "What if an employee never activated their account?",
+    a: "Their status shows as 'Pending' in the employee list. They cannot use self-service password reset until they have activated. Ask them to check their original welcome email, or resend it from the admin panel. Once activated, they can reset their password independently at any time.",
+  },
+  {
+    q: "How does self-service password reset work for employees?",
+    a: [
+      "Activated employees can reset their own password by clicking 'Forgot password?' on the login page.",
+      "They enter their email address. If their account is activated, a reset link is sent to their inbox (valid for 1 hour).",
+      "If their account is still in 'Pending' status, the page will tell them to activate their account first using their welcome email.",
+      "Admins do not need to be involved in this process.",
+    ],
+  },
+];
+
 const contactInfo = [
   {
     label: "Cohort & Programme Queries",
@@ -249,6 +273,13 @@ export function AdminHelp() {
         icon={BookOpen}
         color="border-amber-500"
         items={dosDonts}
+      />
+
+      <FAQSection
+        title="Employee Activation & Password Reset"
+        icon={KeyRound}
+        color="border-[#1D3557]"
+        items={employeeActivationFAQs}
       />
 
       <FAQSection
