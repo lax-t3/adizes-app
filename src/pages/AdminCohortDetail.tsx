@@ -3,7 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
-import { Download, ArrowLeft, Users, FileText, UserPlus, X, Loader2, Trash2, Upload, CheckCircle2, AlertCircle, MinusCircle, MailCheck } from "lucide-react";
+import { Download, ArrowLeft, Users, FileText, UserPlus, X, Loader2, Trash2, Upload, CheckCircle2, AlertCircle, MinusCircle, MailCheck, Plus } from "lucide-react";
 import { motion } from "motion/react";
 import {
   Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
@@ -13,6 +13,10 @@ import * as XLSX from "xlsx";
 import { getCohort, enrollUser, removeMember, exportCohortCsv, bulkEnroll, resendEnrollmentInvite } from "@/api/admin";
 import type { BulkEnrollEntry, BulkEnrollResult } from "@/api/admin";
 import type { CohortDetailResponse } from "@/types/api";
+import { listCohortOrgs, linkOrgToCohort, unlinkOrgFromCohort,
+         enrollFromOrg, listOrganizations, getOrganization,
+         listNodeEmployees } from '@/api/organizations';
+import type { LinkedOrgSummary, OrgSummary, OrgDetail, OrgEmployeeSummary } from '@/types/api';
 
 const ROLE_COLORS: Record<string, string> = {
   P: "#C8102E",
@@ -407,6 +411,24 @@ export function AdminCohortDetail() {
   const [resendingId, setResendingId] = useState<string | null>(null);
   const [resendMsg, setResendMsg] = useState<{ userId: string; ok: boolean; text: string } | null>(null);
 
+  const [linkedOrgs, setLinkedOrgs] = useState<LinkedOrgSummary[]>([]);
+  const [allOrgs, setAllOrgs] = useState<OrgSummary[]>([]);
+  const [showLinkModal, setShowLinkModal] = useState(false);
+  const [linkOrgId, setLinkOrgId] = useState('');
+  const [linking, setLinking] = useState(false);
+  const [showEnrolModal, setShowEnrolModal] = useState(false);
+  const [enrolOrg, setEnrolOrg] = useState<OrgDetail | null>(null);
+  const [enrolScope, setEnrolScope] = useState<{ nodeId: string | null; includeDesc: boolean }>({
+    nodeId: null, includeDesc: true,
+  });
+  const [enrolUserIds, setEnrolUserIds] = useState<string[]>([]);
+  const [enrolTab, setEnrolTab] = useState<'scope' | 'individual'>('scope');
+  const [enrolling, setEnrolling] = useState(false);
+  const [enrolResult, setEnrolResult] = useState<{ enrolled: number; skipped: number } | null>(null);
+  const [orgEmployees, setOrgEmployees] = useState<OrgEmployeeSummary[]>([]);
+  const [empSearch, setEmpSearch] = useState('');
+  const [empLoading, setEmpLoading] = useState(false);
+
   const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
   const fetchCohort = () => {
@@ -426,7 +448,11 @@ export function AdminCohortDetail() {
       .finally(() => setLoading(false));
   };
 
-  useEffect(() => { fetchCohort(); }, [id]);
+  useEffect(() => {
+    fetchCohort();
+    listCohortOrgs(id!).then(setLinkedOrgs).catch(() => {});
+    listOrganizations().then(setAllOrgs).catch(() => {});
+  }, [id]);
 
   const handleRemoveMember = async (userId: string) => {
     if (!id) return;
@@ -714,7 +740,250 @@ export function AdminCohortDetail() {
             )}
           </CardContent>
         </Card>
+
+        {/* ── Linked Organisations ────────────────────── */}
+        <div className="bg-white rounded-xl border border-gray-200 p-6 mt-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-semibold text-gray-900">Linked Organisations</h3>
+            <button
+              onClick={() => setShowLinkModal(true)}
+              className="flex items-center gap-1.5 text-sm border border-gray-300 rounded-lg px-3 py-1.5 hover:bg-gray-50 text-gray-600"
+            >
+              <Plus className="h-3.5 w-3.5" /> Link Organisation
+            </button>
+          </div>
+
+          {linkedOrgs.length === 0 ? (
+            <p className="text-sm text-gray-400">No organisations linked yet.</p>
+          ) : (
+            <div className="space-y-2">
+              {linkedOrgs.map((lo) => (
+                <div key={lo.org_id} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
+                  <div>
+                    <span className="font-medium text-sm text-gray-900">{lo.name}</span>
+                    <span className="ml-2 text-xs text-gray-400">{lo.employee_count} employees</span>
+                  </div>
+                  <button
+                    onClick={async () => {
+                      if (!confirm(`Unlink ${lo.name}?`)) return;
+                      await unlinkOrgFromCohort(id!, lo.org_id);
+                      setLinkedOrgs((prev) => prev.filter((o) => o.org_id !== lo.org_id));
+                    }}
+                    className="text-xs text-gray-400 hover:text-red-600"
+                  >
+                    Unlink
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {linkedOrgs.length > 0 && (
+            linkedOrgs.length === 1 ? (
+              <button
+                onClick={async () => {
+                  const org = await getOrganization(linkedOrgs[0].org_id);
+                  setEnrolOrg(org);
+                  setEnrolResult(null);
+                  setEnrolScope({ nodeId: null, includeDesc: true });
+                  setEnrolUserIds([]);
+                  setEmpSearch('');
+                  // Pre-fetch all employees (root node + descendants) for the individual tab
+                  if (org.tree[0]) {
+                    setEmpLoading(true);
+                    listNodeEmployees(org.id, org.tree[0].id, true)
+                      .then(setOrgEmployees).catch(() => {}).finally(() => setEmpLoading(false));
+                  }
+                  setShowEnrolModal(true);
+                }}
+                className="mt-4 w-full text-sm bg-[#1D3557] text-white rounded-lg py-2 hover:bg-blue-900"
+              >
+                Enrol from Organisation
+              </button>
+            ) : (
+              <div className="mt-4 space-y-2">
+                <p className="text-xs text-gray-500">Enrol from a linked organisation:</p>
+                {linkedOrgs.map((lo) => (
+                  <button
+                    key={lo.org_id}
+                    onClick={async () => {
+                      const org = await getOrganization(lo.org_id);
+                      setEnrolOrg(org);
+                      setEnrolResult(null);
+                      setEnrolScope({ nodeId: null, includeDesc: true });
+                      setEnrolUserIds([]);
+                      setEmpSearch('');
+                      if (org.tree[0]) {
+                        listNodeEmployees(org.id, org.tree[0].id, true).then(setOrgEmployees).catch(() => {});
+                      }
+                      setShowEnrolModal(true);
+                    }}
+                    className="w-full text-left text-sm bg-[#1D3557] text-white rounded-lg px-3 py-2 hover:bg-blue-900"
+                  >
+                    {lo.name} ({lo.employee_count} employees)
+                  </button>
+                ))}
+              </div>
+            )
+          )}
+        </div>
       </motion.div>
+
+      {/* ── Link Org Modal ───────────────────────────── */}
+      {showLinkModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-sm p-6">
+            <h2 className="text-lg font-semibold mb-4">Link Organisation</h2>
+            <select
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mb-4"
+              value={linkOrgId}
+              onChange={(e) => setLinkOrgId(e.target.value)}
+            >
+              <option value="">Select an organisation…</option>
+              {allOrgs
+                .filter((o) => !linkedOrgs.some((lo) => lo.org_id === o.id))
+                .map((o) => (
+                  <option key={o.id} value={o.id}>{o.name}</option>
+                ))}
+            </select>
+            <div className="flex justify-end gap-3">
+              <button onClick={() => setShowLinkModal(false)} className="px-4 py-2 text-sm text-gray-600">Cancel</button>
+              <button
+                disabled={!linkOrgId || linking}
+                onClick={async () => {
+                  setLinking(true);
+                  try {
+                    await linkOrgToCohort(id!, linkOrgId);
+                    const updated = await listCohortOrgs(id!);
+                    setLinkedOrgs(updated);
+                    setShowLinkModal(false); setLinkOrgId('');
+                  } finally { setLinking(false); }
+                }}
+                className="px-4 py-2 text-sm bg-[#C8102E] text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
+              >
+                {linking ? 'Linking…' : 'Link'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Enrol from Org Modal ─────────────────────── */}
+      {showEnrolModal && enrolOrg && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto">
+            <h2 className="text-lg font-semibold mb-1">Enrol from {enrolOrg.name}</h2>
+            <div className="flex gap-4 mb-4 border-b border-gray-200 text-sm">
+              {(['scope', 'individual'] as const).map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setEnrolTab(tab)}
+                  className={`py-2 border-b-2 -mb-px font-medium capitalize
+                    ${enrolTab === tab ? 'border-[#C8102E] text-[#C8102E]' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+                >
+                  {tab === 'scope' ? 'By Scope' : 'By Individual'}
+                </button>
+              ))}
+            </div>
+
+            {enrolTab === 'scope' && (
+              <div className="space-y-2 mb-4">
+                <label className="flex items-center gap-2 p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
+                  <input type="radio" checked={enrolScope.nodeId === null}
+                    onChange={() => setEnrolScope({ nodeId: null, includeDesc: true })} />
+                  <span className="text-sm">Entire organisation</span>
+                </label>
+                {enrolOrg.tree[0]?.children.map((node) => (
+                  <label key={node.id} className="flex items-center gap-2 p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
+                    <input type="radio" checked={enrolScope.nodeId === node.id}
+                      onChange={() => setEnrolScope({ nodeId: node.id, includeDesc: true })} />
+                    <span className="text-sm flex-1">{node.name}</span>
+                    <span className="text-xs text-gray-400">{node.employee_count} employees</span>
+                  </label>
+                ))}
+                {enrolScope.nodeId && (
+                  <label className="flex items-center gap-2 text-sm text-gray-600 mt-2">
+                    <input type="checkbox" checked={enrolScope.includeDesc}
+                      onChange={(e) => setEnrolScope((s) => ({ ...s, includeDesc: e.target.checked }))} />
+                    Include sub-nodes
+                  </label>
+                )}
+              </div>
+            )}
+
+            {enrolTab === 'individual' && (
+              <div className="mb-4">
+                <input
+                  type="text"
+                  placeholder="Search by name or email…"
+                  value={empSearch}
+                  onChange={(e) => setEmpSearch(e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mb-2"
+                />
+                <div className="max-h-52 overflow-y-auto space-y-1">
+                  {orgEmployees
+                    .filter(
+                      (e) => e.name.toLowerCase().includes(empSearch.toLowerCase()) ||
+                             e.email.toLowerCase().includes(empSearch.toLowerCase())
+                    )
+                    .map((emp) => (
+                      <label key={emp.user_id} className="flex items-center gap-2 p-2 rounded hover:bg-gray-50 cursor-pointer text-sm">
+                        <input
+                          type="checkbox"
+                          checked={enrolUserIds.includes(emp.user_id)}
+                          onChange={(e) => setEnrolUserIds((ids) =>
+                            e.target.checked ? [...ids, emp.user_id] : ids.filter((id) => id !== emp.user_id)
+                          )}
+                        />
+                        <span className="flex-1">{emp.name}</span>
+                        <span className="text-xs text-gray-400">{emp.email}</span>
+                      </label>
+                    ))}
+                  {orgEmployees.filter(
+                    (e) => e.name.toLowerCase().includes(empSearch.toLowerCase()) ||
+                           e.email.toLowerCase().includes(empSearch.toLowerCase())
+                  ).length === 0 && (
+                    <p className="text-xs text-gray-400 p-2">
+                      {empLoading ? 'Loading employees…' : 'No employees found.'}
+                    </p>
+                  )}
+                </div>
+                {enrolUserIds.length > 0 && (
+                  <p className="text-xs text-gray-500 mt-1">{enrolUserIds.length} selected</p>
+                )}
+              </div>
+            )}
+
+            {enrolResult && (
+              <div className="bg-green-50 rounded-lg p-3 text-sm mb-4 text-green-700">
+                ✓ {enrolResult.enrolled} enrolled, {enrolResult.skipped} skipped (already enrolled)
+              </div>
+            )}
+
+            <div className="flex justify-end gap-3">
+              <button onClick={() => setShowEnrolModal(false)} className="px-4 py-2 text-sm text-gray-600">Close</button>
+              <button
+                disabled={enrolling || (enrolTab === 'individual' && enrolUserIds.length === 0)}
+                onClick={async () => {
+                  setEnrolling(true);
+                  try {
+                    const result = await enrollFromOrg(id!, {
+                      org_id: enrolOrg.id,
+                      node_id: enrolScope.nodeId ?? undefined,
+                      include_descendants: enrolScope.includeDesc,
+                      user_ids: enrolUserIds.length > 0 ? enrolUserIds : undefined,
+                    });
+                    setEnrolResult(result);
+                  } finally { setEnrolling(false); }
+                }}
+                className="px-4 py-2 text-sm bg-[#C8102E] text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
+              >
+                {enrolling ? 'Enrolling…' : 'Enrol'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
