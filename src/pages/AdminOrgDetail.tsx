@@ -1,7 +1,7 @@
 // src/pages/AdminOrgDetail.tsx
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, ChevronRight, ChevronDown, Plus, Trash2, Users, Download } from 'lucide-react';
+import { ArrowLeft, ChevronRight, ChevronDown, Plus, Trash2, Users, Download, HelpCircle } from 'lucide-react';
 import {
   getOrganization, createNode, deleteNode, updateNode,
   listNodeEmployees, addEmployee, bulkUploadEmployees, removeEmployee,
@@ -90,6 +90,10 @@ export function AdminOrgDetail() {
   const [bulkFile, setBulkFile] = useState<File | null>(null);
   const [bulkResult, setBulkResult] = useState<any>(null);
   const [uploading, setUploading] = useState(false);
+
+  // Help modal state
+  const [showOrgHelp, setShowOrgHelp] = useState(false);
+  const [showCsvHelp, setShowCsvHelp] = useState(false);
 
   const loadOrg = useCallback(() => {
     if (!orgId) return;
@@ -222,6 +226,19 @@ export function AdminOrgDetail() {
       <div className="flex flex-1 overflow-hidden">
         {/* Left: tree (35%) */}
         <div className="w-[35%] border-r border-gray-200 overflow-y-auto p-3">
+          {/* Heading row */}
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+              Organisation Structure
+            </h3>
+            <button
+              onClick={() => setShowOrgHelp(true)}
+              className="text-gray-400 hover:text-gray-600 transition-colors"
+              title="How to build your org structure"
+            >
+              <HelpCircle className="h-4 w-4" />
+            </button>
+          </div>
           {currentOrg.tree.map((root) => (
             <TreeNode
               key={root.id}
@@ -467,6 +484,78 @@ export function AdminOrgDetail() {
                 className="px-4 py-2 text-sm bg-[#C8102E] text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
               >
                 {uploading ? 'Uploading…' : 'Upload'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Org Structure Help Modal */}
+      {showOrgHelp && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-lg">
+            {/* Header */}
+            <div className="px-6 pt-5 pb-4 border-b border-gray-100">
+              <p className="text-base font-bold text-gray-900">How to build your org structure</p>
+              <p className="text-xs text-gray-500 mt-0.5">A step-by-step guide</p>
+            </div>
+
+            {/* Body */}
+            <div className="px-6 py-5 overflow-y-auto max-h-[70vh] flex flex-col gap-4 text-sm text-gray-600">
+
+              {/* Step 1 */}
+              <div className="flex gap-3 items-start">
+                <div className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0 bg-[#C8102E]">1</div>
+                <div>
+                  <p className="font-semibold text-gray-900">Create the organisation</p>
+                  <p className="text-xs text-gray-500 mt-1">Give it a name (e.g. "Tata Motors") and an optional description. This is the top-level container — everything else lives inside it.</p>
+                </div>
+              </div>
+
+              {/* Step 2 — tree example nested inside */}
+              <div className="flex gap-3 items-start">
+                <div className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0 bg-[#C8102E]">2</div>
+                <div>
+                  <p className="font-semibold text-gray-900">Add nodes to build the tree</p>
+                  <p className="text-xs text-gray-500 mt-1">Nodes are departments, regions, or teams. Click <strong>+ Add Node</strong> under any existing node to create a child beneath it.</p>
+                  <pre className="mt-2 bg-gray-50 rounded p-2 text-xs text-gray-600 font-mono leading-loose">{`🏢 Tata Motors\n  └── 📁 Sales\n        ├── 📁 North Region\n        └── 📁 South Region\n  └── 📁 Operations`}</pre>
+                </div>
+              </div>
+
+              {/* Step 3 */}
+              <div className="flex gap-3 items-start">
+                <div className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0 bg-[#C8102E]">3</div>
+                <div>
+                  <p className="font-semibold text-gray-900">Add employees to nodes</p>
+                  <p className="text-xs text-gray-500 mt-1">Select any node in the tree, then use <strong>Add Employee</strong> (one at a time) or <strong>Bulk Upload</strong> (CSV) to add employees. Each employee receives a welcome email to activate their account.</p>
+                </div>
+              </div>
+
+              {/* Step 4 — navy circle (off-page action) */}
+              <div className="flex gap-3 items-start">
+                <div className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0 bg-[#1D3557]">4</div>
+                <div>
+                  <p className="font-semibold text-gray-900">Link the org to a cohort</p>
+                  <p className="text-xs text-gray-500 mt-1">Go to the cohort detail page → Linked Organisations → link this org. Then use <strong>Enrol from Org</strong> to enrol employees into the assessment cohort.</p>
+                </div>
+              </div>
+
+              {/* Sub-node callout — amber */}
+              <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 text-xs text-orange-900">
+                <p className="font-bold mb-1">💡 What is a sub-node?</p>
+                <p>A sub-node is any node nested inside another. They let you mirror your real org hierarchy — as deep as you need.</p>
+                <p className="mt-1"><strong>Example:</strong> Tata Motors → Sales → North Region → Delhi Team</p>
+                <p className="mt-1">When you enrol employees by scope you can pick an entire branch — choosing "Sales" automatically includes North Region, South Region, and all their employees.</p>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="px-6 py-3 border-t border-gray-100 flex justify-end">
+              <button
+                onClick={() => setShowOrgHelp(false)}
+                className="bg-[#C8102E] hover:bg-red-700 text-white text-xs font-semibold px-5 py-2 rounded-lg"
+              >
+                Got it
               </button>
             </div>
           </div>
