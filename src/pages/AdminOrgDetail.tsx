@@ -320,6 +320,14 @@ export function AdminOrgDetail() {
                   Bulk Upload
                 </button>
                 <button
+                  onClick={() => setShowCsvHelp(true)}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                  title="How to format the CSV file"
+                  aria-label="How to format the CSV file"
+                >
+                  <HelpCircle className="h-4 w-4" />
+                </button>
+                <button
                   onClick={() => setShowAddEmp(true)}
                   className="flex items-center gap-1.5 text-sm bg-[#C8102E] text-white rounded-lg px-3 py-1.5 hover:bg-red-700"
                 >
@@ -554,6 +562,97 @@ export function AdminOrgDetail() {
             <div className="px-6 py-3 border-t border-gray-100 flex justify-end">
               <button
                 onClick={() => setShowOrgHelp(false)}
+                className="bg-[#C8102E] hover:bg-red-700 text-white text-xs font-semibold px-5 py-2 rounded-lg"
+              >
+                Got it
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* CSV Help Modal */}
+      {showCsvHelp && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-lg">
+            {/* Header */}
+            <div className="px-6 pt-5 pb-4 border-b border-gray-100">
+              <h2 className="text-base font-bold text-gray-900">Bulk Upload — CSV Format</h2>
+              <p className="text-xs text-gray-500 mt-0.5">How to fill the upload template</p>
+            </div>
+
+            {/* Body */}
+            <div className="px-6 py-5 overflow-y-auto max-h-[70vh] flex flex-col gap-4 text-sm text-gray-600">
+
+              {/* Column table */}
+              <div>
+                <p className="text-xs font-bold text-gray-900 mb-2">Required columns</p>
+                <table className="w-full text-xs border-collapse">
+                  <thead>
+                    <tr className="bg-gray-50">
+                      <th className="text-left px-2 py-1.5 border border-gray-200 font-semibold text-gray-600">Column</th>
+                      <th className="text-left px-2 py-1.5 border border-gray-200 font-semibold text-gray-600">Description</th>
+                      <th className="text-left px-2 py-1.5 border border-gray-200 font-semibold text-gray-600 whitespace-nowrap">Required?</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td className="px-2 py-1.5 border border-gray-200 font-mono text-[#C8102E]">name</td>
+                      <td className="px-2 py-1.5 border border-gray-200 text-gray-600">Employee's full name</td>
+                      <td className="px-2 py-1.5 border border-gray-200 text-center">✅</td>
+                    </tr>
+                    <tr className="bg-gray-50">
+                      <td className="px-2 py-1.5 border border-gray-200 font-mono text-[#C8102E]">email</td>
+                      <td className="px-2 py-1.5 border border-gray-200 text-gray-600">Work email address (must be unique)</td>
+                      <td className="px-2 py-1.5 border border-gray-200 text-center">✅</td>
+                    </tr>
+                    <tr>
+                      <td className="px-2 py-1.5 border border-gray-200 font-mono text-[#C8102E]">title</td>
+                      <td className="px-2 py-1.5 border border-gray-200 text-gray-600">Job title (e.g. "Senior Manager")</td>
+                      <td className="px-2 py-1.5 border border-gray-200 text-center text-gray-500">Optional</td>
+                    </tr>
+                    <tr className="bg-gray-50">
+                      <td className="px-2 py-1.5 border border-gray-200 font-mono text-[#C8102E]">employee_id</td>
+                      <td className="px-2 py-1.5 border border-gray-200 text-gray-600">Your internal HR / payroll ID</td>
+                      <td className="px-2 py-1.5 border border-gray-200 text-center text-gray-500">Optional</td>
+                    </tr>
+                    <tr>
+                      <td className="px-2 py-1.5 border border-gray-200 font-mono text-[#C8102E]">node_path</td>
+                      <td className="px-2 py-1.5 border border-gray-200 text-gray-600">Slash-separated path to the node. Leave blank to add to the currently selected node.</td>
+                      <td className="px-2 py-1.5 border border-gray-200 text-center text-gray-500">Optional</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Example CSV — dark code block */}
+              <div>
+                <p className="text-xs font-bold text-gray-900 mb-2">Example CSV</p>
+                <pre className="bg-[#1e1e2e] text-[#cdd6f4] rounded-lg p-3 text-xs font-mono leading-loose overflow-x-auto">{`name,email,title,employee_id,node_path\nPriya Sharma,priya@tata.com,Senior Manager,EMP001,Sales/North Region\nRahul Mehta,rahul@tata.com,Team Lead,EMP002,Sales/South Region\nAisha Khan,aisha@tata.com,Analyst,,Operations\nDev Patel,dev@tata.com,Director,EMP004,`}</pre>
+              </div>
+
+              {/* node_path tips — blue callout */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-xs text-blue-900">
+                <p className="font-bold mb-1">💡 node_path tips</p>
+                <ul className="space-y-1">
+                  <li>• Use <code className="bg-blue-100 px-1 rounded">/</code> to separate levels: <code className="bg-blue-100 px-1 rounded">Sales/North Region/Delhi Team</code></li>
+                  <li>• Names must match exactly (case-sensitive)</li>
+                  <li>• Leave blank to add the employee to the node currently selected in the tree</li>
+                  <li>• Employees with an unrecognised path will be skipped and listed in the error summary</li>
+                </ul>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="px-6 py-3 border-t border-gray-100 flex items-center justify-between">
+              <button
+                onClick={downloadTemplate}
+                className="text-xs text-[#C8102E] font-semibold hover:underline"
+              >
+                ⬇ Download blank template
+              </button>
+              <button
+                onClick={() => setShowCsvHelp(false)}
                 className="bg-[#C8102E] hover:bg-red-700 text-white text-xs font-semibold px-5 py-2 rounded-lg"
               >
                 Got it
