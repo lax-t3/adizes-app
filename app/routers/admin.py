@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile
 from typing import Optional
 from fastapi.responses import StreamingResponse
 from app.auth import require_admin
@@ -21,6 +21,9 @@ from app.schemas.org import (
     EnrollFromOrgRequest, EnrollFromOrgResult,
 )
 import csv, io as _io
+import re
+import logging
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -932,3 +935,231 @@ def delete_node(org_id: str, node_id: str, admin: dict = Depends(require_admin))
     if emp_check.data:
         raise HTTPException(status_code=400, detail="Node or sub-nodes contain employees — remove them first")
     supabase_admin.table("org_nodes").delete().eq("id", node_id).execute()
+
+
+# ─────────────────────────────────────────────────────────────
+# Employee Management
+# ─────────────────────────────────────────────────────────────
+
+@router.get("/organizations/{org_id}/nodes/{node_id}/employees",
+            response_model=list[OrgEmployeeSummary])
+def list_node_employees(
+    org_id: str, node_id: str,
+    include_descendants: bool = False,
+    admin: dict = Depends(require_admin),
+):
+    if include_descendants:
+        node = (
+            supabase_admin.table("org_nodes").select("path")
+            .eq("id", node_id).eq("org_id", org_id).single().execute()
+        )
+        node_path = node.data["path"]
+        subtree_ids = [
+            n["id"] for n in (
+                supabase_admin.table("org_nodes").select("id")
+                .eq("org_id", org_id)
+                .or_(f"id.eq.{node_id},path.like.{node_path}/%")
+                .execute().data or []
+            )
+        ]
+        emp_rows = (
+            supabase_admin.table("org_employees").select("*")
+            .in_("node_id", subtree_ids).execute().data or []
+        )
+    else:
+        emp_rows = (
+            supabase_admin.table("org_employees").select("*")
+            .eq("node_id", node_id).execute().data or []
+        )
+
+    auth_users = _get_auth_users_map()
+    result = []
+    for e in emp_rows:
+        u = auth_users.get(e["user_id"])
+        name = (u.user_metadata or {}).get("name", "") if u else ""
+        email = u.email if u else ""
+        status_str = "active" if (u and u.email_confirmed_at) else "pending"
+        result.append(OrgEmployeeSummary(
+            id=e["id"], user_id=e["user_id"], name=name, email=email,
+            title=e.get("title"), employee_id=e.get("employee_id"),
+            status=status_str, node_id=e["node_id"], joined_at=str(e["joined_at"]),
+        ))
+    return result
+
+
+@router.post("/organizations/{org_id}/nodes/{node_id}/employees", status_code=201)
+def add_employee(
+    org_id: str, node_id: str, body: AddEmployeeRequest,
+    admin: dict = Depends(require_admin),
+):
+    # Verify node belongs to org
+    node = (
+        supabase_admin.table("org_nodes").select("id")
+        .eq("id", node_id).eq("org_id", org_id).limit(1).execute()
+    )
+    if not node.data:
+        raise HTTPException(status_code=404, detail="Node not found in this organisation")
+
+    org = supabase_admin.table("organizations").select("name").eq("id", org_id).single().execute().data
+    org_name = org["name"]
+
+    return _add_employee_to_node(
+        org_id=org_id, org_name=org_name, node_id=node_id,
+        email=str(body.email), name=body.name, title=body.title,
+        employee_id=body.employee_id,
+    )
+
+
+def _add_employee_to_node(
+    org_id: str, org_name: str, node_id: str,
+    email: str, name: str,
+    title: str | None = None, employee_id: str | None = None,
+) -> dict:
+    """
+    3-case logic:
+      1. New user    → generate_link(invite) → insert org_employees → send org_welcome
+      2. Unactivated → generate_link(recovery) → insert org_employees → send org_welcome
+      3. Active      → insert org_employees only, no email
+    Returns {"user_id": ..., "created": bool, "emailed": bool}
+    """
+    # Check if already in this org
+    try:
+        existing_users = supabase_admin.auth.admin.list_users()
+        target = next((u for u in existing_users if u.email == email), None)
+    except Exception:
+        target = None
+
+    activation_url = settings.frontend_url
+    is_new = target is None
+    is_unactivated = target is not None and target.email_confirmed_at is None
+
+    if is_new:
+        try:
+            lr = supabase_admin.auth.admin.generate_link({
+                "type": "invite",
+                "email": email,
+                "data": {"name": name},
+            })
+            activation_url = lr.properties.action_link
+            target = supabase_admin.auth.admin.get_user_by_id(lr.user.id).user
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Could not create user: {e}")
+
+    elif is_unactivated:
+        try:
+            lr = supabase_admin.auth.admin.generate_link({
+                "type": "recovery",
+                "email": email,
+            })
+            activation_url = lr.properties.action_link
+        except Exception:
+            activation_url = settings.frontend_url
+
+    user_id = str(target.id)
+
+    # Check not already in this org
+    dup = (
+        supabase_admin.table("org_employees").select("id")
+        .eq("org_id", org_id).eq("user_id", user_id).limit(1).execute()
+    )
+    if dup.data:
+        raise HTTPException(status_code=409, detail="Employee already in this organisation")
+
+    supabase_admin.table("org_employees").insert({
+        "org_id": org_id, "node_id": node_id, "user_id": user_id,
+        "employee_id": employee_id, "title": title,
+    }).execute()
+
+    emailed = False
+    if (is_new or is_unactivated) and smtp_configured():
+        try:
+            send_template_email("org_welcome", email, {
+                "user_name": name,
+                "org_name": org_name,
+                "platform_name": "Adizes India",
+                "platform_url": settings.frontend_url,
+                "activation_url": activation_url,
+            })
+            emailed = True
+        except Exception as exc:
+            logger.error(f"[org] Welcome email failed for {email}: {exc}")
+
+    return {"user_id": user_id, "created": is_new, "emailed": emailed}
+
+
+@router.post("/organizations/{org_id}/nodes/{node_id}/employees/bulk")
+async def bulk_upload_employees(
+    org_id: str, node_id: str,
+    file: UploadFile,
+    admin: dict = Depends(require_admin),
+):
+    node = (
+        supabase_admin.table("org_nodes").select("id")
+        .eq("id", node_id).eq("org_id", org_id).limit(1).execute()
+    )
+    if not node.data:
+        raise HTTPException(status_code=404, detail="Node not found")
+
+    org = supabase_admin.table("organizations").select("name").eq("id", org_id).single().execute().data
+    org_name = org["name"]
+
+    flat_nodes = (
+        supabase_admin.table("org_nodes").select("*").eq("org_id", org_id).execute().data or []
+    )
+
+    contents = await file.read()
+    reader = csv.DictReader(_io.StringIO(contents.decode("utf-8-sig")))
+
+    created = skipped = 0
+    errors = []
+
+    seen_emails = set()
+    for row_idx, row in enumerate(reader, start=2):  # row 1 = header
+        email = (row.get("email") or "").strip()
+        name = (row.get("name") or "").strip()
+        title = (row.get("title") or "").strip() or None
+        ext_id = (row.get("employee_id") or "").strip() or None
+        node_path_val = (row.get("node_path") or "").strip() or None
+
+        # Validate email
+        if not re.match(r"[^@]+@[^@]+\.[^@]+", email):
+            errors.append({"row": row_idx, "email": email, "reason": "invalid email"})
+            continue
+
+        # Duplicate in file
+        if email.lower() in seen_emails:
+            errors.append({"row": row_idx, "email": email, "reason": "duplicate in file"})
+            continue
+        seen_emails.add(email.lower())
+
+        # Resolve target node
+        target_node_id = node_id
+        if node_path_val:
+            resolved = _resolve_node_path(node_path_val, flat_nodes)
+            if resolved is None:
+                errors.append({"row": row_idx, "email": email, "reason": f"node_path not found: {node_path_val}"})
+                continue
+            target_node_id = resolved
+
+        try:
+            _add_employee_to_node(
+                org_id=org_id, org_name=org_name, node_id=target_node_id,
+                email=email, name=name, title=title, employee_id=ext_id,
+            )
+            created += 1
+        except HTTPException as he:
+            if he.status_code == 409:
+                skipped += 1
+            else:
+                errors.append({"row": row_idx, "email": email, "reason": he.detail})
+        except Exception as e:
+            errors.append({"row": row_idx, "email": email, "reason": str(e)})
+
+    return BulkUploadResult(created=created, skipped=skipped, errors=errors)
+
+
+@router.delete("/organizations/{org_id}/employees/{org_employee_id}", status_code=204)
+def remove_employee(org_id: str, org_employee_id: str, admin: dict = Depends(require_admin)):
+    """Remove employee from org. Does NOT delete auth user or cohort memberships."""
+    supabase_admin.table("org_employees").delete()\
+        .eq("id", org_employee_id).eq("org_id", org_id).execute()

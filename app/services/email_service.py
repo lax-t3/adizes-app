@@ -162,6 +162,23 @@ def _cohort_enrollment_existing_html() -> str:
     return _build_template("user_email", body)
 
 
+def _org_welcome_html() -> str:
+    cta = _cta("{{activation_url}}", "Activate Your Account")
+    body = f"""
+  <!-- Body -->
+  <tr>
+    <td style="padding:40px 48px 36px;" bgcolor="#ffffff">
+      <p style="margin:0 0 20px;font-family:Georgia,'Times New Roman',serif;font-size:22px;color:#1a1a1a;font-weight:400;line-height:1.35;">Welcome, {{{{user_name}}}}.</p>
+      <p style="margin:0 0 16px;font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#444444;line-height:1.75;"><strong style="color:#1a1a1a;">{{{{org_name}}}}</strong> has registered you on the <strong style="color:#1a1a1a;">Adizes PAEI Assessment Platform</strong>.</p>
+      <p style="margin:0 0 32px;font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#444444;line-height:1.75;">Click the button below to activate your account and set your password. Your administrator will invite you to an assessment cohort separately.</p>
+      {cta}
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:32px 0 24px;"><tr><td style="border-top:1px solid #e8e8e8;font-size:1px;line-height:1px;">&nbsp;</td></tr></table>
+      <p style="margin:0;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#666666;line-height:1.75;">If you did not expect this email, you can safely ignore it.</p>
+    </td>
+  </tr>"""
+    return _build_template("user_email", body)
+
+
 DEFAULT_TEMPLATES = {
     "user_enrolled": {
         "id": "user_enrolled",
@@ -186,6 +203,11 @@ DEFAULT_TEMPLATES = {
         "name": "Cohort Enrollment — Existing User",
         "subject": "You've been enrolled in {{cohort_name}} — {{platform_name}}",
         "html_body": _cohort_enrollment_existing_html(),
+    },
+    "org_welcome": {
+        "id": "org_welcome",
+        "subject": "You've been added to {{org_name}} on the Adizes PAEI Platform",
+        "html_body": _org_welcome_html(),
     },
 }
 
