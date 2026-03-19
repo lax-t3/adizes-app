@@ -49,3 +49,11 @@ class CohortAssessmentHistory(BaseModel):
     completed_at: Optional[str] = None
     dominant_style: Optional[str] = None
 
+
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+
+class ForgotPasswordResponse(BaseModel):
+    status: str  # "sent" | "not_activated"
+

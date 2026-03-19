@@ -3,9 +3,12 @@ from app.schemas.auth import (
     LoginRequest, RegisterRequest, AuthResponse,
     ProfileResponse, UpdateProfileRequest, ChangePasswordRequest,
     CohortAssessmentHistory,
+    ForgotPasswordRequest, ForgotPasswordResponse,
 )
 from app.database import supabase, supabase_admin
 from app.auth import get_current_user
+from app.config import settings
+from app.services.email_service import send_template_email, smtp_configured
 from pydantic import BaseModel
 
 router = APIRouter()
@@ -156,6 +159,54 @@ def change_password(body: ChangePasswordRequest, current_user: dict = Depends(ge
         raise HTTPException(status_code=400, detail=str(e))
 
     return {"message": "Password updated successfully"}
+
+
+# ─── Forgot Password ──────────────────────────────────────────────────────────
+
+@router.post("/forgot-password", response_model=ForgotPasswordResponse)
+def forgot_password(body: ForgotPasswordRequest):
+    """
+    Request a password reset link.
+    Always returns 200 to avoid email enumeration.
+    Returns status="not_activated" if the user exists but has not yet activated their account.
+    Returns status="sent" for all other cases (activated user, unknown email).
+    """
+    if not smtp_configured():
+        raise HTTPException(status_code=400, detail="SMTP is not configured")
+
+    # supabase-py list_users() has no filter param — must iterate all users
+    try:
+        all_users = supabase_admin.auth.admin.list_users()
+        target = next((u for u in all_users if u.email == body.email), None)
+    except Exception:
+        target = None
+
+    # Unknown email — return "sent" silently to avoid email enumeration
+    if target is None:
+        return ForgotPasswordResponse(status="sent")
+
+    # Not activated — tell them to use activation link instead
+    if getattr(target, "email_confirmed_at", None) is None:
+        return ForgotPasswordResponse(status="not_activated")
+
+    # Activated — generate recovery link and send password reset email
+    try:
+        lr = supabase_admin.auth.admin.generate_link({
+            "type": "recovery",
+            "email": body.email,
+            "options": {"redirect_to": f"{settings.frontend_url}/reset-password"},
+        })
+        user_name = (getattr(target, "user_metadata", None) or {}).get("name") or body.email
+        send_template_email("password_reset", body.email, {
+            "user_name": user_name,
+            "reset_link": lr.properties.action_link,
+            "platform_name": "Adizes India",
+            "platform_url": settings.frontend_url,
+        })
+    except Exception:
+        pass  # Return "sent" regardless to avoid enumeration
+
+    return ForgotPasswordResponse(status="sent")
 
 
 # ─── My Assessments ───────────────────────────────────────────────────────────
