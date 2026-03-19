@@ -17,6 +17,8 @@ import { AdminRespondent } from "./pages/AdminRespondent";
 import { AdminUsers } from "./pages/AdminUsers";
 import { AdminSettings } from "./pages/AdminSettings";
 import { AdminHelp } from "./pages/AdminHelp";
+import { AdminOrganizations } from "./pages/AdminOrganizations";
+import { AdminOrgDetail } from "./pages/AdminOrgDetail";
 import { UserHelp } from "./pages/UserHelp";
 import { SetPassword } from "./pages/SetPassword";
 import { PolicyPage } from "./pages/PolicyPage";
@@ -53,6 +55,8 @@ function AdminLayout() {
           <Route path="/cohorts" element={<AdminCohorts />} />
           <Route path="/cohorts/:id" element={<AdminCohortDetail />} />
           <Route path="/respondents/:id" element={<AdminRespondent />} />
+          <Route path="/organizations" element={<AdminOrganizations />} />
+          <Route path="/organizations/:orgId" element={<AdminOrgDetail />} />
           <Route path="/users" element={<AdminUsers />} />
           <Route path="/settings" element={<AdminSettings />} />
           <Route path="/help" element={<AdminHelp />} />

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { useAuthStore } from "@/store/authStore";
-import { LayoutDashboard, Users, LogOut, ShieldCheck, Settings, HelpCircle, Menu } from "lucide-react";
+import { LayoutDashboard, Users, LogOut, ShieldCheck, Settings, HelpCircle, Menu, Building2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export function AdminSidebar() {
@@ -16,6 +16,7 @@ export function AdminSidebar() {
 
   const navItems = [
     { name: "Dashboard", to: "/admin/dashboard", icon: LayoutDashboard },
+    { name: "Organizations", to: "/admin/organizations", icon: Building2 },
     { name: "Cohorts", to: "/admin/cohorts", icon: Users },
     { name: "Administrators", to: "/admin/users", icon: ShieldCheck },
     { name: "Settings", to: "/admin/settings", icon: Settings },
