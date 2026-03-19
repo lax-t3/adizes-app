@@ -44,3 +44,16 @@ export async function saveInviteProfile(
     { headers: { Authorization: `Bearer ${inviteToken}` } }
   );
 }
+
+/**
+ * Request a password reset link.
+ * Always resolves (never throws on 200).
+ * Returns status="sent" (link sent or unknown email) or status="not_activated".
+ */
+export async function forgotPassword(email: string): Promise<{ status: 'sent' | 'not_activated' }> {
+  const { data } = await apiClient.post<{ status: 'sent' | 'not_activated' }>(
+    '/auth/forgot-password',
+    { email }
+  );
+  return data;
+}
