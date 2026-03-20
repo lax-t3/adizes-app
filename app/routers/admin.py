@@ -126,6 +126,23 @@ def create_cohort(body: CreateCohortRequest, admin: dict = Depends(require_admin
     )
 
 
+@router.delete("/cohorts/{cohort_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_cohort(cohort_id: str, admin: dict = Depends(require_admin)):
+    """Delete a cohort only if it has no enrolled members."""
+    member_count = (
+        supabase_admin.table("cohort_members")
+        .select("id", count="exact")
+        .eq("cohort_id", cohort_id)
+        .execute()
+    ).count or 0
+    if member_count > 0:
+        raise HTTPException(
+            status_code=400,
+            detail="Cannot delete a cohort that has enrolled members."
+        )
+    supabase_admin.table("cohorts").delete().eq("id", cohort_id).execute()
+
+
 @router.get("/cohorts/{cohort_id}", response_model=CohortDetailResponse)
 def get_cohort(cohort_id: str, admin: dict = Depends(require_admin)):
     cohort = (
