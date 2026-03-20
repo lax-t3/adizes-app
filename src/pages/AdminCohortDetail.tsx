@@ -967,7 +967,9 @@ export function AdminCohortDetail() {
             )}
 
             <div className="flex justify-end gap-3">
-              <button onClick={() => setShowEnrolModal(false)} className="px-4 py-2 text-sm text-gray-600">Close</button>
+              <button onClick={() => setShowEnrolModal(false)} className="px-4 py-2 text-sm text-gray-600">
+                {enrolResult ? 'Done' : 'Close'}
+              </button>
               <button
                 disabled={enrolling || (enrolTab === 'individual' && enrolUserIds.length === 0)}
                 onClick={async () => {
@@ -980,6 +982,7 @@ export function AdminCohortDetail() {
                       user_ids: enrolUserIds.length > 0 ? enrolUserIds : undefined,
                     });
                     setEnrolResult(result);
+                    if (result.enrolled > 0) fetchCohort();
                   } catch {
                     alert('Enrolment failed. Please try again.');
                   } finally { setEnrolling(false); }

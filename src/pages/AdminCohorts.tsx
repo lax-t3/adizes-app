@@ -2,9 +2,9 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent } from "@/components/ui/Card";
-import { Plus, Users, ArrowRight, X, Loader2 } from "lucide-react";
+import { Plus, Users, ArrowRight, X, Loader2, Trash2 } from "lucide-react";
 import { motion } from "motion/react";
-import { listCohorts, createCohort } from "@/api/admin";
+import { listCohorts, createCohort, deleteCohort } from "@/api/admin";
 import type { CohortSummary } from "@/types/api";
 
 function CreateCohortModal({
@@ -96,6 +96,16 @@ export function AdminCohorts() {
     setCohorts(prev => [cohort, ...prev]);
   };
 
+  const handleDelete = async (cohort: CohortSummary) => {
+    if (!confirm(`Delete cohort "${cohort.name}"? This cannot be undone.`)) return;
+    try {
+      await deleteCohort(cohort.id);
+      setCohorts(prev => prev.filter(c => c.id !== cohort.id));
+    } catch (err: any) {
+      alert(err?.response?.data?.detail ?? "Failed to delete cohort.");
+    }
+  };
+
   return (
     <div className="p-4 sm:p-8">
       {showCreate && (
@@ -160,6 +170,16 @@ export function AdminCohorts() {
                       style={{ width: `${cohort.completion_pct}%` }}
                     />
                   </div>
+                  {cohort.member_count === 0 && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-red-500 border-red-200 hover:bg-red-50 hover:text-red-600"
+                      onClick={() => handleDelete(cohort)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
                   <Link to={`/admin/cohorts/${cohort.id}`}>
                     <Button variant="outline" size="sm">
                       View <ArrowRight className="ml-2 h-4 w-4" />

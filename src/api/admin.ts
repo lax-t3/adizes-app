@@ -22,6 +22,10 @@ export async function createCohort(name: string, description?: string): Promise<
   return data;
 }
 
+export async function deleteCohort(cohortId: string): Promise<void> {
+  await apiClient.delete(`/admin/cohorts/${cohortId}`);
+}
+
 export async function getCohort(cohortId: string): Promise<CohortDetailResponse> {
   const { data } = await apiClient.get<CohortDetailResponse>(`/admin/cohorts/${cohortId}`);
   return data;
