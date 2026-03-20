@@ -306,11 +306,14 @@ export function Assessment() {
               </h2>
               <p className="text-xl text-gray-600 mb-4">{section.description}</p>
               <p className="text-sm text-gray-400 mb-4">{totalPerSection} questions</p>
-              <div className="mb-8 sm:mb-12 mx-auto max-w-md rounded-lg bg-primary/8 border border-primary/20 px-5 py-4">
+              <div className="mb-8 sm:mb-12 mx-auto max-w-md rounded-lg bg-primary/8 border border-primary/20 px-5 py-4 text-left space-y-2">
                 <p className="text-sm font-semibold text-primary/90 leading-relaxed">
-                  💡 For each question, click the options in order of preference —{" "}
+                  💡 Click the options in order of preference —{" "}
                   <span className="underline underline-offset-2">1st</span> for most like you,
                   through to <span className="underline underline-offset-2">4th</span> for least like you.
+                </p>
+                <p className="text-sm text-primary/70 leading-relaxed">
+                  Changed your mind? Click a chosen option again to deselect it and re-rank.
                 </p>
               </div>
               <Button size="lg" onClick={() => setShowIntro(false)} className="w-full sm:w-auto px-12 text-lg h-14">
