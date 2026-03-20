@@ -800,7 +800,7 @@ export function AdminOrgDetail() {
           <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
             <h2 className="text-lg font-semibold mb-2">Bulk Upload Employees</h2>
             <p className="text-sm text-gray-500 mb-4">
-              Upload a CSV with columns: <code className="bg-gray-100 px-1 rounded">name, email, title, employee_id, node_path</code>
+              Upload a CSV with 14 columns. Download the template or click the <strong>?</strong> button for the full column reference.
             </p>
             <input
               type="file" accept=".csv"
