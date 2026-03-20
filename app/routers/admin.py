@@ -131,7 +131,7 @@ def delete_cohort(cohort_id: str, admin: dict = Depends(require_admin)):
     """Delete a cohort only if it has no enrolled members."""
     member_count = (
         supabase_admin.table("cohort_members")
-        .select("id", count="exact")
+        .select("cohort_id", count="exact")
         .eq("cohort_id", cohort_id)
         .execute()
     ).count or 0
