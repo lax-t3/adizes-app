@@ -241,7 +241,9 @@ export function AdminOrgDetail() {
   };
 
   const downloadTemplate = () => {
-    const csv = 'name,email,title,employee_id,node_path\nJane Smith,jane@example.com,Manager,E001,\n';
+    const header = 'name,last_name,middle_name,email,title,employee_id,emp_status,gender,default_language,manager_email,dob,emp_date,head_of_dept,node_path';
+    const example = 'Jane,Smith,Marie,jane@example.com,Manager,E001,Active,Female,English,manager@example.com,15/06/1985,01/03/2020,No,';
+    const csv = `${header}\n${example}\n`;
     const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
     const a = document.createElement('a');
     a.href = url;
@@ -932,13 +934,23 @@ export function AdminOrgDetail() {
                   <tbody>
                     <tr>
                       <td className="px-2 py-1.5 border border-gray-200 font-mono text-[#C8102E]">name</td>
-                      <td className="px-2 py-1.5 border border-gray-200 text-gray-600">Employee's full name</td>
+                      <td className="px-2 py-1.5 border border-gray-200 text-gray-600">Employee's first name</td>
                       <td className="px-2 py-1.5 border border-gray-200 text-center">✅</td>
                     </tr>
                     <tr className="bg-gray-50">
                       <td className="px-2 py-1.5 border border-gray-200 font-mono text-[#C8102E]">email</td>
                       <td className="px-2 py-1.5 border border-gray-200 text-gray-600">Work email address (must be unique)</td>
                       <td className="px-2 py-1.5 border border-gray-200 text-center">✅</td>
+                    </tr>
+                    <tr>
+                      <td className="px-2 py-1.5 border border-gray-200 font-mono text-[#C8102E]">last_name</td>
+                      <td className="px-2 py-1.5 border border-gray-200 text-gray-600">Employee's last name</td>
+                      <td className="px-2 py-1.5 border border-gray-200 text-center text-gray-500">Optional</td>
+                    </tr>
+                    <tr className="bg-gray-50">
+                      <td className="px-2 py-1.5 border border-gray-200 font-mono text-[#C8102E]">middle_name</td>
+                      <td className="px-2 py-1.5 border border-gray-200 text-gray-600">Employee's middle name</td>
+                      <td className="px-2 py-1.5 border border-gray-200 text-center text-gray-500">Optional</td>
                     </tr>
                     <tr>
                       <td className="px-2 py-1.5 border border-gray-200 font-mono text-[#C8102E]">title</td>
@@ -951,6 +963,41 @@ export function AdminOrgDetail() {
                       <td className="px-2 py-1.5 border border-gray-200 text-center text-gray-500">Optional</td>
                     </tr>
                     <tr>
+                      <td className="px-2 py-1.5 border border-gray-200 font-mono text-[#C8102E]">emp_status</td>
+                      <td className="px-2 py-1.5 border border-gray-200 text-gray-600">Active / Inactive / On Leave / Probation / Resigned</td>
+                      <td className="px-2 py-1.5 border border-gray-200 text-center text-gray-500">Optional (defaults to Active)</td>
+                    </tr>
+                    <tr className="bg-gray-50">
+                      <td className="px-2 py-1.5 border border-gray-200 font-mono text-[#C8102E]">gender</td>
+                      <td className="px-2 py-1.5 border border-gray-200 text-gray-600">Employee's gender</td>
+                      <td className="px-2 py-1.5 border border-gray-200 text-center text-gray-500">Optional</td>
+                    </tr>
+                    <tr>
+                      <td className="px-2 py-1.5 border border-gray-200 font-mono text-[#C8102E]">default_language</td>
+                      <td className="px-2 py-1.5 border border-gray-200 text-gray-600">Display language</td>
+                      <td className="px-2 py-1.5 border border-gray-200 text-center text-gray-500">Optional (defaults to English)</td>
+                    </tr>
+                    <tr className="bg-gray-50">
+                      <td className="px-2 py-1.5 border border-gray-200 font-mono text-[#C8102E]">manager_email</td>
+                      <td className="px-2 py-1.5 border border-gray-200 text-gray-600">Manager's work email</td>
+                      <td className="px-2 py-1.5 border border-gray-200 text-center text-gray-500">Optional</td>
+                    </tr>
+                    <tr>
+                      <td className="px-2 py-1.5 border border-gray-200 font-mono text-[#C8102E]">dob</td>
+                      <td className="px-2 py-1.5 border border-gray-200 text-gray-600">Date of birth (DD/MM/YYYY)</td>
+                      <td className="px-2 py-1.5 border border-gray-200 text-center text-gray-500">Optional</td>
+                    </tr>
+                    <tr className="bg-gray-50">
+                      <td className="px-2 py-1.5 border border-gray-200 font-mono text-[#C8102E]">emp_date</td>
+                      <td className="px-2 py-1.5 border border-gray-200 text-gray-600">Employment start date (DD/MM/YYYY)</td>
+                      <td className="px-2 py-1.5 border border-gray-200 text-center text-gray-500">Optional</td>
+                    </tr>
+                    <tr>
+                      <td className="px-2 py-1.5 border border-gray-200 font-mono text-[#C8102E]">head_of_dept</td>
+                      <td className="px-2 py-1.5 border border-gray-200 text-gray-600">Yes or No</td>
+                      <td className="px-2 py-1.5 border border-gray-200 text-center text-gray-500">Optional (defaults to No)</td>
+                    </tr>
+                    <tr className="bg-gray-50">
                       <td className="px-2 py-1.5 border border-gray-200 font-mono text-[#C8102E]">node_path</td>
                       <td className="px-2 py-1.5 border border-gray-200 text-gray-600">Slash-separated path to the node. Leave blank to add to the currently selected node.</td>
                       <td className="px-2 py-1.5 border border-gray-200 text-center text-gray-500">Optional</td>
@@ -962,7 +1009,7 @@ export function AdminOrgDetail() {
               {/* Example CSV — dark code block */}
               <div>
                 <p className="text-xs font-bold text-gray-900 mb-2">Example CSV</p>
-                <pre className="bg-[#1e1e2e] text-[#cdd6f4] rounded-lg p-3 text-xs font-mono leading-loose overflow-x-auto">{`name,email,title,employee_id,node_path\nPriya Sharma,priya@tata.com,Senior Manager,EMP001,Sales/North Region\nRahul Mehta,rahul@tata.com,Team Lead,EMP002,Sales/South Region\nAisha Khan,aisha@tata.com,Analyst,,Operations\nDev Patel,dev@tata.com,Director,EMP004,`}</pre>
+                <pre className="bg-[#1e1e2e] text-[#cdd6f4] rounded-lg p-3 text-xs font-mono leading-loose overflow-x-auto">{`name,last_name,middle_name,email,title,employee_id,emp_status,gender,default_language,manager_email,dob,emp_date,head_of_dept,node_path\nPriya,Sharma,Devi,priya@tata.com,Senior Manager,EMP001,Active,Female,English,mgr@tata.com,15/06/1985,01/06/2019,No,Sales/North Region\nRahul,Mehta,,rahul@tata.com,Team Lead,EMP002,On Leave,Male,English,,,,No,Sales/South Region\nAisha,Khan,,aisha@tata.com,Analyst,,Active,,,,,,,Operations`}</pre>
               </div>
 
               {/* node_path tips — blue callout */}
