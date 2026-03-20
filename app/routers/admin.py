@@ -1170,6 +1170,17 @@ async def bulk_upload_employees(
         title = (row.get("title") or "").strip() or None
         ext_id = (row.get("employee_id") or "").strip() or None
         node_path_val = (row.get("node_path") or "").strip() or None
+        last_name = (row.get("last_name") or "").strip() or None
+        middle_name = (row.get("middle_name") or "").strip() or None
+        gender = (row.get("gender") or "").strip() or None
+        default_language = (row.get("default_language") or "").strip() or "English"
+        manager_email = (row.get("manager_email") or "").strip() or None
+        dob_raw = (row.get("dob") or "").strip() or None
+        emp_date_raw = (row.get("emp_date") or "").strip() or None
+        head_raw = (row.get("head_of_dept") or "").strip().lower()
+        head_of_dept = head_raw in ("yes", "true", "1")
+        emp_status_raw = (row.get("emp_status") or "").strip()
+        emp_status = emp_status_raw if emp_status_raw else "Active"
 
         # Validate email
         if not re.match(r"[^@]+@[^@]+\.[^@]+", email):
@@ -1181,6 +1192,27 @@ async def bulk_upload_employees(
             errors.append({"row": row_idx, "email": email, "reason": "duplicate in file"})
             continue
         seen_emails.add(email.lower())
+
+        # Validate name required
+        if not name:
+            errors.append({"row": row_idx, "email": email, "reason": "name is required"})
+            continue
+
+        # Validate emp_status
+        from app.schemas.org import EMP_STATUS_VALUES
+        if emp_status not in EMP_STATUS_VALUES:
+            errors.append({"row": row_idx, "email": email,
+                           "reason": f"invalid emp_status '{emp_status}'"})
+            continue
+
+        # Validate date formats early (before node resolution) for cleaner error reporting.
+        # The raw strings are passed to _add_employee_to_node, which calls _parse_dmy_date internally.
+        try:
+            _parse_dmy_date(dob_raw)      # validate only; raw string passed to _add_employee_to_node
+            _parse_dmy_date(emp_date_raw)  # _add_employee_to_node will parse again internally
+        except ValueError as exc:
+            errors.append({"row": row_idx, "email": email, "reason": str(exc)})
+            continue
 
         # Resolve target node
         target_node_id = node_id
@@ -1195,6 +1227,12 @@ async def bulk_upload_employees(
             _add_employee_to_node(
                 org_id=org_id, org_name=org_name, node_id=target_node_id,
                 email=email, name=name, title=title, employee_id=ext_id,
+                last_name=last_name, middle_name=middle_name,
+                emp_status=emp_status, gender=gender,
+                default_language=default_language, manager_email=manager_email,
+                dob=dob_raw,  # _add_employee_to_node calls _parse_dmy_date internally
+                emp_date=emp_date_raw,
+                head_of_dept=head_of_dept,
             )
             created += 1
         except HTTPException as he:

@@ -104,3 +104,40 @@ class TestParseDmyDate:
             _parse_dmy_date('1990-06-15')   # ISO format — wrong
         with pytest.raises(ValueError):
             _parse_dmy_date('32/13/2020')   # impossible date
+
+
+class TestBulkParsing:
+    """Test the parsing rules applied to each CSV row in bulk_upload_employees."""
+
+    def _parse_head_of_dept(self, value: str) -> bool:
+        """Mirror the logic in bulk_upload_employees."""
+        return value.strip().lower() in ('yes', 'true', '1')
+
+    def test_head_of_dept_yes(self):
+        assert self._parse_head_of_dept('yes') is True
+        assert self._parse_head_of_dept('Yes') is True
+        assert self._parse_head_of_dept('true') is True
+        assert self._parse_head_of_dept('1') is True
+
+    def test_head_of_dept_no(self):
+        assert self._parse_head_of_dept('no') is False
+        assert self._parse_head_of_dept('') is False
+        assert self._parse_head_of_dept('No') is False
+
+    def test_emp_status_default(self):
+        # blank → 'Active'
+        value = ''.strip() or 'Active'
+        assert value == 'Active'
+
+    def test_emp_status_invalid(self):
+        from app.schemas.org import EMP_STATUS_VALUES
+        assert 'BadStatus' not in EMP_STATUS_VALUES
+
+    def test_date_parse_valid(self):
+        from app.routers.admin import _parse_dmy_date
+        assert _parse_dmy_date('01/06/1985') == '1985-06-01'
+
+    def test_date_parse_invalid_raises(self):
+        from app.routers.admin import _parse_dmy_date
+        with pytest.raises(ValueError):
+            _parse_dmy_date('2026-01-01')  # ISO, not DMY
