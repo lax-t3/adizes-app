@@ -120,6 +120,22 @@ cd /Users/vrln/adizes-frontend && npm run dev
 
 > These must be recreated after every `supabase start` (local DB resets).
 
+## Production Services
+
+| Service | Details |
+|---------|---------|
+| Supabase Cloud | Project: `t3-adizes-db` · URL: `https://swiznkamzxyfzgckebqi.supabase.co` · Project ID: `swiznkamzxyfzgckebqi` · Publishable key: `sb_publishable_WEHbUUR_iDtHlyAkNz8BRg_s-KGpVkV` |
+| AWS ECR | `094492115510.dkr.ecr.ap-south-1.amazonaws.com/adizes-backend:latest` |
+| AWS Profile | Use `lax-t3-assumed` for all ECR operations (`AWS_PROFILE=lax-t3-assumed`) |
+
+### Migrations → Production Supabase
+The project is already linked in the Supabase CLI. Run pending migrations with:
+```bash
+cd /Users/vrln/adizes-backend
+supabase db push --linked
+```
+Dry-run first with `--dry-run` to confirm which migrations will be applied.
+
 ## Production Architecture
 ```
 ┌──────────────────────────────────────────────────────────────┐
@@ -157,8 +173,8 @@ AWS_ACCOUNT_ID=<your-account-id>
 AWS_REGION=ap-south-1
 ECR_REPO=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/adizes-backend
 
-# Authenticate Docker to ECR
-aws ecr get-login-password --region $AWS_REGION | \
+# Authenticate Docker to ECR  (use lax-t3-assumed profile)
+AWS_PROFILE=lax-t3-assumed aws ecr get-login-password --region $AWS_REGION | \
   docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
 
 # Build for linux/amd64 (required if building on Apple Silicon)
