@@ -1,13 +1,15 @@
 // src/pages/AdminOrgDetail.tsx
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, Fragment } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, ChevronRight, ChevronDown, Plus, Trash2, Users, Download, HelpCircle } from 'lucide-react';
 import {
   getOrganization, createNode, deleteNode, updateNode,
   listNodeEmployees, addEmployee, bulkUploadEmployees, removeEmployee,
+  updateEmployee,
 } from '@/api/organizations';
-import { useOrgStore, findNode, buildBreadcrumb } from '@/store/orgStore';
+import { useOrgStore, findNode, buildBreadcrumb, flattenTree } from '@/store/orgStore';
 import type { OrgNode, OrgEmployeeSummary } from '@/types/api';
+import * as XLSX from 'xlsx';
 
 // ── Tree node (recursive) ─────────────────────────────────────
 function TreeNode({
@@ -91,6 +93,25 @@ export function AdminOrgDetail() {
   const [bulkResult, setBulkResult] = useState<any>(null);
   const [uploading, setUploading] = useState(false);
 
+  // Extended employee form state
+  const [empTab, setEmpTab] = useState<'identity' | 'employment'>('identity');
+  const [empLastName, setEmpLastName] = useState('');
+  const [empMiddleName, setEmpMiddleName] = useState('');
+  const [empGender, setEmpGender] = useState('');
+  const [empDob, setEmpDob] = useState('');
+  const [empLanguage, setEmpLanguage] = useState('English');
+  const [empStatus, setEmpStatus] = useState('Active');
+  const [empManagerEmail, setEmpManagerEmail] = useState('');
+  const [empDate, setEmpDate] = useState('');
+  const [empHeadOfDept, setEmpHeadOfDept] = useState(false);
+  const [empEditMode, setEmpEditMode] = useState(false);
+  const [empEditId, setEmpEditId] = useState<string | null>(null);
+  const [dobError, setDobError] = useState('');
+  const [empDateError, setEmpDateError] = useState('');
+
+  // Expandable table row
+  const [expandedEmpId, setExpandedEmpId] = useState<string | null>(null);
+
   // Help modal state
   const [showOrgHelp, setShowOrgHelp] = useState(false);
   const [showCsvHelp, setShowCsvHelp] = useState(false);
@@ -122,18 +143,49 @@ export function AdminOrgDetail() {
   useEffect(() => { loadEmployees(); }, [loadEmployees]);
 
   const handleAddEmployee = async () => {
+    const dobErr = validateDmy(empDob);
+    const empDateErr = validateDmy(empDate);
+    setDobError(dobErr); setEmpDateError(empDateErr);
+    if (dobErr || empDateErr) return;
+
     if (!orgId || !selectedNodeId || !empName.trim() || !empEmail.trim()) return;
     setAddingEmp(true); setEmpError(null);
     try {
-      await addEmployee(orgId, selectedNodeId, {
-        name: empName.trim(), email: empEmail.trim(),
-        title: empTitle.trim() || undefined, employee_id: empExtId.trim() || undefined,
-      });
+      if (empEditMode && empEditId) {
+        await updateEmployee(orgId, empEditId, {
+          last_name: empLastName || undefined,
+          middle_name: empMiddleName || undefined,
+          title: empTitle || undefined,
+          employee_id: empExtId || undefined,
+          emp_status: empStatus,
+          gender: empGender || undefined,
+          default_language: empLanguage,
+          manager_email: empManagerEmail || undefined,
+          dob: empDob || undefined,
+          emp_date: empDate || undefined,
+          head_of_dept: empHeadOfDept,
+        });
+      } else {
+        await addEmployee(orgId, selectedNodeId, {
+          name: empName.trim(), email: empEmail.trim(),
+          last_name: empLastName || undefined,
+          middle_name: empMiddleName || undefined,
+          title: empTitle || undefined,
+          employee_id: empExtId || undefined,
+          emp_status: empStatus,
+          gender: empGender || undefined,
+          default_language: empLanguage,
+          manager_email: empManagerEmail || undefined,
+          dob: empDob || undefined,
+          emp_date: empDate || undefined,
+          head_of_dept: empHeadOfDept,
+        });
+      }
       setShowAddEmp(false);
-      setEmpName(''); setEmpEmail(''); setEmpTitle(''); setEmpExtId('');
+      resetEmpModal();
       loadOrg(); loadEmployees();
     } catch (e: any) {
-      setEmpError(e?.response?.data?.detail ?? 'Failed to add employee');
+      setEmpError(e?.response?.data?.detail ?? 'Failed to save employee');
     } finally {
       setAddingEmp(false);
     }
@@ -196,6 +248,53 @@ export function AdminOrgDetail() {
     a.download = 'employee_upload_template.csv';
     a.click();
     URL.revokeObjectURL(url);
+  };
+
+  /** Format YYYY-MM-DD (from API) to DD/MM/YYYY (for display). */
+  const fmtDate = (iso: string | null): string => {
+    if (!iso) return '';
+    const [y, m, d] = iso.split('-');
+    return `${d}/${m}/${y}`;
+  };
+
+  /** Validate DD/MM/YYYY format — returns error string or ''. */
+  const validateDmy = (val: string): string => {
+    if (!val) return '';
+    if (!/^\d{2}\/\d{2}\/\d{4}$/.test(val)) return 'Use DD/MM/YYYY format';
+    return '';
+  };
+
+  /** Reset all Add Employee modal state to defaults. */
+  const resetEmpModal = () => {
+    setEmpTab('identity');
+    setEmpName(''); setEmpEmail(''); setEmpTitle(''); setEmpExtId('');
+    setEmpLastName(''); setEmpMiddleName(''); setEmpGender('');
+    setEmpDob(''); setEmpLanguage('English'); setEmpStatus('Active');
+    setEmpManagerEmail(''); setEmpDate(''); setEmpHeadOfDept(false);
+    setEmpEditMode(false); setEmpEditId(null);
+    setEmpError(null); setDobError(''); setEmpDateError('');
+  };
+
+  /** Open the modal in edit mode pre-filled with an existing employee. */
+  const openEditEmployee = (emp: OrgEmployeeSummary) => {
+    setEmpTab('identity');
+    setEmpName(emp.name);
+    setEmpEmail(emp.email);
+    setEmpTitle(emp.title ?? '');
+    setEmpExtId(emp.employee_id ?? '');
+    setEmpLastName(emp.last_name ?? '');
+    setEmpMiddleName(emp.middle_name ?? '');
+    setEmpGender(emp.gender ?? '');
+    setEmpDob(fmtDate(emp.dob));
+    setEmpLanguage(emp.default_language);
+    setEmpStatus(emp.emp_status);
+    setEmpManagerEmail(emp.manager_email ?? '');
+    setEmpDate(fmtDate(emp.emp_date));
+    setEmpHeadOfDept(emp.head_of_dept);
+    setEmpEditMode(true);
+    setEmpEditId(emp.id);
+    setEmpError(null); setDobError(''); setEmpDateError('');
+    setShowAddEmp(true);
   };
 
   const selectedNode = currentOrg && selectedNodeId
@@ -385,38 +484,190 @@ export function AdminOrgDetail() {
         </div>
       </div>
 
-      {/* Add Employee Modal */}
+      {/* Add / Edit Employee Modal — two tabs */}
       {showAddEmp && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
-            <h2 className="text-lg font-semibold mb-4">Add Employee</h2>
-            {empError && <p className="text-red-600 text-sm mb-3">{empError}</p>}
-            {[
-              { label: 'Name *', value: empName, set: setEmpName, placeholder: 'Full name' },
-              { label: 'Email *', value: empEmail, set: setEmpEmail, placeholder: 'work@company.com' },
-              { label: 'Job Title', value: empTitle, set: setEmpTitle, placeholder: 'Optional' },
-              { label: 'Employee ID', value: empExtId, set: setEmpExtId, placeholder: 'Optional HR ID' },
-            ].map(({ label, value, set, placeholder }) => (
-              <div key={label} className="mb-3">
-                <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
-                <input
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#C8102E]"
-                  placeholder={placeholder}
-                  value={value}
-                  onChange={(e) => set(e.target.value)}
-                />
-              </div>
-            ))}
-            <div className="flex justify-end gap-3 mt-4">
-              <button onClick={() => { setShowAddEmp(false); setEmpError(null); }}
-                className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900">Cancel</button>
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-lg">
+            {/* Header */}
+            <div className="px-6 pt-5 pb-0">
+              <h2 className="text-lg font-semibold text-gray-900">
+                {empEditMode ? 'Edit Employee' : 'Add Employee'}
+              </h2>
+            </div>
+
+            {/* Tabs */}
+            <div className="flex gap-0 border-b border-gray-200 mt-4 px-6">
               <button
-                onClick={handleAddEmployee}
-                disabled={addingEmp || !empName.trim() || !empEmail.trim()}
-                className="px-4 py-2 text-sm bg-[#C8102E] text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
+                className={`pb-2 px-1 mr-6 text-sm font-medium border-b-2 transition-colors ${
+                  empTab === 'identity'
+                    ? 'border-[#C8102E] text-[#C8102E]'
+                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                }`}
+                onClick={() => setEmpTab('identity')}
               >
-                {addingEmp ? 'Adding…' : 'Add Employee'}
+                Identity
               </button>
+              <button
+                className={`pb-2 px-1 text-sm font-medium border-b-2 transition-colors ${
+                  empTab === 'employment'
+                    ? 'border-[#C8102E] text-[#C8102E]'
+                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                }`}
+                onClick={() => setEmpTab('employment')}
+              >
+                Employment
+              </button>
+            </div>
+
+            {empError && <p className="text-red-600 text-sm px-6 pt-3">{empError}</p>}
+
+            {/* Tab 1: Identity */}
+            {empTab === 'identity' && (
+              <div className="px-6 pt-4 pb-2 flex flex-col gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    First Name *{empEditMode && <span className="ml-2 text-xs text-gray-400">(read-only)</span>}
+                  </label>
+                  <input
+                    className={`w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#C8102E] ${empEditMode ? 'bg-gray-50 cursor-not-allowed' : ''}`}
+                    placeholder="First name"
+                    value={empName}
+                    onChange={(e) => !empEditMode && setEmpName(e.target.value)}
+                    readOnly={empEditMode}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Middle Name</label>
+                    <input className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#C8102E]"
+                      placeholder="Optional" value={empMiddleName} onChange={(e) => setEmpMiddleName(e.target.value)} />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
+                    <input className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#C8102E]"
+                      placeholder="Optional" value={empLastName} onChange={(e) => setEmpLastName(e.target.value)} />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Email *{empEditMode && <span className="ml-2 text-xs text-gray-400">(read-only)</span>}
+                  </label>
+                  <input
+                    className={`w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#C8102E] ${empEditMode ? 'bg-gray-50 cursor-not-allowed' : ''}`}
+                    placeholder="work@company.com" value={empEmail}
+                    onChange={(e) => !empEditMode && setEmpEmail(e.target.value)}
+                    readOnly={empEditMode}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Gender</label>
+                  <select className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#C8102E]"
+                    value={empGender} onChange={(e) => setEmpGender(e.target.value)}>
+                    <option value="">Not specified</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                    <option value="Non-Binary">Non-Binary</option>
+                    <option value="Prefer not to say">Prefer not to say</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Date of Birth (DD/MM/YYYY)</label>
+                  <input className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#C8102E] ${dobError ? 'border-red-400' : 'border-gray-300'}`}
+                    placeholder="DD/MM/YYYY" value={empDob}
+                    onChange={(e) => { setEmpDob(e.target.value); setDobError(''); }}
+                    onBlur={() => setDobError(validateDmy(empDob))} />
+                  {dobError && <p className="text-red-500 text-xs mt-1">{dobError}</p>}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Default Language</label>
+                  <select className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#C8102E]"
+                    value={empLanguage} onChange={(e) => setEmpLanguage(e.target.value)}>
+                    {['English','Hindi','Tamil','Telugu','Kannada','Malayalam','Bengali','Marathi','Other'].map(l => (
+                      <option key={l} value={l}>{l}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            )}
+
+            {/* Tab 2: Employment */}
+            {empTab === 'employment' && (
+              <div className="px-6 pt-4 pb-2 flex flex-col gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Employment Status *</label>
+                  <select className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#C8102E]"
+                    value={empStatus} onChange={(e) => setEmpStatus(e.target.value)}>
+                    {['Active','Inactive','On Leave','Probation','Resigned'].map(s => (
+                      <option key={s} value={s}>{s}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Job Title</label>
+                    <input className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#C8102E]"
+                      placeholder="Optional" value={empTitle} onChange={(e) => setEmpTitle(e.target.value)} />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Employee ID</label>
+                    <input className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#C8102E]"
+                      placeholder="Optional HR ID" value={empExtId} onChange={(e) => setEmpExtId(e.target.value)} />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Manager Email</label>
+                  <input className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#C8102E]"
+                    placeholder="manager@company.com" value={empManagerEmail} onChange={(e) => setEmpManagerEmail(e.target.value)} />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Employment Date (DD/MM/YYYY)</label>
+                  <input className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#C8102E] ${empDateError ? 'border-red-400' : 'border-gray-300'}`}
+                    placeholder="DD/MM/YYYY" value={empDate}
+                    onChange={(e) => { setEmpDate(e.target.value); setEmpDateError(''); }}
+                    onBlur={() => setEmpDateError(validateDmy(empDate))} />
+                  {empDateError && <p className="text-red-500 text-xs mt-1">{empDateError}</p>}
+                </div>
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-medium text-gray-700">Head of Department</label>
+                  <div className="flex rounded-lg overflow-hidden border border-gray-300 text-sm">
+                    <button
+                      onClick={() => setEmpHeadOfDept(false)}
+                      className={`px-4 py-1.5 transition-colors ${!empHeadOfDept ? 'bg-[#C8102E] text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
+                    >No</button>
+                    <button
+                      onClick={() => setEmpHeadOfDept(true)}
+                      className={`px-4 py-1.5 transition-colors ${empHeadOfDept ? 'bg-[#C8102E] text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
+                    >Yes</button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Footer */}
+            <div className="flex justify-between items-center px-6 py-4 border-t border-gray-100 mt-2">
+              {empTab === 'identity' ? (
+                <>
+                  <button onClick={() => { setShowAddEmp(false); resetEmpModal(); }}
+                    className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900">Cancel</button>
+                  <button
+                    onClick={() => setEmpTab('employment')}
+                    disabled={!empName.trim() || !empEmail.trim()}
+                    className="px-4 py-2 text-sm bg-[#C8102E] text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
+                  >Next →</button>
+                </>
+              ) : (
+                <>
+                  <button onClick={() => setEmpTab('identity')}
+                    className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900">← Back</button>
+                  <button
+                    onClick={handleAddEmployee}
+                    disabled={addingEmp}
+                    className="px-4 py-2 text-sm bg-[#C8102E] text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
+                  >
+                    {addingEmp ? 'Saving…' : empEditMode ? 'Save Changes' : 'Add Employee'}
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>
