@@ -82,7 +82,8 @@ adizes-frontend/
       assessment.ts    # getQuestions; submitAssessment(cohort_id, answers) — cohort_id required
       results.ts       # getResult, getMyAssessments → CohortAssessmentHistory[] (downloadPdf removed — PDFs served from S3 via pdf_url)
       admin.ts         # cohort CRUD, member management, user management; getRespondent(userId, cohortId);
-                       #   organisation CRUD, org node management, org employee management, cohort↔org linking
+                       #   organisation CRUD, org node management, org employee management (addEmployee with 9 HR fields,
+                       #   updateEmployee PATCH), cohort↔org linking; exportToExcel (SheetJS)
       settings.ts      # SMTP + email template CRUD
     components/
       layout/          # AdminSidebar (includes Organizations link), Header, Footer
@@ -104,7 +105,9 @@ adizes-frontend/
       AdminCohortList.tsx
       AdminCohortDetail.tsx   # Cohort members + resend invite; linked organisations panel; enrol from org modal
       AdminOrganizations.tsx  # Organisation list + create org
-      AdminOrgDetail.tsx      # Org tree (nodes), employee management per node, link to cohorts
+      AdminOrgDetail.tsx      # Org tree (nodes), employee management per node, link to cohorts.
+                              #   Two-tab Add/Edit modal (Identity + Employment), expandable table rows
+                              #   with inline detail grid + Edit/Remove actions, Export Excel (SheetJS)
       AdminRespondent.tsx     # Respondent detail; reads cohort_id from ?cohort_id= query param; shows pending state if no result
       AdminSettings.tsx       # SMTP config + email template editor
       AdminHelp.tsx           # Admin FAQ including Employee Activation & Password Reset section
@@ -112,8 +115,10 @@ adizes-frontend/
     store/
       authStore.ts       # Zustand auth state (JWT, user, role)
       assessmentStore.ts # Assessment session state including cohortId (set from ?cohort_id= query param)
+      orgStore.ts        # Org tree state; exports flattenTree() helper for building node-id→name map (used for Excel export)
     types/
-      api.ts             # Shared API types (AuthResponse, CohortAssessmentHistory, Organisation, OrgNode, etc.)
+      api.ts             # Shared API types (AuthResponse, CohortAssessmentHistory, Organisation, OrgNode,
+                         #   OrgEmployeeSummary with 9 extended HR fields, UpdateEmployeeRequest, etc.)
 ```
 
 ## Pages & Routes
@@ -182,6 +187,12 @@ Admins manage organisations from `/admin/organizations`:
 3. Add employees to any node → employee receives `org_welcome` email with 24-hour activation link → redirects to `/register`
 4. Link the organisation to a cohort from `/admin/cohorts/:id` → **Enrol from Org** modal
 5. Enrol employees by scope (whole org / specific node + descendants) or by individual selection
+
+### Employee fields
+
+Each employee record supports: `name` (required), `email` (required), `title`, `employee_id`, `emp_status` (Active / Inactive / On Leave / Probation / Resigned — default Active), `last_name`, `middle_name`, `gender`, `default_language` (default English), `manager_email`, `dob` (DD/MM/YYYY), `emp_date` (DD/MM/YYYY), `head_of_dept` (bool).
+
+Employees can be added individually (two-tab modal) or via **bulk CSV upload** (14-column template). An **Export Excel** button downloads all employees in the current node with their node name included.
 
 ## Related
 
