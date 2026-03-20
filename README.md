@@ -99,11 +99,14 @@ adizes-frontend/
       ForgotPassword.tsx      # Forgot-password flow: email input → sent/not_activated/error states
       ResetPassword.tsx       # Reset-password flow: reads recovery token from URL hash → set new password
       Dashboard.tsx           # PAEI results tabs + My Assessments list; all "Begin Assessment" CTAs pass ?cohort_id=
-      Assessment.tsx          # 36-question flow; reads cohort_id from query param; redirects to /dashboard if missing
+      Assessment.tsx          # 36-question flow; reads cohort_id from query param; redirects to /dashboard if missing.
+                              #   Pre-assessment YouTube video intro screen shown once before Section 1 gate.
+                              #   Section intro cards show a highlighted callout with ranking instructions (1st→4th) and deselect hint.
       Results.tsx             # Full PAEI results + PDF download (S3 url state machine: null→"Generating…"+check-again, set→window.open)
       AdminDashboard.tsx
-      AdminCohortList.tsx
-      AdminCohortDetail.tsx   # Cohort members + resend invite; linked organisations panel; enrol from org modal
+      AdminCohorts.tsx        # Cohort list + create cohort. Trash icon on empty cohorts (member_count === 0) → DELETE /admin/cohorts/{id}
+      AdminCohortDetail.tsx   # Cohort members + resend invite; linked organisations panel; enrol from org modal.
+                              #   Respondent list auto-refreshes after successful org enrolment.
       AdminOrganizations.tsx  # Organisation list + create org
       AdminOrgDetail.tsx      # Org tree (nodes), employee management per node, link to cohorts.
                               #   Two-tab Add/Edit modal (Identity + Employment), expandable table rows
