@@ -60,3 +60,16 @@ export function buildBreadcrumb(tree: OrgNode[], nodeId: string): string {
   walk(tree, nodeId);
   return parts.join(' › ');
 }
+
+/** Flatten the org tree into a list of all nodes (for lookup maps). */
+export function flattenTree(tree: OrgNode[]): OrgNode[] {
+  const result: OrgNode[] = [];
+  function walk(nodes: OrgNode[]) {
+    for (const n of nodes) {
+      result.push(n);
+      if (n.children.length) walk(n.children);
+    }
+  }
+  walk(tree);
+  return result;
+}

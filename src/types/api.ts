@@ -163,15 +163,38 @@ export interface OrgDetail {
 }
 
 export interface OrgEmployeeSummary {
-  id: string;         // org_employees.id — use for DELETE
+  id: string;           // org_employees.id — use for PATCH/DELETE
   user_id: string;
-  name: string;
+  name: string;         // first name, from auth.users.user_metadata.name
   email: string;
+  last_name: string | null;
+  middle_name: string | null;
   title: string | null;
   employee_id: string | null;
-  status: 'active' | 'pending';
+  emp_status: string;   // 'Active' | 'Inactive' | 'On Leave' | 'Probation' | 'Resigned'
+  gender: string | null;
+  default_language: string;
+  manager_email: string | null;
+  dob: string | null;      // YYYY-MM-DD from API; format to DD/MM/YYYY in UI
+  emp_date: string | null; // YYYY-MM-DD from API
+  head_of_dept: boolean;
+  status: 'active' | 'pending';   // auth activation state
   node_id: string;
   joined_at: string;
+}
+
+export interface UpdateEmployeeRequest {
+  last_name?: string;
+  middle_name?: string;
+  title?: string;
+  employee_id?: string;
+  emp_status?: string;
+  gender?: string;
+  default_language?: string;
+  manager_email?: string;
+  dob?: string;      // DD/MM/YYYY or "" to clear
+  emp_date?: string; // DD/MM/YYYY or "" to clear
+  head_of_dept?: boolean;
 }
 
 export interface LinkedOrgSummary {

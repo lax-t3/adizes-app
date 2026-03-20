@@ -1,6 +1,6 @@
 import { apiClient } from './client';
 import type {
-  OrgSummary, OrgDetail, OrgEmployeeSummary,
+  OrgSummary, OrgDetail, OrgEmployeeSummary, UpdateEmployeeRequest,
   LinkedOrgSummary, BulkUploadResult, EnrollFromOrgResult,
 } from '@/types/api';
 
@@ -72,7 +72,15 @@ export async function listNodeEmployees(
 export async function addEmployee(
   orgId: string,
   nodeId: string,
-  payload: { name: string; email: string; title?: string; employee_id?: string },
+  payload: {
+    name: string; email: string;
+    last_name?: string; middle_name?: string;
+    title?: string; employee_id?: string;
+    emp_status?: string; gender?: string;
+    default_language?: string; manager_email?: string;
+    dob?: string; emp_date?: string;
+    head_of_dept?: boolean;
+  },
 ): Promise<{ user_id: string; created: boolean; emailed: boolean }> {
   const { data } = await apiClient.post(
     `/admin/organizations/${orgId}/nodes/${nodeId}/employees`, payload,
@@ -97,6 +105,18 @@ export async function bulkUploadEmployees(
 
 export async function removeEmployee(orgId: string, orgEmployeeId: string): Promise<void> {
   await apiClient.delete(`/admin/organizations/${orgId}/employees/${orgEmployeeId}`);
+}
+
+export async function updateEmployee(
+  orgId: string,
+  orgEmployeeId: string,
+  payload: UpdateEmployeeRequest,
+): Promise<OrgEmployeeSummary> {
+  const { data } = await apiClient.patch<OrgEmployeeSummary>(
+    `/admin/organizations/${orgId}/employees/${orgEmployeeId}`,
+    payload,
+  );
+  return data;
 }
 
 // ── Cohort ↔ Org ──────────────────────────────────────────────
