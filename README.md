@@ -38,6 +38,7 @@ docker exec -i $DB psql -U postgres -d postgres < migrations/005_ranking_scoring
 docker exec -i $DB psql -U postgres -d postgres < migrations/006_cohort_scoped_assessments.sql
 docker exec -i $DB psql -U postgres -d postgres < migrations/007_organizations.sql
 docker exec -i $DB psql -U postgres -d postgres < migrations/008_employee_extended_fields.sql
+docker exec -i $DB psql -U postgres -d postgres < migrations/009_employee_name_column.sql
 
 # 3. Copy and edit env (use http://127.0.0.1:54321 for local Supabase)
 cp .env.example .env
@@ -258,9 +259,11 @@ adizes-backend/
     006_cohort_scoped_assessments.sql   # Adds cohort_id NOT NULL FK to assessments (clean-slate migration)
     007_organizations.sql               # organisations, org_nodes, org_employees, cohort_organizations tables
     008_employee_extended_fields.sql    # 9 new HR columns on org_employees (emp_status, last/middle name, gender, language, manager_email, DOB, emp_date, head_of_dept)
+    009_employee_name_column.sql        # adds name (first name) column to org_employees (was missing from original schema)
   supabase/migrations/
     20260319000007_organizations.sql    # Supabase CLI-tracked copy of 007 (applied to cloud via supabase db push)
     20260320000008_employee_extended_fields.sql  # Supabase CLI-tracked copy of 008
+    20260320000009_employee_name_column.sql      # Supabase CLI-tracked copy of 009
   tests/
     test_scoring.py
     test_gap_analysis.py
