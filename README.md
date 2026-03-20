@@ -312,6 +312,7 @@ adizes-backend/
 | GET | `/admin/stats` | Admin | Platform-wide stats |
 | GET | `/admin/cohorts` | Admin | List all cohorts |
 | POST | `/admin/cohorts` | Admin | Create cohort |
+| DELETE | `/admin/cohorts/{id}` | Admin | Delete cohort — only if it has 0 enrolled members; returns 400 otherwise |
 | GET | `/admin/cohorts/{id}` | Admin | Cohort detail + team scores |
 | POST | `/admin/cohorts/{id}/members` | Admin | Enroll user by email (auto-invites new users) |
 | POST | `/admin/cohorts/{id}/members/bulk` | Admin | Bulk enroll from list |
@@ -334,7 +335,7 @@ adizes-backend/
 | PUT | `/admin/organizations/{id}/nodes/{nid}` | Admin | Rename node |
 | DELETE | `/admin/organizations/{id}/nodes/{nid}` | Admin | Delete node (cascades employees) |
 | GET | `/admin/organizations/{id}/nodes/{nid}/employees` | Admin | List employees in a node |
-| POST | `/admin/organizations/{id}/nodes/{nid}/employees` | Admin | Add employee to node (sends org_welcome email with activation link). Accepts 9 extended HR fields: `emp_status`, `last_name`, `middle_name`, `gender`, `default_language`, `manager_email`, `dob` (DD/MM/YYYY), `emp_date` (DD/MM/YYYY), `head_of_dept`. |
+| POST | `/admin/organizations/{id}/nodes/{nid}/employees` | Admin | Add employee to node (sends org_welcome email with activation link). Accepts 9 extended HR fields: `emp_status`, `last_name`, `middle_name`, `gender`, `default_language`, `manager_email`, `dob` (DD/MM/YYYY), `emp_date` (DD/MM/YYYY), `head_of_dept`. Employee `name` is stored in `org_employees.name` and written to `user_metadata` via `generate_link options.data` so the profile page pre-populates the name field. |
 | PATCH | `/admin/organizations/{id}/employees/{eid}` | Admin | Partial update employee HR fields. All fields optional; send `""` to clear nullable fields. `emp_status` and `default_language` cannot be cleared. |
 | DELETE | `/admin/organizations/{id}/nodes/{nid}/employees/{uid}` | Admin | Remove employee from node |
 | POST | `/admin/organizations/{id}/nodes/{nid}/employees/{uid}/resend-welcome` | Admin | Resend welcome activation email |
