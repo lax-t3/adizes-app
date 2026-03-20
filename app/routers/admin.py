@@ -986,7 +986,7 @@ def list_node_employees(
     result = []
     for e in emp_rows:
         u = auth_users.get(e["user_id"])
-        name = (u.user_metadata or {}).get("name", "") if u else ""
+        name = e.get("name") or (u.user_metadata or {}).get("name", "") if u else e.get("name", "")
         email = u.email if u else ""
         status_str = "active" if (u and u.email_confirmed_at) else "pending"
         result.append(OrgEmployeeSummary(
@@ -1113,6 +1113,7 @@ def _add_employee_to_node(
 
     supabase_admin.table("org_employees").insert({
         "org_id": org_id, "node_id": node_id, "user_id": user_id,
+        "name": name,
         "employee_id": employee_id, "title": title,
         "last_name": last_name, "middle_name": middle_name,
         "emp_status": emp_status, "gender": gender,
@@ -1318,7 +1319,7 @@ def update_employee(
     u = auth_users.get(row["user_id"])
     return OrgEmployeeSummary(
         id=row["id"], user_id=row["user_id"],
-        name=(u.user_metadata or {}).get("name", "") if u else "",
+        name=row.get("name") or ((u.user_metadata or {}).get("name", "") if u else ""),
         email=u.email if u else "",
         last_name=row.get("last_name"), middle_name=row.get("middle_name"),
         title=row.get("title"), employee_id=row.get("employee_id"),
