@@ -16,7 +16,7 @@ import io
 from app.schemas.org import (
     CreateOrgRequest, UpdateOrgRequest, OrgSummary, OrgDetail, OrgNode,
     CreateNodeRequest, UpdateNodeRequest,
-    AddEmployeeRequest, OrgEmployeeSummary, BulkUploadResult,
+    AddEmployeeRequest, UpdateEmployeeRequest, OrgEmployeeSummary, BulkUploadResult,
     LinkOrgRequest, LinkedOrgSummary, LinkedCohortSummary,
     EnrollFromOrgRequest, EnrollFromOrgResult,
 )
@@ -1251,6 +1251,88 @@ def remove_employee(org_id: str, org_employee_id: str, admin: dict = Depends(req
     """Remove employee from org. Does NOT delete auth user or cohort memberships."""
     supabase_admin.table("org_employees").delete()\
         .eq("id", org_employee_id).eq("org_id", org_id).execute()
+
+
+@router.patch("/organizations/{org_id}/employees/{org_employee_id}",
+              response_model=OrgEmployeeSummary)
+def update_employee(
+    org_id: str,
+    org_employee_id: str,
+    body: UpdateEmployeeRequest,
+    admin: dict = Depends(require_admin),
+):
+    """Partial update of org_employees record. Only supplied (non-None) fields are written.
+    Send "" (empty string) to clear an optional text/date field.
+    emp_status and default_language cannot be cleared.
+    """
+    # Verify record belongs to this org
+    existing = (
+        supabase_admin.table("org_employees").select("*")
+        .eq("id", org_employee_id).eq("org_id", org_id).limit(1).execute()
+    )
+    if not existing.data:
+        raise HTTPException(status_code=404, detail="Employee record not found")
+
+    from app.schemas.org import EMP_STATUS_VALUES
+
+    update_dict = body.model_dump(exclude_none=True)
+
+    # Validate emp_status if provided
+    if "emp_status" in update_dict:
+        if update_dict["emp_status"] not in EMP_STATUS_VALUES:
+            # Note: "" is also caught here since "" ∉ EMP_STATUS_VALUES
+            raise HTTPException(
+                status_code=422,
+                detail=f"Invalid emp_status '{update_dict['emp_status']}'"
+            )
+
+    # default_language cannot be cleared (it has a required default)
+    if "default_language" in update_dict and update_dict["default_language"] == "":
+        raise HTTPException(status_code=422, detail="default_language cannot be cleared")
+
+    # Apply empty-string → None clearing for clearable optional fields
+    CLEARABLE = {'last_name', 'middle_name', 'title', 'employee_id',
+                 'gender', 'manager_email', 'dob', 'emp_date'}
+    for field in list(update_dict.keys()):
+        if field in CLEARABLE and update_dict[field] == '':
+            update_dict[field] = None
+
+    # Parse date fields (DD/MM/YYYY → YYYY-MM-DD); None stays None
+    for date_field in ('dob', 'emp_date'):
+        if date_field in update_dict and update_dict[date_field] is not None:
+            try:
+                update_dict[date_field] = _parse_dmy_date(update_dict[date_field])
+            except ValueError as exc:
+                raise HTTPException(status_code=400, detail=str(exc))
+
+    if update_dict:
+        supabase_admin.table("org_employees").update(update_dict)\
+            .eq("id", org_employee_id).execute()
+
+    # Return fresh record
+    row = (
+        supabase_admin.table("org_employees").select("*")
+        .eq("id", org_employee_id).single().execute().data
+    )
+    auth_users = _get_auth_users_map()
+    u = auth_users.get(row["user_id"])
+    return OrgEmployeeSummary(
+        id=row["id"], user_id=row["user_id"],
+        name=(u.user_metadata or {}).get("name", "") if u else "",
+        email=u.email if u else "",
+        last_name=row.get("last_name"), middle_name=row.get("middle_name"),
+        title=row.get("title"), employee_id=row.get("employee_id"),
+        emp_status=row.get("emp_status") or "Active",
+        gender=row.get("gender"),
+        default_language=row.get("default_language") or "English",
+        manager_email=row.get("manager_email"),
+        dob=str(row["dob"]) if row.get("dob") else None,
+        emp_date=str(row["emp_date"]) if row.get("emp_date") else None,
+        head_of_dept=bool(row.get("head_of_dept", False)),
+        status="active" if (u and u.email_confirmed_at) else "pending",
+        node_id=row["node_id"],
+        joined_at=str(row["joined_at"]),
+    )
 
 
 # ─────────────────────────────────────────────────────────────

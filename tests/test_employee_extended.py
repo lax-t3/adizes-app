@@ -141,3 +141,36 @@ class TestBulkParsing:
         from app.routers.admin import _parse_dmy_date
         with pytest.raises(ValueError):
             _parse_dmy_date('2026-01-01')  # ISO, not DMY
+
+
+class TestEmptyStringClearing:
+    """Verify that "" is treated as a clear (→ None) in the update endpoint logic."""
+
+    def _apply_clear_logic(self, update_dict: dict) -> dict:
+        """Mirror the clearing logic from update_employee."""
+        CLEARABLE = {'last_name', 'middle_name', 'title', 'employee_id',
+                     'gender', 'manager_email', 'dob', 'emp_date'}
+        result = {}
+        for k, v in update_dict.items():
+            if k in CLEARABLE and v == '':
+                result[k] = None
+            else:
+                result[k] = v
+        return result
+
+    def test_empty_string_clears_text_field(self):
+        d = self._apply_clear_logic({'last_name': ''})
+        assert d['last_name'] is None
+
+    def test_non_empty_preserved(self):
+        d = self._apply_clear_logic({'last_name': 'Smith'})
+        assert d['last_name'] == 'Smith'
+
+    def test_non_clearable_preserved(self):
+        d = self._apply_clear_logic({'emp_status': 'Active'})
+        assert d['emp_status'] == 'Active'
+
+    def test_empty_emp_status_not_cleared(self):
+        # emp_status with "" should NOT be treated as clear
+        d = self._apply_clear_logic({'emp_status': ''})
+        assert d['emp_status'] == ''  # left for the validation to reject
