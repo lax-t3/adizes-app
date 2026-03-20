@@ -85,3 +85,22 @@ class TestBulkEmployeeRow:
         assert row.emp_status == 'Active'
         assert row.head_of_dept is False
         assert row.node_path is None
+
+
+class TestParseDmyDate:
+    def test_valid(self):
+        from app.routers.admin import _parse_dmy_date
+        assert _parse_dmy_date('15/06/1990') == '1990-06-15'
+        assert _parse_dmy_date('01/01/2020') == '2020-01-01'
+
+    def test_none_returns_none(self):
+        from app.routers.admin import _parse_dmy_date
+        assert _parse_dmy_date(None) is None
+        assert _parse_dmy_date('') is None
+
+    def test_invalid_raises(self):
+        from app.routers.admin import _parse_dmy_date
+        with pytest.raises(ValueError):
+            _parse_dmy_date('1990-06-15')   # ISO format — wrong
+        with pytest.raises(ValueError):
+            _parse_dmy_date('32/13/2020')   # impossible date

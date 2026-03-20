@@ -720,6 +720,17 @@ def _compute_team_scores(all_scaled: list) -> TeamScores:
 # Org module helpers
 # ─────────────────────────────────────────────────────────────
 
+def _parse_dmy_date(value: str | None) -> str | None:
+    """Parse DD/MM/YYYY → YYYY-MM-DD. Returns None for None/empty. Raises ValueError on bad format."""
+    if not value:
+        return None
+    from datetime import datetime
+    try:
+        return datetime.strptime(value.strip(), "%d/%m/%Y").strftime("%Y-%m-%d")
+    except ValueError:
+        raise ValueError(f"Invalid date '{value}' — expected DD/MM/YYYY")
+
+
 def _build_org_tree(flat_nodes: list[dict], employee_counts: dict) -> list[dict]:
     """Convert flat node list into nested tree. Returns list with single root element."""
     node_map = {}
@@ -980,7 +991,15 @@ def list_node_employees(
         status_str = "active" if (u and u.email_confirmed_at) else "pending"
         result.append(OrgEmployeeSummary(
             id=e["id"], user_id=e["user_id"], name=name, email=email,
+            last_name=e.get("last_name"), middle_name=e.get("middle_name"),
             title=e.get("title"), employee_id=e.get("employee_id"),
+            emp_status=e.get("emp_status") or "Active",
+            gender=e.get("gender"),
+            default_language=e.get("default_language") or "English",
+            manager_email=e.get("manager_email"),
+            dob=str(e["dob"]) if e.get("dob") else None,
+            emp_date=str(e["emp_date"]) if e.get("emp_date") else None,
+            head_of_dept=bool(e.get("head_of_dept", False)),
             status=status_str, node_id=e["node_id"], joined_at=str(e["joined_at"]),
         ))
     return result
@@ -1004,15 +1023,31 @@ def add_employee(
 
     return _add_employee_to_node(
         org_id=org_id, org_name=org_name, node_id=node_id,
-        email=str(body.email), name=body.name, title=body.title,
-        employee_id=body.employee_id,
+        email=str(body.email), name=body.name,
+        title=body.title, employee_id=body.employee_id,
+        last_name=body.last_name, middle_name=body.middle_name,
+        emp_status=body.emp_status, gender=body.gender,
+        default_language=body.default_language,
+        manager_email=str(body.manager_email) if body.manager_email else None,
+        dob=body.dob, emp_date=body.emp_date,
+        head_of_dept=body.head_of_dept,
     )
 
 
 def _add_employee_to_node(
     org_id: str, org_name: str, node_id: str,
     email: str, name: str,
-    title: str | None = None, employee_id: str | None = None,
+    title: str | None = None,
+    employee_id: str | None = None,
+    last_name: str | None = None,
+    middle_name: str | None = None,
+    emp_status: str = 'Active',
+    gender: str | None = None,
+    default_language: str = 'English',
+    manager_email: str | None = None,
+    dob: str | None = None,       # DD/MM/YYYY — parsed to ISO before insert
+    emp_date: str | None = None,  # DD/MM/YYYY — parsed to ISO before insert
+    head_of_dept: bool = False,
 ) -> dict:
     """
     3-case logic:
@@ -1066,9 +1101,23 @@ def _add_employee_to_node(
     if dup.data:
         raise HTTPException(status_code=409, detail="Employee already in this organisation")
 
+    from app.schemas.org import EMP_STATUS_VALUES
+    if emp_status not in EMP_STATUS_VALUES:
+        raise HTTPException(status_code=422, detail=f"Invalid emp_status '{emp_status}'")
+
+    try:
+        dob_iso = _parse_dmy_date(dob)
+        emp_date_iso = _parse_dmy_date(emp_date)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
     supabase_admin.table("org_employees").insert({
         "org_id": org_id, "node_id": node_id, "user_id": user_id,
         "employee_id": employee_id, "title": title,
+        "last_name": last_name, "middle_name": middle_name,
+        "emp_status": emp_status, "gender": gender,
+        "default_language": default_language, "manager_email": manager_email,
+        "dob": dob_iso, "emp_date": emp_date_iso, "head_of_dept": head_of_dept,
     }).execute()
 
     emailed = False
