@@ -37,6 +37,7 @@ docker exec -i $DB psql -U postgres -d postgres < migrations/004_email_settings.
 docker exec -i $DB psql -U postgres -d postgres < migrations/005_ranking_scoring.sql
 docker exec -i $DB psql -U postgres -d postgres < migrations/006_cohort_scoped_assessments.sql
 docker exec -i $DB psql -U postgres -d postgres < migrations/007_organizations.sql
+docker exec -i $DB psql -U postgres -d postgres < migrations/008_employee_extended_fields.sql
 
 # 3. Copy and edit env (use http://127.0.0.1:54321 for local Supabase)
 cp .env.example .env
@@ -91,9 +92,11 @@ checks automatically — no EC2 or load balancer configuration needed.
 
 Run this whenever you want to deploy a new version:
 
+> **AWS Profile:** Use the `lax-t3-assumed` profile for all ECR operations.
+
 ```bash
 # Authenticate Docker to ECR
-aws ecr get-login-password --region ap-south-1 | \
+AWS_PROFILE=lax-t3-assumed aws ecr get-login-password --region ap-south-1 | \
   docker login --username AWS --password-stdin \
   094492115510.dkr.ecr.ap-south-1.amazonaws.com
 
@@ -143,7 +146,7 @@ Update `FRONTEND_URL` on App Runner to point to your Netlify URL (so CORS header
 Just push a new image to ECR — App Runner auto-redeploys within ~1 minute:
 
 ```bash
-aws ecr get-login-password --region ap-south-1 | \
+AWS_PROFILE=lax-t3-assumed aws ecr get-login-password --region ap-south-1 | \
   docker login --username AWS --password-stdin \
   094492115510.dkr.ecr.ap-south-1.amazonaws.com
 
@@ -152,6 +155,19 @@ docker buildx build \
   -t 094492115510.dkr.ecr.ap-south-1.amazonaws.com/adizes-backend:latest \
   --push .
 ```
+
+### Step 5 — Run new migrations on production Supabase
+
+The project `swiznkamzxyfzgckebqi` is already linked in the Supabase CLI. After adding a new migration file under `supabase/migrations/`, apply it with:
+
+```bash
+supabase db push --linked        # dry-run first: add --dry-run
+```
+
+Production Supabase:
+- **URL:** `https://swiznkamzxyfzgckebqi.supabase.co`
+- **Project ID:** `swiznkamzxyfzgckebqi`
+- **Publishable key:** `sb_publishable_WEHbUUR_iDtHlyAkNz8BRg_s-KGpVkV`
 
 ### IAM permissions required for App Runner
 
@@ -241,13 +257,16 @@ adizes-backend/
     005_ranking_scoring.sql             # Ranking-based scoring engine changes
     006_cohort_scoped_assessments.sql   # Adds cohort_id NOT NULL FK to assessments (clean-slate migration)
     007_organizations.sql               # organisations, org_nodes, org_employees, cohort_organizations tables
+    008_employee_extended_fields.sql    # 9 new HR columns on org_employees (emp_status, last/middle name, gender, language, manager_email, DOB, emp_date, head_of_dept)
   supabase/migrations/
     20260319000007_organizations.sql    # Supabase CLI-tracked copy of 007 (applied to cloud via supabase db push)
+    20260320000008_employee_extended_fields.sql  # Supabase CLI-tracked copy of 008
   tests/
     test_scoring.py
     test_gap_analysis.py
     test_api_assessment.py
     test_org_module.py                  # Organisation CRUD, node management, employee management
+    test_employee_extended.py           # 23 tests: extended HR fields, PATCH partial update, bulk CSV parsing, date helpers
     test_forgot_password.py             # ForgotPasswordRequest/Response schema validation
     test_email_templates.py             # password_reset and org_welcome template rendering
   templates/
@@ -312,7 +331,8 @@ adizes-backend/
 | PUT | `/admin/organizations/{id}/nodes/{nid}` | Admin | Rename node |
 | DELETE | `/admin/organizations/{id}/nodes/{nid}` | Admin | Delete node (cascades employees) |
 | GET | `/admin/organizations/{id}/nodes/{nid}/employees` | Admin | List employees in a node |
-| POST | `/admin/organizations/{id}/nodes/{nid}/employees` | Admin | Add employee to node (sends org_welcome email with activation link) |
+| POST | `/admin/organizations/{id}/nodes/{nid}/employees` | Admin | Add employee to node (sends org_welcome email with activation link). Accepts 9 extended HR fields: `emp_status`, `last_name`, `middle_name`, `gender`, `default_language`, `manager_email`, `dob` (DD/MM/YYYY), `emp_date` (DD/MM/YYYY), `head_of_dept`. |
+| PATCH | `/admin/organizations/{id}/employees/{eid}` | Admin | Partial update employee HR fields. All fields optional; send `""` to clear nullable fields. `emp_status` and `default_language` cannot be cleared. |
 | DELETE | `/admin/organizations/{id}/nodes/{nid}/employees/{uid}` | Admin | Remove employee from node |
 | POST | `/admin/organizations/{id}/nodes/{nid}/employees/{uid}/resend-welcome` | Admin | Resend welcome activation email |
 | GET | `/admin/cohorts/{id}/organizations` | Admin | List orgs linked to a cohort |
