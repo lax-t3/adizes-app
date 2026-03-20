@@ -53,6 +53,7 @@ export function Assessment() {
 
   const [searchParams] = useSearchParams();
 
+  const [showVideoIntro, setShowVideoIntro] = useState(true);
   const [showIntro, setShowIntro] = useState(true);
   const [loadingQuestions, setLoadingQuestions] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -235,6 +236,56 @@ export function Assessment() {
   };
 
   const isAtStart = currentSection === 0 && currentQuestion === 0;
+
+  // Pre-assessment video intro screen
+  if (showVideoIntro) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="w-full max-w-3xl"
+        >
+          <Card className="border-t-4 border-t-primary shadow-lg">
+            <CardContent className="p-6 sm:p-10">
+              <div className="text-center mb-6">
+                <h2 className="font-display text-3xl font-bold text-gray-900 mb-2">
+                  Before You Begin
+                </h2>
+                <p className="text-gray-500 text-base max-w-xl mx-auto">
+                  Watch this short video to understand the Adizes PAEI framework and get the most out of your assessment.
+                </p>
+              </div>
+
+              {/* 16:9 YouTube embed */}
+              <div className="relative w-full mb-8" style={{ paddingBottom: "56.25%" }}>
+                <iframe
+                  className="absolute inset-0 w-full h-full rounded-lg shadow"
+                  src="https://www.youtube.com/embed/qhtbLtR2zBE"
+                  title="Adizes PAEI Framework Introduction"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                />
+              </div>
+
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                <p className="text-sm text-gray-400">
+                  Take your time — click the button when you're ready to start.
+                </p>
+                <Button
+                  size="lg"
+                  onClick={() => setShowVideoIntro(false)}
+                  className="w-full sm:w-auto px-10 text-lg h-14 shrink-0"
+                >
+                  I'm Ready — Begin Assessment <ArrowRight className="ml-2 h-5 w-5" />
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+      </div>
+    );
+  }
 
   // Section intro screen
   if (showIntro) {
