@@ -50,6 +50,12 @@ Existing rows gain `emp_status = 'Active'`, `default_language = 'English'`, `hea
 
 **Date storage:** ISO `YYYY-MM-DD`. The UI accepts and displays `DD/MM/YYYY`; conversion happens at the API layer (backend parses `DD/MM/YYYY` → `YYYY-MM-DD` on write, frontend formats `YYYY-MM-DD` → `DD/MM/YYYY` on display).
 
+**Name field semantics:** The existing `name` field in `auth.users.user_metadata` is now semantically "first name". `last_name` and `middle_name` are separate columns in `org_employees`. First name and email are set at account creation and cannot be changed through the employee edit flow; corrections require direct Supabase admin intervention.
+
+**`manager_email`** is stored as free text with no referential check — the referenced manager does not need to exist in the system. Referential validation is deferred to a future iteration.
+
+**Migration note:** This migration must be applied to both `migrations/008_employee_extended_fields.sql` (plain SQL for Docker local dev) and a corresponding timestamped file in `supabase/migrations/` (e.g., `20260320000008_employee_extended_fields.sql`) for Supabase CLI compatibility.
+
 ---
 
 ## Section 2: Backend API
@@ -116,7 +122,26 @@ class OrgEmployeeSummary(BaseModel):
     joined_at: str
 ```
 
-**`BulkEmployeeRow`** — add all 9 new fields (all Optional).
+**`BulkEmployeeRow`** — add all 9 new fields:
+
+```python
+class BulkEmployeeRow(BaseModel):
+    row: int
+    name: str
+    last_name: Optional[str] = None
+    middle_name: Optional[str] = None
+    email: str
+    title: Optional[str] = None
+    employee_id: Optional[str] = None
+    emp_status: str = 'Active'
+    gender: Optional[str] = None
+    default_language: str = 'English'
+    manager_email: Optional[str] = None
+    dob: Optional[str] = None       # DD/MM/YYYY
+    emp_date: Optional[str] = None  # DD/MM/YYYY
+    head_of_dept: bool = False
+    node_path: Optional[str] = None
+```
 
 ### 2b. Endpoint changes (`app/routers/admin.py`)
 
@@ -125,23 +150,25 @@ class OrgEmployeeSummary(BaseModel):
 **`list_node_employees`** — read all new columns from `org_employees` rows and populate `OrgEmployeeSummary`.
 
 **`bulk_upload_employees`** — parse 9 new columns from CSV headers. Parsing rules:
+- `name`: required; blank → row error
 - `emp_status`: blank → `'Active'`; invalid value → row error
 - `head_of_dept`: `yes`/`true`/`1` (case-insensitive) → `True`; anything else → `False`
 - `default_language`: blank → `'English'`
 - `dob` / `emp_date`: must be `DD/MM/YYYY` if provided; invalid format → row error
 
-**New endpoint — `PATCH /organizations/{org_id}/employees/{emp_record_id}`:**
+**New endpoint — `PATCH /organizations/{org_id}/employees/{org_employee_id}`:**
 
 ```python
-@router.patch("/organizations/{org_id}/employees/{emp_record_id}")
-def update_employee(org_id: str, emp_record_id: str, body: UpdateEmployeeRequest,
+@router.patch("/organizations/{org_id}/employees/{org_employee_id}")
+def update_employee(org_id: str, org_employee_id: str, body: UpdateEmployeeRequest,
                     admin: dict = Depends(require_admin)):
 ```
 
-- Verifies `org_employees.id = emp_record_id` and `org_id` match
-- Builds update dict from non-None fields only (partial update)
-- Validates `emp_status` if provided
-- Parses date fields from `DD/MM/YYYY` to `YYYY-MM-DD` if provided
+- Verifies `org_employees.id = org_employee_id` and `org_id` match (returns 404 if not)
+- Builds update dict using `body.model_dump(exclude_none=True)` — only fields explicitly sent are updated
+- To **clear** an optional string or date field, send `""` (empty string) — the backend maps `""` → `None` before the DB update. `emp_status` and `default_language` cannot be cleared (they have required defaults; empty string is treated as invalid and returns 422).
+- Validates `emp_status` against the allowed set if provided
+- Parses date fields from `DD/MM/YYYY` to `YYYY-MM-DD` if provided; `""` → `None` (clear)
 - Returns updated `OrgEmployeeSummary`
 
 ---
@@ -158,10 +185,10 @@ Add `UpdateEmployeeRequest` type (all fields optional).
 
 Update `addEmployee(orgId, nodeId, body)` — `body` now includes all new fields.
 
-Add `updateEmployee(orgId, empRecordId, body: UpdateEmployeeRequest)`:
+Add `updateEmployee(orgId, orgEmployeeId, body: UpdateEmployeeRequest)`:
 ```typescript
-export async function updateEmployee(orgId: string, empRecordId: string, body: UpdateEmployeeRequest) {
-  const { data } = await apiClient.patch(`/organizations/${orgId}/employees/${empRecordId}`, body);
+export async function updateEmployee(orgId: string, orgEmployeeId: string, body: UpdateEmployeeRequest) {
+  const { data } = await apiClient.patch(`/organizations/${orgId}/employees/${orgEmployeeId}`, body);
   return data;
 }
 ```
@@ -198,8 +225,9 @@ Fields (in order):
 1. First Name `*` — full width
 2. Middle Name / Last Name — side-by-side (`grid-cols-2`)
 3. Email `*` — full width
-4. Gender / DOB (DD/MM/YYYY) — side-by-side
-5. Default Language — full-width select, options: English, Hindi, Tamil, Telugu, Kannada, Malayalam, Bengali, Marathi, Other
+4. Gender — full-width select, options: Male, Female, Non-Binary, Prefer not to say (blank = not specified)
+5. DOB (DD/MM/YYYY) — full-width text input with placeholder `DD/MM/YYYY`; regex-validated on blur: `/^\d{2}\/\d{2}\/\d{4}$/`
+6. Default Language — full-width select, options: English, Hindi, Tamil, Telugu, Kannada, Malayalam, Bengali, Marathi, Other
 
 "Next →" button — disabled until First Name and Email are non-empty.
 
@@ -209,7 +237,7 @@ Fields (in order):
 1. Emp Status `*` — full-width select (Active / Inactive / On Leave / Probation / Resigned), default Active
 2. Job Title / Employee ID — side-by-side
 3. Manager Email — full width
-4. Employment Date (DD/MM/YYYY) — full width
+4. Employment Date (DD/MM/YYYY) — full-width text input with placeholder `DD/MM/YYYY`; same regex validation as DOB
 5. Head of Department — toggle row: label + Yes/No segmented control
 
 "← Back" button (left) + "Add Employee" button (right, `bg-[#C8102E]`).
@@ -282,6 +310,10 @@ Add `xlsx` (SheetJS) to frontend dependencies: `npm install xlsx`.
 ```typescript
 import * as XLSX from 'xlsx';
 
+// Build a lookup map from node ID → node name using the org tree already in memory
+// (flattenTree is a helper that traverses currentOrg.tree recursively)
+const nodeMap = Object.fromEntries(flattenTree(currentOrg.tree).map(n => [n.id, n.name]));
+
 const exportToExcel = () => {
   const rows = employees.map(emp => ({
     'Name': emp.name,
@@ -298,7 +330,7 @@ const exportToExcel = () => {
     'Employment Date': emp.emp_date ? formatDate(emp.emp_date) : '',
     'Head of Dept': emp.head_of_dept ? 'Yes' : 'No',
     'Activation': emp.status === 'active' ? 'Active' : 'Pending',
-    'Node': selectedNode?.name ?? '',
+    'Node': nodeMap[emp.node_id] ?? '',   // resolves actual node per employee row
   }));
   const ws = XLSX.utils.json_to_sheet(rows);
   const wb = XLSX.utils.book_new();
@@ -364,6 +396,7 @@ The "Employee Activation & Password Reset" FAQ section already covers the invite
 | `adizes-frontend/src/pages/AdminOrgDetail.tsx` | Two-tab modal; expandable table; edit mode; Export Excel button |
 | `adizes-frontend/src/pages/AdminHelp.tsx` | Add FAQ entry for extended fields |
 | `adizes-frontend/package.json` | Add `xlsx` dependency |
+| `HIL_Adizes_India/CLAUDE.md` | Add migration 008 to quick-start section |
 
 ---
 
