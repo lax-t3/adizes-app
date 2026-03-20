@@ -297,6 +297,36 @@ export function AdminOrgDetail() {
     setShowAddEmp(true);
   };
 
+  const exportToExcel = () => {
+    if (!currentOrg) return;
+    const nodeMap = Object.fromEntries(
+      flattenTree(currentOrg.tree).map(n => [n.id, n.name])
+    );
+    const rows = employees.map(emp => ({
+      'Name': emp.name,
+      'Last Name': emp.last_name ?? '',
+      'Middle Name': emp.middle_name ?? '',
+      'Email': emp.email,
+      'Job Title': emp.title ?? '',
+      'Employee ID': emp.employee_id ?? '',
+      'Emp Status': emp.emp_status,
+      'Gender': emp.gender ?? '',
+      'Language': emp.default_language,
+      'Manager Email': emp.manager_email ?? '',
+      'DOB': fmtDate(emp.dob),
+      'Employment Date': fmtDate(emp.emp_date),
+      'Head of Dept': emp.head_of_dept ? 'Yes' : 'No',
+      'Activation': emp.status === 'active' ? 'Active' : 'Pending',
+      'Node': nodeMap[emp.node_id] ?? '',
+    }));
+    const ws = XLSX.utils.json_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Employees');
+    const nodeName = (selectedNode?.name ?? 'employees').replace(/\s+/g, '-').toLowerCase();
+    const date = new Date().toISOString().slice(0, 10);
+    XLSX.writeFile(wb, `employees-${nodeName}-${date}.xlsx`);
+  };
+
   const selectedNode = currentOrg && selectedNodeId
     ? findNode(currentOrg.tree, selectedNodeId)
     : null;
@@ -399,7 +429,15 @@ export function AdminOrgDetail() {
                 <h3 className="font-semibold text-gray-900 flex items-center gap-2">
                   <Users className="h-4 w-4" /> Employees
                 </h3>
-                <label className="flex items-center gap-1.5 text-sm text-gray-600 ml-auto cursor-pointer">
+                <button
+                  onClick={exportToExcel}
+                  disabled={employees.length === 0}
+                  className="flex items-center gap-1.5 text-sm bg-[#1D3557] text-white rounded-lg px-3 py-1.5 hover:bg-[#152a44] disabled:opacity-50 ml-auto"
+                  title="Export current employee list to Excel"
+                >
+                  Export Excel
+                </button>
+                <label className="flex items-center gap-1.5 text-sm text-gray-600 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={includeDescendants}
@@ -447,34 +485,77 @@ export function AdminOrgDetail() {
                     <tr className="border-b border-gray-100 text-xs text-gray-500 uppercase tracking-wide text-left">
                       <th className="pb-2 pr-3">Name</th>
                       <th className="pb-2 pr-3">Email</th>
-                      <th className="pb-2 pr-3">Title</th>
-                      <th className="pb-2 pr-3">Status</th>
-                      <th className="pb-2" />
+                      <th className="pb-2 pr-3">Emp Status</th>
+                      <th className="pb-2 pr-3">Activation</th>
+                      <th className="pb-2 w-6" />
                     </tr>
                   </thead>
                   <tbody>
                     {employees.map((emp) => (
-                      <tr key={emp.id} className="border-b border-gray-50 hover:bg-gray-50">
-                        <td className="py-2 pr-3 font-medium text-gray-900">{emp.name}</td>
-                        <td className="py-2 pr-3 text-gray-500">{emp.email}</td>
-                        <td className="py-2 pr-3 text-gray-500">{emp.title ?? '—'}</td>
-                        <td className="py-2 pr-3">
-                          <span className={`px-2 py-0.5 rounded-full text-xs font-medium
-                            ${emp.status === 'active'
-                              ? 'bg-green-50 text-green-700'
-                              : 'bg-amber-50 text-amber-700'}`}>
-                            {emp.status === 'active' ? 'Active' : 'Pending'}
-                          </span>
-                        </td>
-                        <td className="py-2">
-                          <button
-                            onClick={() => handleRemoveEmployee(emp)}
-                            className="text-gray-400 hover:text-red-600"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </td>
-                      </tr>
+                      <Fragment key={emp.id}>
+                        {/* Main row */}
+                        <tr
+                          className={`border-b border-gray-50 cursor-pointer hover:bg-gray-50 ${expandedEmpId === emp.id ? 'bg-red-50 hover:bg-red-50' : ''}`}
+                          onClick={() => setExpandedEmpId(expandedEmpId === emp.id ? null : emp.id)}
+                        >
+                          <td className="py-2 pr-3 font-medium text-gray-900">{emp.name}</td>
+                          <td className="py-2 pr-3 text-gray-500">{emp.email}</td>
+                          <td className="py-2 pr-3">
+                            <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                              emp.emp_status === 'Active' ? 'bg-green-50 text-green-700' :
+                              emp.emp_status === 'Inactive' ? 'bg-gray-100 text-gray-600' :
+                              emp.emp_status === 'On Leave' ? 'bg-amber-50 text-amber-700' :
+                              emp.emp_status === 'Probation' ? 'bg-blue-50 text-blue-700' :
+                              'bg-red-50 text-red-700'
+                            }`}>{emp.emp_status}</span>
+                          </td>
+                          <td className="py-2 pr-3">
+                            <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                              emp.status === 'active' ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700'
+                            }`}>{emp.status === 'active' ? 'Active' : 'Pending'}</span>
+                          </td>
+                          <td className="py-2 text-gray-400 text-xs">
+                            {expandedEmpId === emp.id ? '▲' : '▼'}
+                          </td>
+                        </tr>
+
+                        {/* Expanded detail row */}
+                        {expandedEmpId === emp.id && (
+                          <tr className="bg-red-50">
+                            <td colSpan={5} className="px-3 pb-3 pt-1">
+                              <div className="grid grid-cols-3 gap-x-4 gap-y-2 text-xs text-gray-600 mb-3">
+                                {[
+                                  ['Last Name', emp.last_name ?? '—'],
+                                  ['Middle Name', emp.middle_name ?? '—'],
+                                  ['Gender', emp.gender ?? '—'],
+                                  ['DOB', fmtDate(emp.dob) || '—'],
+                                  ['Language', emp.default_language],
+                                  ['Job Title', emp.title ?? '—'],
+                                  ['Employee ID', emp.employee_id ?? '—'],
+                                  ['Manager Email', emp.manager_email ?? '—'],
+                                  ['Employment Date', fmtDate(emp.emp_date) || '—'],
+                                  ['Head of Dept', emp.head_of_dept ? 'Yes' : 'No'],
+                                ].map(([label, value]) => (
+                                  <div key={label}>
+                                    <span className="text-gray-400">{label}</span>
+                                    <div className="font-medium text-gray-800 truncate">{value}</div>
+                                  </div>
+                                ))}
+                              </div>
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); openEditEmployee(emp); }}
+                                  className="flex items-center gap-1.5 text-xs bg-[#1D3557] text-white px-3 py-1.5 rounded-lg hover:bg-[#152a44]"
+                                >Edit</button>
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); handleRemoveEmployee(emp); }}
+                                  className="flex items-center gap-1.5 text-xs border border-red-300 text-red-600 px-3 py-1.5 rounded-lg hover:bg-red-50"
+                                >Remove</button>
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </Fragment>
                     ))}
                   </tbody>
                 </table>
