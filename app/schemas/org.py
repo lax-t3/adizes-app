@@ -64,21 +64,60 @@ class UpdateNodeRequest(BaseModel):
 
 
 # ── Employees ─────────────────────────────────────────────────
+EMP_STATUS_VALUES = {'Active', 'Inactive', 'On Leave', 'Probation', 'Resigned'}
+
+
 class AddEmployeeRequest(BaseModel):
     name: str
     email: EmailStr
+    last_name: Optional[str] = None
+    middle_name: Optional[str] = None
     title: Optional[str] = None
     employee_id: Optional[str] = None
+    emp_status: str = 'Active'
+    gender: Optional[str] = None
+    default_language: str = 'English'
+    manager_email: Optional[EmailStr] = None
+    dob: Optional[str] = None       # DD/MM/YYYY
+    emp_date: Optional[str] = None  # DD/MM/YYYY
+    head_of_dept: bool = False
+
+
+class UpdateEmployeeRequest(BaseModel):
+    """Partial update — only provided (non-None) fields are written.
+    Send empty string "" to clear an optional text/date field.
+    emp_status and default_language cannot be cleared (they have required defaults).
+    """
+    last_name: Optional[str] = None
+    middle_name: Optional[str] = None
+    title: Optional[str] = None
+    employee_id: Optional[str] = None
+    emp_status: Optional[str] = None
+    gender: Optional[str] = None
+    default_language: Optional[str] = None
+    manager_email: Optional[str] = None  # str not EmailStr — validated in endpoint
+    dob: Optional[str] = None       # DD/MM/YYYY or "" to clear
+    emp_date: Optional[str] = None  # DD/MM/YYYY or "" to clear
+    head_of_dept: Optional[bool] = None
 
 
 class OrgEmployeeSummary(BaseModel):
-    id: str           # org_employees.id UUID — use this for DELETE
+    id: str           # org_employees.id UUID — use this for PATCH/DELETE
     user_id: str
     name: str
     email: str
+    last_name: Optional[str] = None
+    middle_name: Optional[str] = None
     title: Optional[str] = None
     employee_id: Optional[str] = None
-    status: str       # 'active' | 'pending'
+    emp_status: str = 'Active'
+    gender: Optional[str] = None
+    default_language: str = 'English'
+    manager_email: Optional[str] = None
+    dob: Optional[str] = None       # YYYY-MM-DD (frontend formats to DD/MM/YYYY)
+    emp_date: Optional[str] = None  # YYYY-MM-DD
+    head_of_dept: bool = False
+    status: str       # 'active' | 'pending' (auth activation state)
     node_id: str
     joined_at: str
 
@@ -86,9 +125,18 @@ class OrgEmployeeSummary(BaseModel):
 class BulkEmployeeRow(BaseModel):
     row: int
     name: str
+    last_name: Optional[str] = None
+    middle_name: Optional[str] = None
     email: str
     title: Optional[str] = None
     employee_id: Optional[str] = None
+    emp_status: str = 'Active'
+    gender: Optional[str] = None
+    default_language: str = 'English'
+    manager_email: Optional[str] = None
+    dob: Optional[str] = None       # DD/MM/YYYY
+    emp_date: Optional[str] = None  # DD/MM/YYYY
+    head_of_dept: bool = False
     node_path: Optional[str] = None
 
 
