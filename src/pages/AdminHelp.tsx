@@ -231,6 +231,10 @@ const employeeActivationFAQs: FAQItem[] = [
       "Admins do not need to be involved in this process.",
     ],
   },
+  {
+    q: "What fields can I set when adding or editing an employee?",
+    a: "First name, last name, middle name, email, job title, employee ID, employment status (Active / Inactive / On Leave / Probation / Resigned), gender, default language, manager email, date of birth (DD/MM/YYYY), employment start date, and head-of-department flag. Email and first name cannot be changed after the account is created — they are the login identity.",
+  },
 ];
 
 const contactInfo = [
