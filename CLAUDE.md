@@ -92,6 +92,7 @@ docker exec -i supabase_db_adizes-backend psql -U postgres -d postgres < migrati
 docker exec -i supabase_db_adizes-backend psql -U postgres -d postgres < migrations/005_ranking_scoring.sql
 docker exec -i supabase_db_adizes-backend psql -U postgres -d postgres < migrations/006_cohort_scoped_assessments.sql
 docker exec -i supabase_db_adizes-backend psql -U postgres -d postgres < migrations/007_organizations.sql
+docker exec -i supabase_db_adizes-backend psql -U postgres -d postgres < migrations/008_employee_extended_fields.sql
 
 # 4. Create test users (REQUIRED after every supabase start — users reset)
 SK="<SUPABASE_SERVICE_ROLE_KEY from .env>"
