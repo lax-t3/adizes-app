@@ -1030,6 +1030,16 @@ export function AdminOrgDetail() {
                   <li>• Employees with an unrecognised path will be skipped and listed in the error summary</li>
                 </ul>
               </div>
+
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-900">
+                <p className="font-bold mb-1">⚠️ Uploading to a new organisation?</p>
+                <ul className="space-y-1">
+                  <li>• The <code className="bg-amber-100 px-1 rounded">node_path</code> values in your CSV must match nodes that already exist in this organisation.</li>
+                  <li>• If your organisation's department structure has not been created yet, rows with a <code className="bg-amber-100 px-1 rounded">node_path</code> will fail with <em>"node_path not found"</em>.</li>
+                  <li>• <strong>Option A:</strong> Build the node tree first (using the left-hand panel), then upload the CSV — paths will resolve correctly.</li>
+                  <li>• <strong>Option B:</strong> Leave <code className="bg-amber-100 px-1 rounded">node_path</code> blank for all rows — every employee will be added to the node selected in the tree, and you can move them later.</li>
+                </ul>
+              </div>
             </div>
 
             {/* Footer */}

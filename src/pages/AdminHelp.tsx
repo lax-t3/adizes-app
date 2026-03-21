@@ -235,6 +235,26 @@ const employeeActivationFAQs: FAQItem[] = [
     q: "What fields can I set when adding or editing an employee?",
     a: "First name, last name, middle name, email, job title, employee ID, employment status (Active / Inactive / On Leave / Probation / Resigned), gender, default language, manager email, date of birth (DD/MM/YYYY), employment start date, and head-of-department flag. Email and first name cannot be changed after the account is created — they are the login identity.",
   },
+  {
+    q: "Why does my bulk upload fail with 'node_path not found' errors?",
+    a: [
+      "The node_path column in your CSV must match department/node names that already exist inside the organisation — the upload does not create new nodes automatically.",
+      "If you are uploading into a brand-new organisation whose structure has not been built yet, every row with a node_path will fail with 'node_path not found'.",
+      "Option A — Build first, then upload: Use the left-hand node tree to create all your department nodes (e.g. 'Sales', 'Sales/North Region'). Once the structure is in place, re-upload the CSV and the paths will resolve correctly.",
+      "Option B — Upload without paths: Leave the node_path column blank for all rows. Every employee will be added to the node you have selected in the tree at the time of upload. You can reassign them to sub-nodes afterwards.",
+      "Names in node_path are case-sensitive and must match the node names exactly, including spacing.",
+    ],
+  },
+  {
+    q: "How do I build a reporting-structure tree for an organisation?",
+    a: [
+      "The reporting tree is built from the Manager Email field on each employee record.",
+      "For each employee, set their Manager Email to the email address of their direct manager (the manager must also be an employee in the same organisation).",
+      "Once manager emails are set, go to the organisation page and click the 'Reporting Tree' link in the header to view the hierarchy.",
+      "If no employees have a Manager Email set, the Reporting Tree page will show a prompt to populate that field first.",
+      "You can set Manager Email when adding an employee individually, or include the manager_email column in a bulk upload CSV.",
+    ],
+  },
 ];
 
 const contactInfo = [
