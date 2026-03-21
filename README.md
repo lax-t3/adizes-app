@@ -110,10 +110,16 @@ adizes-frontend/
       AdminOrganizations.tsx  # Organisation list + create org
       AdminOrgDetail.tsx      # Org tree (nodes), employee management per node, link to cohorts.
                               #   Two-tab Add/Edit modal (Identity + Employment), expandable table rows
-                              #   with inline detail grid + Edit/Remove actions, Export Excel (SheetJS)
+                              #   with inline detail grid + Edit/Remove actions, Export Excel (SheetJS).
+                              #   'Reporting Tree' link in header → /admin/organizations/:orgId/reporting
+      AdminOrgReportingTree.tsx # Manager→report hierarchy built from manager_email relationships.
+                              #   SVG connector lines (correct horizontal bars at branch points).
+                              #   Pan (mouse drag / single-finger touch) + zoom (scroll wheel / pinch /
+                              #   ± buttons). Empty states for no-employees and no-manager-email orgs.
       AdminRespondent.tsx     # Respondent detail; reads cohort_id from ?cohort_id= query param; shows pending state if no result
       AdminSettings.tsx       # SMTP config + email template editor
-      AdminHelp.tsx           # Admin FAQ including Employee Activation & Password Reset section
+      AdminHelp.tsx           # Admin FAQ including Employee Activation & Password Reset section;
+                              #   bulk upload node_path troubleshooting; reporting tree setup guide
       PolicyPage.tsx
     store/
       authStore.ts       # Zustand auth state (JWT, user, role)
@@ -141,6 +147,7 @@ adizes-frontend/
 | `/admin/cohorts/:id` | `AdminCohortDetail` | Admin | Members + resend invite; linked orgs panel; enrol from org |
 | `/admin/organizations` | `AdminOrganizations` | Admin | Organisation list + create |
 | `/admin/organizations/:id` | `AdminOrgDetail` | Admin | Org tree, node management, employee management |
+| `/admin/organizations/:id/reporting` | `AdminOrgReportingTree` | Admin | Manager→report hierarchy tree; pan + zoom; empty-state messages |
 | `/admin/settings` | `AdminSettings` | Admin | SMTP + email templates |
 | `/admin/help` | `AdminHelp` | Admin | Admin FAQ including Employee Activation & Password Reset |
 
@@ -196,6 +203,20 @@ Admins manage organisations from `/admin/organizations`:
 Each employee record supports: `name` (required), `email` (required), `title`, `employee_id`, `emp_status` (Active / Inactive / On Leave / Probation / Resigned — default Active), `last_name`, `middle_name`, `gender`, `default_language` (default English), `manager_email`, `dob` (DD/MM/YYYY), `emp_date` (DD/MM/YYYY), `head_of_dept` (bool).
 
 Employees can be added individually (two-tab modal) or via **bulk CSV upload** (14-column template). An **Export Excel** button downloads all employees in the current node with their node name included.
+
+### Bulk upload `node_path` gotcha
+
+The `node_path` column must match **existing** node names in the organisation. If uploading into a brand-new org with no sub-nodes yet, rows with a `node_path` will fail with `node_path not found`. Two options:
+- **Build first, then upload** — create the node tree, then re-upload the CSV.
+- **Leave `node_path` blank** — all employees land on the node selected in the tree; reassign afterwards.
+
+### Reporting tree
+
+The **Reporting Tree** page (`/admin/organizations/:id/reporting`) builds a visual hierarchy from each employee's `manager_email` field. The page shows a clear message if no manager emails are set. Supports mouse-drag pan, scroll-wheel zoom, pinch-to-zoom, and ± zoom buttons.
+
+### Axios + FormData — do NOT set `Content-Type` manually
+
+When uploading files with Axios + `FormData`, **never** set `Content-Type: multipart/form-data` manually. Axios auto-generates this header including the required `boundary` parameter. Setting it manually strips the boundary, causing the server to receive empty fields (all rows fail with "invalid email" or similar).
 
 ## Related
 
