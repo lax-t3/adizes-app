@@ -1,0 +1,13 @@
+name,last_name,middle_name,email,title,employee_id,emp_status,gender,default_language,manager_email,dob,emp_date,head_of_dept,node_path
+Rahul,Verma,,rahul.verma@pinnacle-test.com,Regional Operations Manager,EMP015,Active,Male,English,priya.sharma@pinnacle-test.com,15/06/1985,01/04/2019,No,North India Region
+Anjali,Singh,,anjali.singh@pinnacle-test.com,Corporate Strategy Lead,EMP016,Active,Female,English,arjun.mehta@pinnacle-test.com,22/09/1988,15/07/2020,No,Corporate Functions
+Suresh,Pillai,,suresh.pillai@pinnacle-test.com,Commercial Operations Analyst,EMP017,Active,Male,English,rohit.nair@pinnacle-test.com,08/03/1990,01/01/2021,No,North India Region/Commercial Operations
+Nandini,Kapoor,,nandini.kapoor@pinnacle-test.com,Senior Accountant,EMP018,Active,Female,English,pooja.menon@pinnacle-test.com,14/11/1992,10/06/2022,No,Corporate Functions/Finance & Accounts
+Ramesh,Joshi,,ramesh.joshi@pinnacle-test.com,HR Business Partner,EMP019,Active,Male,English,krishna.murthy@pinnacle-test.com,30/07/1987,01/03/2020,No,Corporate Functions/Human Resources
+Anil,Kumar,,anil.kumar@pinnacle-test.com,Sales Executive,EMP020,Active,Male,English,sunita.gupta@pinnacle-test.com,05/02/1994,15/08/2022,No,North India Region/Commercial Operations/Enterprise Sales
+Divya,Menon,,divya.menon@pinnacle-test.com,Sales Executive,EMP021,Active,Female,English,sunita.gupta@pinnacle-test.com,18/04/1996,01/11/2023,No,North India Region/Commercial Operations/Enterprise Sales
+Prakash,Reddy,,prakash.reddy@pinnacle-test.com,Key Accounts Executive,EMP022,On Leave,Male,English,deepak.pillai@pinnacle-test.com,25/12/1991,01/09/2021,No,North India Region/Commercial Operations/Enterprise Sales/Key Accounts Management
+Shalini,Bhat,,shalini.bhat@pinnacle-test.com,Partnerships Executive,EMP023,Active,Female,English,anand.bose@pinnacle-test.com,09/08/1993,01/02/2022,No,North India Region/Commercial Operations/Enterprise Sales/Key Accounts Management/Strategic Partnerships
+Karthik,Nair,,karthik.nair@pinnacle-test.com,Account Executive - Tier 1,EMP024,Active,Male,English,anand.bose@pinnacle-test.com,03/05/1995,15/01/2023,No,North India Region/Commercial Operations/Enterprise Sales/Key Accounts Management/Strategic Partnerships/Tier-1 Client Group
+Sneha,Patel,,sneha.patel@pinnacle-test.com,Account Executive - Tier 1,EMP025,Probation,Female,English,anand.bose@pinnacle-test.com,20/10/1997,01/10/2024,No,North India Region/Commercial Operations/Enterprise Sales/Key Accounts Management/Strategic Partnerships/Tier-1 Client Group
+Mohan,Das,,mohan.das@pinnacle-test.com,Accounts Payable Specialist,EMP026,Active,Male,English,pooja.menon@pinnacle-test.com,12/01/1989,01/07/2018,No,Corporate Functions/Finance & Accounts
