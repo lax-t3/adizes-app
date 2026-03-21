@@ -93,6 +93,7 @@ docker exec -i supabase_db_adizes-backend psql -U postgres -d postgres < migrati
 docker exec -i supabase_db_adizes-backend psql -U postgres -d postgres < migrations/006_cohort_scoped_assessments.sql
 docker exec -i supabase_db_adizes-backend psql -U postgres -d postgres < migrations/007_organizations.sql
 docker exec -i supabase_db_adizes-backend psql -U postgres -d postgres < migrations/008_employee_extended_fields.sql
+docker exec -i supabase_db_adizes-backend psql -U postgres -d postgres < migrations/009_employee_name_column.sql
 
 # 4. Create test users (REQUIRED after every supabase start — users reset)
 SK="<SUPABASE_SERVICE_ROLE_KEY from .env>"
@@ -240,6 +241,25 @@ export S3_BUCKET_NAME=adizes-pdf-reports
   `redirect_to=/reset-password`, sends `password_reset` email. Frontend: `/forgot-password` page +
   `/reset-password` page (reads `access_token` + `type=recovery` from URL hash, passes token as Bearer
   header to `POST /auth/set-password`).
+- **org_employees has NO email column**: Email is stored in `auth.users` only. The `org_employees`
+  table has `user_id` (FK to `auth.users.id`). Any endpoint needing email must resolve it via
+  `_get_auth_users_map()` — a dict keyed on `user_id`. Selecting `email` from `org_employees` causes
+  a Supabase schema cache 500 error.
+- **Reporting tree** (added 2026-03-21): `GET /admin/organizations/{org_id}/reporting-tree` builds
+  a manager→report hierarchy from `manager_email` relationships. Returns `{has_structure, reason, roots}`
+  where `roots` are recursive `ReportingNode` objects. Returns `reason: "no_employees"` or
+  `"no_manager_emails"` when no hierarchy can be built. Frontend: `AdminOrgReportingTree.tsx` with
+  SVG connector lines (layout algorithm: subtree-width-based x-positioning; horizontal bars drawn at
+  midpoint between parent bottom and child top). Pan/zoom: non-passive wheel listener, mouse drag,
+  pinch-to-zoom, ± buttons.
+- **Bulk upload Content-Type bug**: When using Axios + `FormData`, NEVER set `Content-Type:
+  multipart/form-data` manually. Axios auto-generates this header WITH the required `boundary`
+  parameter. Setting it manually strips the boundary → FastAPI's python-multipart cannot parse the
+  fields → all form fields arrive empty → every CSV row fails "invalid email".
+- **Bulk upload node_path**: The `node_path` column in CSV must match nodes that already exist in
+  the org. Uploading to a new org with no sub-nodes will fail all rows with "node_path not found".
+  Options: (A) build node tree first then upload, or (B) leave node_path blank to place all employees
+  on the selected node.
 
 ## Known Gotchas (Local Dev)
 
