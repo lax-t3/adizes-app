@@ -1,7 +1,8 @@
 // src/pages/AdminOrgDetail.tsx
 import { useEffect, useState, useCallback, Fragment } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, ChevronRight, ChevronDown, Plus, Trash2, Users, Download, HelpCircle } from 'lucide-react';
+import { ArrowLeft, ChevronRight, ChevronDown, Plus, Trash2, Users, Download, HelpCircle, GitBranch } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import {
   getOrganization, createNode, deleteNode, updateNode,
   listNodeEmployees, addEmployee, bulkUploadEmployees, removeEmployee,
@@ -350,8 +351,15 @@ export function AdminOrgDetail() {
         {currentOrg.description && (
           <span className="text-sm text-gray-400">— {currentOrg.description}</span>
         )}
-        <div className="ml-auto flex gap-4 text-sm text-gray-500">
+        <div className="ml-auto flex items-center gap-4 text-sm text-gray-500">
           <span>{currentOrg.linked_cohort_count} cohort{currentOrg.linked_cohort_count !== 1 ? 's' : ''}</span>
+          <Link
+            to={`/admin/organizations/${orgId}/reporting`}
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:text-primary/80 transition-colors"
+          >
+            <GitBranch className="h-4 w-4" />
+            Reporting Tree
+          </Link>
         </div>
       </div>
 

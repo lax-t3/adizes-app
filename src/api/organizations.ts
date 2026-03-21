@@ -107,6 +107,29 @@ export async function removeEmployee(orgId: string, orgEmployeeId: string): Prom
   await apiClient.delete(`/admin/organizations/${orgId}/employees/${orgEmployeeId}`);
 }
 
+export interface ReportingNode {
+  id: string;
+  name: string;
+  last_name: string;
+  email: string;
+  title: string;
+  emp_status: string;
+  reports: ReportingNode[];
+}
+
+export interface ReportingTreeResponse {
+  has_structure: boolean;
+  reason: 'no_employees' | 'no_manager_emails' | null;
+  roots: ReportingNode[];
+}
+
+export async function getReportingTree(orgId: string): Promise<ReportingTreeResponse> {
+  const { data } = await apiClient.get<ReportingTreeResponse>(
+    `/admin/organizations/${orgId}/reporting-tree`,
+  );
+  return data;
+}
+
 export async function updateEmployee(
   orgId: string,
   orgEmployeeId: string,

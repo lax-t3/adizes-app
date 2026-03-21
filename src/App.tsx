@@ -19,6 +19,7 @@ import { AdminSettings } from "./pages/AdminSettings";
 import { AdminHelp } from "./pages/AdminHelp";
 import { AdminOrganizations } from "./pages/AdminOrganizations";
 import { AdminOrgDetail } from "./pages/AdminOrgDetail";
+import { AdminOrgReportingTree } from "./pages/AdminOrgReportingTree";
 import { UserHelp } from "./pages/UserHelp";
 import { SetPassword } from "./pages/SetPassword";
 import { ForgotPassword } from "./pages/ForgotPassword";
@@ -59,6 +60,7 @@ function AdminLayout() {
           <Route path="/respondents/:id" element={<AdminRespondent />} />
           <Route path="/organizations" element={<AdminOrganizations />} />
           <Route path="/organizations/:orgId" element={<AdminOrgDetail />} />
+          <Route path="/organizations/:orgId/reporting" element={<AdminOrgReportingTree />} />
           <Route path="/users" element={<AdminUsers />} />
           <Route path="/settings" element={<AdminSettings />} />
           <Route path="/help" element={<AdminHelp />} />
