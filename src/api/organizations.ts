@@ -98,7 +98,6 @@ export async function bulkUploadEmployees(
   const { data } = await apiClient.post<BulkUploadResult>(
     `/admin/organizations/${orgId}/nodes/${nodeId}/employees/bulk`,
     form,
-    { headers: { 'Content-Type': 'multipart/form-data' } },
   );
   return data;
 }
