@@ -232,7 +232,8 @@ adizes-backend/
       results.py               # GET /results/:id (includes pdf_url), GET /results/:id/pdf (WeasyPrint fallback)
       admin.py                 # Cohorts, members (enroll/bulk/resend-invite/remove),
                                #   respondents, CSV export, admin user management,
-                               #   organisations + org nodes + org employees
+                               #   organisations + org nodes + org employees,
+                               #   GET /admin/organizations/{id}/reporting-tree (manager→report chain)
       settings.py              # SMTP config CRUD, email template CRUD + reset
     services/
       scoring.py               # PAEI scoring engine (36-question key)
@@ -260,6 +261,7 @@ adizes-backend/
     007_organizations.sql               # organisations, org_nodes, org_employees, cohort_organizations tables
     008_employee_extended_fields.sql    # 9 new HR columns on org_employees (emp_status, last/middle name, gender, language, manager_email, DOB, emp_date, head_of_dept)
     009_employee_name_column.sql        # adds name (first name) column to org_employees (was missing from original schema)
+  # Note: org_employees has NO email column — email is in auth.users, resolved via user_id → _get_auth_users_map()
   supabase/migrations/
     20260319000007_organizations.sql    # Supabase CLI-tracked copy of 007 (applied to cloud via supabase db push)
     20260320000008_employee_extended_fields.sql  # Supabase CLI-tracked copy of 008
