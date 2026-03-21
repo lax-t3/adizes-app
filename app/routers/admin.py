@@ -1482,3 +1482,73 @@ def enroll_from_org(cohort_id: str, body: EnrollFromOrgRequest, admin: dict = De
             logger.error(f"[enroll-from-org] Failed for user {user_id}: {e}")
 
     return EnrollFromOrgResult(enrolled=enrolled, skipped=skipped)
+
+
+# ── Reporting tree ────────────────────────────────────────────────────────────
+
+@router.get("/organizations/{org_id}/reporting-tree")
+def get_reporting_tree(org_id: str, admin: dict = Depends(require_admin)):
+    """Return the manager→report chain for all employees in an org.
+
+    Response shape:
+      {
+        "has_structure": bool,
+        "reason": str | None,          # "no_manager_emails" | "no_employees"
+        "roots": [ ReportingNode ]
+      }
+
+    ReportingNode: { id, name, last_name, email, title, emp_status, reports: [...] }
+    """
+    # Fetch all employees for this org (no email column — stored in auth.users)
+    rows = (
+        supabase_admin.table("org_employees")
+        .select("id, user_id, name, last_name, title, emp_status, manager_email")
+        .eq("org_id", org_id)
+        .execute()
+        .data or []
+    )
+
+    if not rows:
+        return {"has_structure": False, "reason": "no_employees", "roots": []}
+
+    # Resolve emails from auth.users for all employees in one call
+    auth_map = _get_auth_users_map()  # {user_id: user_obj}
+    for row in rows:
+        u = auth_map.get(row["user_id"])
+        row["email"] = u.email if u else ""
+
+    # Check whether anyone has a manager_email set
+    has_any_manager = any(r.get("manager_email") for r in rows)
+    if not has_any_manager:
+        return {"has_structure": False, "reason": "no_manager_emails", "roots": []}
+
+    org_emails = {r["email"] for r in rows if r["email"]}
+
+    # Build children map: manager_email → [direct reports]
+    children: dict[str, list] = {r["email"]: [] for r in rows if r["email"]}
+    roots: list[dict] = []
+
+    for emp in rows:
+        mgr = emp.get("manager_email")
+        if mgr and mgr in org_emails:
+            children[mgr].append(emp)
+        else:
+            # No manager, or manager is outside this org → root
+            roots.append(emp)
+
+    def build_node(emp: dict) -> dict:
+        return {
+            "id": emp["id"],
+            "name": emp.get("name") or "",
+            "last_name": emp.get("last_name") or "",
+            "email": emp.get("email") or "",
+            "title": emp.get("title") or "",
+            "emp_status": emp.get("emp_status") or "Active",
+            "reports": [build_node(c) for c in children.get(emp.get("email", ""), [])],
+        }
+
+    return {
+        "has_structure": True,
+        "reason": None,
+        "roots": [build_node(r) for r in roots],
+    }
