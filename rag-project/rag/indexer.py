@@ -38,14 +38,35 @@ def clear_index(persist_dir: str = "chroma_db") -> None:
         shutil.rmtree(path)
 
 
-def build_index(pdf_path: str, persist_dir: str = "chroma_db") -> Chroma:
-    """Build or load ChromaDB index. Cache-first: skips re-indexing if persist_dir already has data.
-    Note: if persist_dir exists, pdf_path is ignored and the cached index is returned.
+def build_index(
+    pdf_paths: "str | list[str]",
+    persist_dir: str = "chroma_db",
+    mode: str = "add",
+) -> Chroma:
+    """Build or load a ChromaDB index from one or more PDF paths.
+
+    Args:
+        pdf_paths: A single PDF path string or a list of PDF path strings.
+        persist_dir: Directory where ChromaDB persists data.
+        mode: 'replace' clears the existing index before indexing;
+              'add' appends new documents to an existing index (creates
+              a fresh index if none exists).
     """
     embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
 
-    if index_exists(persist_dir):
-        return Chroma(persist_directory=persist_dir, embedding_function=embeddings)
+    if isinstance(pdf_paths, str):
+        pdf_paths = [pdf_paths]
 
-    chunks = chunk_document(pdf_path)
-    return Chroma.from_documents(chunks, embeddings, persist_directory=persist_dir)
+    if mode == "replace":
+        clear_index(persist_dir)
+
+    all_chunks = []
+    for path in pdf_paths:
+        all_chunks.extend(chunk_document(path))
+
+    if mode == "add" and index_exists(persist_dir):
+        vectorstore = Chroma(persist_directory=persist_dir, embedding_function=embeddings)
+        vectorstore.add_documents(all_chunks)
+        return vectorstore
+
+    return Chroma.from_documents(all_chunks, embeddings, persist_directory=persist_dir)
