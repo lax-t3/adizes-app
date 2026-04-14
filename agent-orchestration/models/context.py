@@ -84,3 +84,45 @@ class JDQIContext(TypedDict, total=False):
     parsed_jd: ParsedJD
     dimension_results: DimensionResults
     advisor_report: AdvisorReport
+
+
+class RequiredSkill(TypedDict):
+    name: str
+    version_or_level: str
+
+
+class SkippedDimension(TypedDict):
+    dimension: str
+    jdqi_impact_note: str
+
+
+class JDQIBrief(TypedDict, total=False):
+    role_title: str
+    industry: str
+    seniority_level: str          # junior | mid | senior | lead | director
+    location: str
+    remote_policy: str            # on-site | hybrid | remote | flexible
+    company_description: str
+    responsibilities: list[str]
+    required_skills: list[RequiredSkill]
+    preferred_skills: list[str]
+    success_criteria: list[str]
+    reporting_structure: Optional[str]
+    growth_path: Optional[str]
+    compensation: Optional[str]
+    inclusion_statement: Optional[str]
+    skipped_dimensions: list[SkippedDimension]
+
+
+class JDDocument(TypedDict, total=False):
+    role_title: str
+    about_company: str
+    about_role: str
+    responsibilities: list[str]
+    required_skills: list[str]
+    preferred_skills: list[str]
+    success_criteria: list[str]
+    reporting_structure: Optional[str]
+    growth_path: Optional[str]
+    compensation: Optional[str]
+    equal_opportunity: str
