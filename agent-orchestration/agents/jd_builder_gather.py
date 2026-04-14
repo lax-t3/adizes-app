@@ -153,5 +153,6 @@ def gather_turn(
         )
         return reply, brief
 
-    reply = response.content[0].text if response.content else ""
+    text_parts = [b.text for b in response.content if b.type == "text"]
+    reply = " ".join(text_parts).strip()
     return reply, None
