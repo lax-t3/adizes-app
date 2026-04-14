@@ -29,13 +29,27 @@ Return ONLY valid JSON — no markdown, no explanation — matching this exact s
 Scoring weights: completeness 25%, skill_specificity 20%, role_coherence 20%, cognitive_load 15%, inclusion_signals 10%, compensation 10%."""
 
 
-def _strip_fences(text: str) -> str:
+def _extract_json(text: str) -> str:
+    """Strip markdown fences then extract the first complete JSON object."""
     text = text.strip()
     if text.startswith("```"):
         lines = text.split("\n")
         end = -1 if lines[-1].strip() == "```" else len(lines)
-        text = "\n".join(lines[1:end])
-    return text
+        text = "\n".join(lines[1:end]).strip()
+
+    # Find the outermost { ... } in case the model appended trailing text
+    start = text.find("{")
+    if start == -1:
+        return text
+    depth = 0
+    for i, ch in enumerate(text[start:], start):
+        if ch == "{":
+            depth += 1
+        elif ch == "}":
+            depth -= 1
+            if depth == 0:
+                return text[start:i + 1]
+    return text[start:]  # malformed — return what we have and let json.loads report it
 
 
 def run_advisor(context: JDQIContext, client: anthropic.Anthropic) -> AdvisorReport:
@@ -55,4 +69,4 @@ def run_advisor(context: JDQIContext, client: anthropic.Anthropic) -> AdvisorRep
             )
         }]
     )
-    return json.loads(_strip_fences(response.content[0].text))
+    return json.loads(_extract_json(response.content[0].text))
