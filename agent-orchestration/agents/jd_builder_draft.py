@@ -61,27 +61,48 @@ def _extract_json(text: str) -> str:
     return text[start:]
 
 
-def draft_jd(brief: JDQIBrief, client: anthropic.Anthropic) -> JDDocument:
+def draft_jd(
+    brief: JDQIBrief,
+    client: anthropic.Anthropic,
+    guardrail_feedback: str | None = None,
+) -> JDDocument:
     """
     Generate a complete JDDocument from a JDQIBrief.
 
     Args:
-        brief:  Structured brief produced by the Gather agent.
-        client: Anthropic client instance.
+        brief:               Structured brief produced by the Gather agent.
+        client:              Anthropic client instance.
+        guardrail_feedback:  If a previous attempt was blocked, pass the
+                             blocked_reason string here so the agent can
+                             course-correct before the next guardrail check.
 
     Returns:
         JDDocument dict with all prose sections filled.
     """
+    user_content = (
+        f"Write a complete JDQI-compliant JD from this brief:\n\n"
+        f"{json.dumps(brief, indent=2)}"
+    )
+
+    if guardrail_feedback:
+        user_content += (
+            f"\n\n---\nGUARDRAIL CORRECTIONS REQUIRED:\n"
+            f"Your previous draft was blocked for the following reasons:\n"
+            f"{guardrail_feedback}\n\n"
+            f"Rewrite the ENTIRE JD avoiding ALL of these issues:\n"
+            f"- Remove or replace every blocked word/phrase with a professional alternative\n"
+            f"- Do not mention protected characteristics (ethnicity, disability, sexual orientation,\n"
+            f"  religion, age, gender, race, etc.) anywhere in the document\n"
+            f"- For the equal_opportunity field use only general language such as:\n"
+            f"  \"We welcome applications from all qualified candidates and are committed to\n"
+            f"   building an inclusive team.\"\n"
+            f"- Ensure no sentence could be read as a discriminatory hiring criterion"
+        )
+
     response = client.messages.create(
         model="claude-sonnet-4-6",
         max_tokens=2000,
         system=_SYSTEM,
-        messages=[{
-            "role": "user",
-            "content": (
-                f"Write a complete JDQI-compliant JD from this brief:\n\n"
-                f"{json.dumps(brief, indent=2)}"
-            ),
-        }],
+        messages=[{"role": "user", "content": user_content}],
     )
     return json.loads(_extract_json(response.content[0].text))

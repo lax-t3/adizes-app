@@ -62,11 +62,18 @@ Phase 1: Gather Agent (Sonnet)
     ▼  User confirms → "Generate JD now"
     │
     ▼
-Phase 2: Draft Agent (Sonnet)
-    Receives clean JDQIBrief (not raw chat history)
-    Writes full JD prose with active voice, specific skill versions, inclusive language
+Phase 2: Draft Agent (Sonnet)          ┐
+    Receives clean JDQIBrief            │  up to 3 attempts
+    Writes full JD prose                │
+    │                                   │
+    ▼  🛡️ Bedrock Guardrail (OUTPUT)   │
+    │                                   │
+    ├── passed ─────────────────────────┘
     │
-    ▼  🛡️ Bedrock Guardrail (OUTPUT)
+    └── blocked → extract block reasons (topics, words, PII)
+                  feed back to Draft Agent as explicit corrections
+                  redraft avoiding all flagged content
+                  re-check guardrail  (loop, max 3 attempts)
     │
     ▼
 Branded .docx download
@@ -148,7 +155,7 @@ AWS_REGION=ap-south-1
 | Setting | Value |
 |---------|-------|
 | Guardrail ID | `ovpwtkmupag5` |
-| Version | `1` |
+| Version | `2` |
 | Region | `ap-south-1` |
 
 ---

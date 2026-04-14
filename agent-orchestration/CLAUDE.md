@@ -70,10 +70,15 @@ Phase 1: Gather Agent (Sonnet)        [agents/jd_builder_gather.py]
     │
     ▼
 Phase 2: Draft Agent (Sonnet)         [agents/jd_builder_draft.py]
-    Receives clean JDQIBrief (not raw chat history)
-    Writes full JD prose → JDDocument dict
-    │
-    ▼  🛡️ Bedrock Guardrail (OUTPUT)
+    Receives clean JDQIBrief (not raw chat history)    ┐
+    Writes full JD prose → JDDocument dict              │ up to 3 attempts
+    │                                                   │
+    ▼  🛡️ Bedrock Guardrail (OUTPUT)                  │
+    ├── passed ─────────────────────────────────────────┘
+    └── blocked → extract block reasons (topics/words/PII)
+                  pass feedback to draft_jd(guardrail_feedback=...)
+                  redraft avoiding all flagged content
+                  re-check guardrail (loop, max 3 attempts)
     │
     ▼
 Branded .docx download               [agents/jd_docx.py]
@@ -133,12 +138,14 @@ AWS_REGION=ap-south-1
 | Setting | Value |
 |---------|-------|
 | Guardrail ID | `ovpwtkmupag5` |
-| Version | `1` |
+| Version | `2` |
 | Region | `ap-south-1` |
 | Input source | `"INPUT"` — JD text / chat message before any LLM call |
 | Output source | `"OUTPUT"` — advisor report / drafted JD text |
 
-**Behavior on blocked content**: pipeline halts, red error shown, no LLM call made.
+**Behavior on blocked INPUT**: pipeline halts, red error shown, no LLM call made.
+**Behavior on blocked OUTPUT (Build JD)**: course-correction loop — block reasons fed back to `draft_jd(guardrail_feedback=...)`, redraft up to 3 times before showing a persistent error.
+**Behavior on blocked OUTPUT (Analyse JD)**: pipeline halts, red error shown.
 **Behavior on AWS error**: pipeline halts, red error shown — guardrail is a hard gate.
 
 ## JDQI Dimensions
@@ -159,6 +166,8 @@ AWS_REGION=ap-south-1
 - **ThreadPoolExecutor not asyncio** — Streamlit runs its own event loop; threading avoids conflicts. `anthropic.Anthropic` client is thread-safe.
 - **`load_dotenv(override=True)`** — ensures `.env` values override any shell environment variables (e.g. a shell-level `AWS_PROFILE` won't shadow `.env` credentials).
 - **`_extract_json()` in advisor + draft agent** — walks brace depth to extract the first `{...}` block, tolerating any text Opus/Sonnet appends after the JSON.
+- **Guardrail output course-correction loop** — when the OUTPUT guardrail blocks a drafted JD, the block reasons (topic policies, blocked words/phrases, PII) are extracted from `assessments` and passed back to `draft_jd(guardrail_feedback=...)` as explicit rewrite instructions. The loop retries up to `_MAX_DRAFT_RETRIES = 3` times. Each redraft is told exactly which words to remove and which patterns triggered topic blocks (e.g. `Discriminatory_Hiring_Criteria`, `Sensitive_Demographic_Questions`). This avoids surfacing a guardrail error to the user in the common case where the first draft uses protected-characteristic language in the EEO statement.
+- **`tool_choice="any"` forced follow-up in gather_turn** — if the gather agent previously declared readiness in text without calling `signal_ready`, the next `gather_turn` call uses `tool_choice={"type": "any"}` to force the tool call. A secondary safety net fires a follow-up call with `tool_choice="any"` if the current reply also contains ready phrases but no tool call. Follow-up messages use the plain text `reply` string (not raw `response.content` Pydantic objects) to avoid `tool_use`-without-`tool_result` 400 errors.
 - **No database** — all state is in-memory per Streamlit session.
 
 ## Running Tests

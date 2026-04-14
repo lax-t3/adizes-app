@@ -193,6 +193,68 @@ def display_report(context: JDQIContext) -> None:
             st.rerun()
 
 
+_MAX_DRAFT_RETRIES = 3
+
+
+def _run_draft(client: anthropic.Anthropic) -> None:
+    """Run Phase 2: draft the JD with live progress and guardrail course-correction."""
+    with st.chat_message("assistant"):
+        ph = st.empty()
+        feedback: str | None = None
+        doc = None
+
+        for attempt in range(1, _MAX_DRAFT_RETRIES + 1):
+            if attempt == 1:
+                ph.markdown(
+                    "⏳ **Generating your JD…**\n\n"
+                    "- ✍️  Step 1/3 — Drafting from your brief… _(~20s)_"
+                )
+            else:
+                ph.markdown(
+                    f"♻️ **Course-correcting (attempt {attempt}/{_MAX_DRAFT_RETRIES})…**\n\n"
+                    f"- ✅  Previous draft blocked — rewriting to fix guardrail issues\n"
+                    f"- ✍️  Redrafting with corrections applied…"
+                )
+
+            doc = draft_jd(st.session_state.jdqi_brief, client, guardrail_feedback=feedback)
+
+            ph.markdown(
+                f"⏳ **Generating your JD…** _(attempt {attempt})_\n\n"
+                "- ✅  Draft complete\n"
+                "- 🛡️  Running Bedrock Guardrail (OUTPUT)…"
+            )
+            gr_out = check_guardrail(extract_jd_text(doc), "OUTPUT")
+
+            if gr_out.passed:
+                break
+
+            feedback = gr_out.blocked_reason
+            if attempt == _MAX_DRAFT_RETRIES:
+                ph.error(
+                    f"🚫 Could not produce a guardrail-compliant JD after "
+                    f"{_MAX_DRAFT_RETRIES} attempts.\n\n**Last block reason:** {feedback}"
+                )
+                return
+
+            ph.markdown(
+                f"♻️ **Guardrail blocked — course-correcting…**\n\n"
+                f"_{feedback}_\n\n"
+                f"Rewriting to fix these issues before attempt {attempt + 1}…"
+            )
+
+        ph.markdown(
+            "⏳ **Generating your JD…**\n\n"
+            "- ✅  Draft complete\n"
+            "- ✅  Guardrail passed\n"
+            "- 📄  Building your branded .docx…"
+        )
+        build_docx(doc, st.session_state.brand_color, st.session_state.logo_bytes)
+        ph.success("✅ Your JD is ready! Scroll down to download.")
+
+    st.session_state.jd_document = doc
+    st.rerun()
+
+
 def _build_jd_tab(client: anthropic.Anthropic) -> None:
     """Render the Build JD chat tab."""
 
@@ -252,21 +314,8 @@ def _build_jd_tab(client: anthropic.Anthropic) -> None:
     # ── Generate button (shown when gather agent signals ready) ──────
     if st.session_state.ready_to_generate and st.session_state.jdqi_brief:
         if st.button("✅ Generate JD now", type="primary"):
-            with st.spinner("✍️ Drafting your JD…"):
-                doc = draft_jd(st.session_state.jdqi_brief, client)
-
-            # OUTPUT guardrail
-            out_ph = st.empty()
-            out_ph.info("🛡️ Bedrock Guardrail (OUTPUT) — Validating…")
-            gr_out = check_guardrail(extract_jd_text(doc), "OUTPUT")
-            if not gr_out.passed:
-                out_ph.error(
-                    f"🚫 Bedrock Guardrail (OUTPUT) — Blocked. {gr_out.blocked_reason}"
-                )
-                return
-            out_ph.success("✅ Bedrock Guardrail (OUTPUT) — Passed")
-            st.session_state.jd_document = doc
-            st.rerun()
+            _run_draft(client)
+            return
 
     # ── Chat input ───────────────────────────────────────────────────
     user_input = st.chat_input("Type your message…")
@@ -284,6 +333,12 @@ def _build_jd_tab(client: anthropic.Anthropic) -> None:
     st.session_state.builder_messages.append({"role": "user", "content": user_input})
     with st.chat_message("user"):
         st.markdown(user_input)
+
+    # If gather phase is complete, any chat message is treated as confirmation
+    # to generate — don't re-enter the gather agent.
+    if st.session_state.ready_to_generate and st.session_state.jdqi_brief:
+        _run_draft(client)
+        return
 
     # Build Anthropic-format history.
     # Anthropic API requires history to start with a user message, so strip

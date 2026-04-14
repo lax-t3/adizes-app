@@ -40,9 +40,10 @@ is weighted at 10%. Want to proceed without it?"
 Record every skipped dimension in skipped_dimensions.
 
 WHEN READY:
-Once you have covered all topics (or the user has consciously skipped them), call the signal_ready tool
-with the complete JDQIBrief. Do NOT call it until you have at least: role_title, industry,
-seniority_level, responsibilities (>=3), required_skills (>=2 with version/level).
+Once you have covered all topics (or the user has consciously skipped them), IMMEDIATELY call the
+signal_ready tool with the complete JDQIBrief. Do NOT write a message saying you are ready — just
+call the tool. Do NOT call it until you have at least: role_title, industry, seniority_level,
+responsibilities (>=3), required_skills (>=2 with version/level).
 
 TONE: Professional but conversational. One question per message. Never list all questions at once."""
 
@@ -133,11 +134,31 @@ def gather_turn(
         (reply, brief) where brief is a JDQIBrief dict if signal_ready was
         called this turn, or None for a normal conversational response.
     """
+    _READY_PHRASES = (
+        "have everything i need", "have all the information", "have enough information",
+        "i now have everything", "ready to write", "ready to generate",
+        "let me compile", "let me draft", "let me put this together",
+        "i have what i need",
+    )
+
+    # If the previous assistant turn already declared readiness without calling the tool,
+    # force tool_choice="any" so the model MUST call signal_ready this turn.
+    last_assistant_text = ""
+    for m in reversed(messages):
+        if m["role"] == "assistant":
+            c = m["content"]
+            last_assistant_text = c if isinstance(c, str) else ""
+            break
+
+    force_tool = any(p in last_assistant_text.lower() for p in _READY_PHRASES)
+    tool_choice: dict = {"type": "any"} if force_tool else {"type": "auto"}
+
     response = client.messages.create(
         model="claude-sonnet-4-6",
         max_tokens=1000,
         system=_SYSTEM,
         tools=[_SIGNAL_READY_TOOL],
+        tool_choice=tool_choice,
         messages=messages,
     )
 
@@ -145,7 +166,6 @@ def gather_turn(
         tool_block = next(b for b in response.content if b.type == "tool_use")
         brief: JDQIBrief = tool_block.input  # type: ignore[assignment]
 
-        # Extract any text the agent wrote before calling the tool
         text_parts = [b.text for b in response.content if b.type == "text"]
         reply = (
             " ".join(text_parts).strip()
@@ -155,4 +175,27 @@ def gather_turn(
 
     text_parts = [b.text for b in response.content if b.type == "text"]
     reply = " ".join(text_parts).strip()
+
+    # Secondary safety net: if the current reply also declares readiness without the tool call,
+    # fire a forced follow-up with tool_choice="any".
+    # Use the plain text string (not response.content) to avoid including any ToolUseBlock
+    # in the assistant message without a corresponding tool_result.
+    if reply and any(p in reply.lower() for p in _READY_PHRASES):
+        follow_up = list(messages) + [
+            {"role": "assistant", "content": reply},
+            {"role": "user", "content": "Please call the signal_ready tool now with everything you've gathered."},
+        ]
+        forced = client.messages.create(
+            model="claude-sonnet-4-6",
+            max_tokens=1000,
+            system=_SYSTEM,
+            tools=[_SIGNAL_READY_TOOL],
+            tool_choice={"type": "any"},
+            messages=follow_up,
+        )
+        if forced.stop_reason == "tool_use":
+            tool_block = next(b for b in forced.content if b.type == "tool_use")
+            brief = tool_block.input  # type: ignore[assignment]
+            return reply, brief
+
     return reply, None
