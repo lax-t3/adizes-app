@@ -10,7 +10,9 @@ Both pipelines are gated by **AWS Bedrock Guardrails** on input and output. Guar
 Core insight: AI amplifies whatever signal the JD carries. Garbage JD → garbage hiring at scale.
 
 ## Repo
-`/Users/vrln/agent-orchestration` · branch: `master`
+`/Users/vrln/agent-orchestration` · local branch: `master`  
+Remote: `https://github.com/lax-t3/jdqi-agent-orchestration` · remote branch: `main`  
+Push: `git push jdqi master:main` (remote `jdqi` = subtree-split of `agent-orchestration/` only)
 
 ## Design & Plans
 | Doc | Path |
