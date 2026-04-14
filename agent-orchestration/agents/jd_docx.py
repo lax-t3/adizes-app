@@ -9,6 +9,7 @@ extract_jd_text(doc) -> str
 """
 
 import io
+from datetime import date
 from typing import Optional
 
 from docx import Document
@@ -32,7 +33,7 @@ def _hex_to_rgb(hex_color: str) -> tuple[int, int, int]:
         b = int(hex_color[4:6], 16)
         return r, g, b
     except (ValueError, IndexError):
-        return _hex_to_rgb(_DEFAULT_COLOR)
+        return (29, 53, 87)  # #1D3557 — hardcoded to avoid recursive failure
 
 
 def _rgb_color(hex_color: str) -> RGBColor:
@@ -49,6 +50,8 @@ def _add_heading(doc: Document, text: str, brand_color: str, level: int = 1) -> 
 
 
 def _add_bullet_list(doc: Document, items: list[str]) -> None:
+    if not items:
+        return
     for item in items:
         if item:
             doc.add_paragraph(item, style="List Bullet")
@@ -70,8 +73,6 @@ def _add_accent_bar(doc: Document, brand_color: str) -> None:
 
 
 def _set_header_footer(doc: Document, role_title: str, brand_color: str) -> None:
-    from datetime import date
-
     section = doc.sections[0]
 
     # Header — role title left, date right
@@ -79,7 +80,7 @@ def _set_header_footer(doc: Document, role_title: str, brand_color: str) -> None
     header.is_linked_to_previous = False
     page_width = section.page_width - section.left_margin - section.right_margin
     htable = header.add_table(1, 2, width=page_width)
-    htable.style = "Table Grid"
+    htable.style = "Normal Table"
     htable.rows[0].cells[0].text = role_title
     htable.rows[0].cells[1].text = date.today().strftime("%d %b %Y")
     htable.rows[0].cells[1].paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.RIGHT
@@ -88,16 +89,6 @@ def _set_header_footer(doc: Document, role_title: str, brand_color: str) -> None
             for run in para.runs:
                 run.font.color.rgb = _rgb_color(brand_color)
                 run.font.size = Pt(9)
-    # Remove table borders
-    for cell in htable.rows[0].cells:
-        tc = cell._tc
-        tcPr = tc.get_or_add_tcPr()
-        tcBorders = OxmlElement("w:tcBorders")
-        for border_name in ("top", "left", "bottom", "right"):
-            border = OxmlElement(f"w:{border_name}")
-            border.set(qn("w:val"), "none")
-            tcBorders.append(border)
-        tcPr.append(tcBorders)
 
     # Footer
     footer = section.footer
