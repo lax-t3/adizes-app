@@ -6,9 +6,13 @@ from dotenv import load_dotenv
 from agents.parser import run_parser
 from agents.specialists import run_specialists
 from agents.synthesizer import run_synthesizer
+from agents.guardrails import check_guardrail, extract_report_text
 from models.context import JDQIContext
+from agents.jd_builder_gather import gather_turn, greeting
+from agents.jd_builder_draft import draft_jd
+from agents.jd_docx import build_docx, extract_jd_text
 
-load_dotenv()
+load_dotenv(override=True)
 
 INDUSTRIES = ["High-tech Manufacturing", "IT/SaaS/AI", "GCC", "Other"]
 
@@ -19,6 +23,13 @@ DIM_LABELS = {
     "inclusion_signals": "Inclusion Signals",
     "compensation":      "Compensation",
     "role_coherence":    "Role Coherence",
+}
+
+
+_BRAND_PRESETS = {
+    "Corporate Navy": "#1D3557",
+    "JDQI Red":       "#C8102E",
+    "Charcoal":       "#2D2D2D",
 }
 
 
@@ -47,6 +58,17 @@ def run_pipeline(jd_text: str, industry: str, client: anthropic.Anthropic) -> No
 
     st.divider()
     st.subheader("Pipeline")
+
+    # ── Bedrock Guardrail — INPUT gate ───────────────────────────────
+    input_ph = st.empty()
+    input_ph.info("🛡️ **Bedrock Guardrail (INPUT)**  Validating JD text...")
+    gr_in = check_guardrail(jd_text, "INPUT")
+    if not gr_in.passed:
+        input_ph.error(
+            f"🚫 **Bedrock Guardrail (INPUT) — Blocked.**  {gr_in.blocked_reason or 'content policy violation'}"
+        )
+        return
+    input_ph.success("✅ **Bedrock Guardrail (INPUT)**  Passed")
 
     # ── Agent 1: JD Parser ───────────────────────────────────────────
     parser_ph = st.empty()
@@ -104,6 +126,18 @@ def run_pipeline(jd_text: str, industry: str, client: anthropic.Anthropic) -> No
         advisor_ph.error(f"❌ Advisor failed — {e}")
         return
 
+    # ── Bedrock Guardrail — OUTPUT gate ──────────────────────────────
+    output_ph = st.empty()
+    output_ph.info("🛡️ **Bedrock Guardrail (OUTPUT)**  Validating advisor report...")
+    report_text = extract_report_text(context["advisor_report"])
+    gr_out = check_guardrail(report_text, "OUTPUT")
+    if not gr_out.passed:
+        output_ph.error(
+            f"🚫 **Bedrock Guardrail (OUTPUT) — Blocked.**  {gr_out.blocked_reason or 'content policy violation'}"
+        )
+        return
+    output_ph.success("✅ **Bedrock Guardrail (OUTPUT)**  Passed")
+
     st.session_state.jdqi_context = context
     st.session_state.accepted = []
 
@@ -159,6 +193,122 @@ def display_report(context: JDQIContext) -> None:
             st.rerun()
 
 
+def _build_jd_tab(client: anthropic.Anthropic) -> None:
+    """Render the Build JD chat tab."""
+
+    # ── Brand settings ───────────────────────────────────────────────
+    with st.expander("⚙️ Brand Settings", expanded=False):
+        bcols = st.columns(len(_BRAND_PRESETS) + 1)
+        for i, (name, hex_val) in enumerate(_BRAND_PRESETS.items()):
+            if bcols[i].button(f"● {name}", key=f"preset_{name}"):
+                st.session_state.brand_color = hex_val
+                st.rerun()
+        custom = bcols[-1].text_input(
+            "Custom hex", value=st.session_state.brand_color, key="custom_color_input"
+        )
+        if custom != st.session_state.brand_color and custom.startswith("#") and len(custom) == 7:
+            st.session_state.brand_color = custom
+
+        logo_file = st.file_uploader("Company Logo (PNG/JPG, optional)", type=["png", "jpg", "jpeg"])
+        if logo_file:
+            st.session_state.logo_bytes = logo_file.read()
+
+    st.caption(f"Brand color: `{st.session_state.brand_color}`")
+
+    # ── Seed greeting on first load ──────────────────────────────────
+    if not st.session_state.builder_messages:
+        first = greeting()
+        st.session_state.builder_messages.append({"role": "assistant", "content": first})
+
+    # ── Chat display ─────────────────────────────────────────────────
+    for msg in st.session_state.builder_messages:
+        with st.chat_message(msg["role"]):
+            st.markdown(msg["content"])
+
+    # ── Download section (shown after successful generation) ─────────
+    if st.session_state.jd_document is not None:
+        st.divider()
+        role = st.session_state.jd_document.get("role_title", "Job Description")
+        st.success(f"📄 JD ready — **{role}**")
+        docx_bytes = build_docx(
+            st.session_state.jd_document,
+            st.session_state.brand_color,
+            st.session_state.logo_bytes,
+        )
+        col1, col2 = st.columns(2)
+        col1.download_button(
+            "⬇ Download .docx",
+            data=docx_bytes,
+            file_name=f"{role.replace(' ', '_')}_JD.docx",
+            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        )
+        if col2.button("🔄 Start over"):
+            for key in ("builder_messages", "jdqi_brief", "jd_document", "logo_bytes"):
+                st.session_state[key] = [] if key == "builder_messages" else None
+            st.session_state.ready_to_generate = False
+            st.rerun()
+        return  # Don't show chat input once JD is done
+
+    # ── Generate button (shown when gather agent signals ready) ──────
+    if st.session_state.ready_to_generate and st.session_state.jdqi_brief:
+        if st.button("✅ Generate JD now", type="primary"):
+            with st.spinner("✍️ Drafting your JD…"):
+                doc = draft_jd(st.session_state.jdqi_brief, client)
+
+            # OUTPUT guardrail
+            out_ph = st.empty()
+            out_ph.info("🛡️ Bedrock Guardrail (OUTPUT) — Validating…")
+            gr_out = check_guardrail(extract_jd_text(doc), "OUTPUT")
+            if not gr_out.passed:
+                out_ph.error(
+                    f"🚫 Bedrock Guardrail (OUTPUT) — Blocked. {gr_out.blocked_reason}"
+                )
+                return
+            out_ph.success("✅ Bedrock Guardrail (OUTPUT) — Passed")
+            st.session_state.jd_document = doc
+            st.rerun()
+
+    # ── Chat input ───────────────────────────────────────────────────
+    user_input = st.chat_input("Type your message…")
+    if not user_input:
+        return
+
+    # INPUT guardrail
+    gr_in = check_guardrail(user_input, "INPUT")
+    if not gr_in.passed:
+        with st.chat_message("assistant"):
+            st.error(f"🚫 Bedrock Guardrail (INPUT) — Blocked. {gr_in.blocked_reason}")
+        return
+
+    # Add user message and display
+    st.session_state.builder_messages.append({"role": "user", "content": user_input})
+    with st.chat_message("user"):
+        st.markdown(user_input)
+
+    # Build Anthropic-format history.
+    # Anthropic API requires history to start with a user message, so strip
+    # any leading assistant messages (the display-only greeting seed).
+    history = [
+        {"role": m["role"], "content": m["content"]}
+        for m in st.session_state.builder_messages
+    ]
+    while history and history[0]["role"] == "assistant":
+        history = history[1:]
+
+    with st.chat_message("assistant"):
+        with st.spinner("Thinking…"):
+            reply, brief = gather_turn(history, client)
+        st.markdown(reply)
+
+    st.session_state.builder_messages.append({"role": "assistant", "content": reply})
+
+    if brief is not None:
+        st.session_state.jdqi_brief = brief
+        st.session_state.ready_to_generate = True
+
+    st.rerun()
+
+
 def main() -> None:
     st.set_page_config(
         page_title="JD Quality Intelligence",
@@ -171,6 +321,20 @@ def main() -> None:
     if "accepted" not in st.session_state:
         st.session_state.accepted = []
 
+    # ── Build JD tab session state ───────────────────────────────────
+    if "builder_messages" not in st.session_state:
+        st.session_state.builder_messages = []
+    if "jdqi_brief" not in st.session_state:
+        st.session_state.jdqi_brief = None
+    if "jd_document" not in st.session_state:
+        st.session_state.jd_document = None
+    if "ready_to_generate" not in st.session_state:
+        st.session_state.ready_to_generate = False
+    if "brand_color" not in st.session_state:
+        st.session_state.brand_color = "#1D3557"
+    if "logo_bytes" not in st.session_state:
+        st.session_state.logo_bytes = None
+
     st.title("🎯 JD Quality Intelligence (JDQI)")
     st.caption(
         "**Claude Advisor Strategy demo** — "
@@ -179,29 +343,35 @@ def main() -> None:
 
     client = _get_client()
 
-    # ── Input form ───────────────────────────────────────────────────
-    with st.form("jd_form"):
-        jd_text = st.text_area(
-            "Paste your Job Description",
-            height=320,
-            placeholder="Paste the full JD text here…",
-        )
-        industry = st.selectbox("Industry", INDUSTRIES)
-        submitted = st.form_submit_button(
-            "Analyse JD ▶", type="primary", use_container_width=True
-        )
+    tab1, tab2 = st.tabs(["🔍 Analyse JD", "📝 Build JD"])
 
-    if submitted:
-        if not jd_text.strip():
-            st.warning("Please paste a job description before analysing.")
-        else:
-            st.session_state.jdqi_context = None
-            st.session_state.accepted = []
-            run_pipeline(jd_text, industry, client)
+    with tab1:
+        # ── Input form ───────────────────────────────────────────────────
+        with st.form("jd_form"):
+            jd_text = st.text_area(
+                "Paste your Job Description",
+                height=320,
+                placeholder="Paste the full JD text here…",
+            )
+            industry = st.selectbox("Industry", INDUSTRIES)
+            submitted = st.form_submit_button(
+                "Analyse JD ▶", type="primary", use_container_width=True
+            )
 
-    # ── Render stored report (persists across Accept button clicks) ──
-    if st.session_state.jdqi_context is not None:
-        display_report(st.session_state.jdqi_context)
+        if submitted:
+            if not jd_text.strip():
+                st.warning("Please paste a job description before analysing.")
+            else:
+                st.session_state.jdqi_context = None
+                st.session_state.accepted = []
+                run_pipeline(jd_text, industry, client)
+
+        # ── Render stored report (persists across Accept button clicks) ──
+        if st.session_state.jdqi_context is not None:
+            display_report(st.session_state.jdqi_context)
+
+    with tab2:
+        _build_jd_tab(client)
 
 
 if __name__ == "__main__":
