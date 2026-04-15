@@ -22,7 +22,7 @@ import boto3
 from botocore.exceptions import BotoCoreError, ClientError
 
 _GUARDRAIL_ID = "ovpwtkmupag5"
-_GUARDRAIL_VERSION = "1"
+_GUARDRAIL_VERSION = "2"
 
 
 @dataclass
