@@ -10,6 +10,7 @@ const {
   ROLE_NAMES,
   ROLE_COLORS,
   TYPE_LABELS,
+  ENERGY_TENSION_MESSAGES,
 } = require('./tensions');
 
 // ── classifyTension ──────────────────────────────────────────────────────────
@@ -89,9 +90,24 @@ assert.strictEqual(msgs.balance.role, 'P');
 assert.strictEqual(msgs.protect.role, 'I');
 assert.ok(typeof msgs.stretch.roleColor === 'string');
 
+// Verify direction branches in generateActionPathMessages
+// E: rolePressureDelta=8 (>0) → stretch should say "demands more"
+assert.ok(msgs.stretch.description.includes('demands more'),
+  'stretch description should say "demands more" when rolePressureDelta > 0');
+// P: identityDriftDelta=-10 (<0) → balance should say "operating with more"
+assert.ok(msgs.balance.description.includes('operating with more'),
+  'balance description should say "operating with more" when identityDriftDelta < 0');
+
+// Verify energyTensionMessage direction
+// P: energyTensionDelta = 18-22 = -4 < 0 → etDir = 'high' → message should mention "outpaces"
+assert.ok(tensions.P.energyTensionMessage.includes('outpaces'),
+  'P energyTensionMessage should use high/drain direction when want < should');
+
 // ── constants exported ───────────────────────────────────────────────────────
 assert.strictEqual(ROLE_NAMES.P, 'Producer');
 assert.strictEqual(ROLE_COLORS.P, '#C8102E');
 assert.strictEqual(TYPE_LABELS.rolePressure, 'Role Pressure');
+assert.ok(typeof ENERGY_TENSION_MESSAGES.P.high === 'string', 'ENERGY_TENSION_MESSAGES exported');
+assert.ok(typeof ENERGY_TENSION_MESSAGES.E.low === 'string', 'ENERGY_TENSION_MESSAGES has all roles');
 
 console.log('All tensions tests passed ✓');

@@ -102,7 +102,8 @@ function computeTensions(scaledScores) {
     else if (peakGap === energyTension)  primaryType = 'energyTension';
     else                                  primaryType = 'identityDrift';
 
-    // Energy tension direction: want < should means role drains; want > should means role energises
+    // 'high' = want < should (role demands more than preference → draining)
+    // 'low'  = want > should (preference exceeds demand → energising surplus)
     const etDir = energyTensionDelta < 0 ? 'high' : 'low';
 
     result[role] = {
@@ -172,7 +173,7 @@ function generateActionPathMessages(tensionData, actionPath) {
 }
 
 module.exports = {
-  ROLES, ROLE_NAMES, ROLE_COLORS, ROLE_TINTS, TYPE_LABELS, ACTION_CUES,
+  ROLES, ROLE_NAMES, ROLE_COLORS, ROLE_TINTS, TYPE_LABELS, ACTION_CUES, ENERGY_TENSION_MESSAGES,
   classifyTension, computeTensions, getTopTensions,
   computeActionPath, generateActionPathMessages,
 };
