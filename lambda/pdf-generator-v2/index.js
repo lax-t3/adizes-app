@@ -22,10 +22,14 @@ function inlineAssets(html) {
   const templateDir = path.join(__dirname, 'template');
 
   const css = fs.readFileSync(path.join(templateDir, 'styles.css'), 'utf8');
+  const beforeCss = html;
   html = html.replace(
     /<link rel="stylesheet" href="\.\/styles\.css">/,
     `<style>${css}</style>`,
   );
+  if (html === beforeCss) {
+    console.warn('[pdf-v2] WARNING: styles.css <link> tag not found — PDF will be unstyled');
+  }
 
   html = html.replace(/src="\.\/assets\/([^"]+)"/g, (_match, filename) => {
     const assetPath = path.join(templateDir, 'assets', filename);
@@ -153,6 +157,7 @@ exports.handler = async (event) => {
       break;
     } catch (err) {
       console.error(`[pdf-v2] Supabase PATCH attempt ${attempt} failed: ${err.message}`);
+      // Intentional: PDF is already in S3. DB update failure is non-fatal — caller can retry via assessment status check.
       if (attempt === 2) console.error(`[pdf-v2] Giving up on Supabase PATCH`);
     }
   }
