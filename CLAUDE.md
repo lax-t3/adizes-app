@@ -194,11 +194,13 @@ App Runner env vars (set in AWS Console → App Runner service → Configuration
 - `AWS_ACCESS_KEY_ID` (IAM user key to invoke PDF Lambda)
 - `AWS_SECRET_ACCESS_KEY`
 - `AWS_REGION=ap-south-1`
-- `PDF_LAMBDA_FUNCTION_NAME=adizes-pdf-generator`
+- `PDF_LAMBDA_FUNCTION_NAME=adizes-pdf-generator-v2`
 
-#### PDF Lambda → AWS Lambda (via ECR)
+> **Rollback:** Change `PDF_LAMBDA_FUNCTION_NAME=adizes-pdf-generator` to revert to v1 with no code changes.
+
+#### PDF Lambda v2 → AWS Lambda (via ECR)
 ```bash
-cd lambda/pdf-generator
+cd lambda/pdf-generator-v2
 export SUPABASE_URL=https://your-project.supabase.co
 export SUPABASE_SERVICE_ROLE_KEY=<service-role-key>
 export S3_BUCKET_NAME=adizes-pdf-reports
@@ -212,6 +214,17 @@ export S3_BUCKET_NAME=adizes-pdf-reports
 4. Set admin role: `UPDATE auth.users SET app_metadata = '{"role":"admin"}' WHERE email = 'admin@yourorg.com'`
 
 ## Key Decisions
+- **PDF Lambda v2 is active** (`adizes-pdf-generator-v2`). Cutover/rollback is one App Runner env var:
+  `PDF_LAMBDA_FUNCTION_NAME=adizes-pdf-generator-v2` (v2) or `=adizes-pdf-generator` (v1 rollback).
+  V1 (`lambda/pdf-generator/`) is preserved deployed and untouched.
+- **PDF Lambda v2 report identity:** "PAEI Energy Alignment Profile" — 5 pages, no Chart.js, HTML div
+  bars only. Three tension types: Role Pressure (`abs(should−is)`), Energy Tension (`abs(want−should)`),
+  Identity Drift (`abs(want−is)`). Thresholds: <5 aligned, 5–15 moderate, >15 high.
+- **Re-trigger stuck PDF (pdf_url = null):** Fetch the assessment row from Supabase REST API, then
+  invoke Lambda directly with `RequestResponse` (synchronous). It patches Supabase itself on success.
+  See `lambda/pdf-generator-v2/how-does-lambda-fn-work.md` for the exact CLI commands.
+- **Lambda deploy IAM:** `power-admin-role` needs `AWSLambda_FullAccess` + `PowerUserAccess` +
+  inline policy `iam-pass-for-lambda` (`iam:PassRole` on `adizes-pdf-lambda-role`).
 - Frontend calls FastAPI for ALL API calls (auth, assessment, results, admin)
 - FastAPI validates Supabase JWT on every protected endpoint
 - Local Supabase uses ES256 JWT; cloud Supabase uses HS256 — auth.py handles both
