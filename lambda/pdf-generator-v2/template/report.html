@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>PAEI Energy Alignment Profile — <%= user_name %></title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+
+<%
+  /* Helpers available in all pages */
+  function barW(score) { return Math.round(score / 50 * 100); }
+  function signedDelta(d) { return (d > 0 ? '+' : '') + d; }
+  function badgeText(level) {
+    return level === 'high' ? 'HIGH' : level === 'moderate' ? 'MODERATE' : 'ALIGNED';
+  }
+  const dateStr = new Date(completed_at).toLocaleDateString('en-GB',
+    { year: 'numeric', month: 'long', day: 'numeric' });
+  const highestTensionRole = ROLES.reduce((a, b) =>
+    tensions[a].peakGap >= tensions[b].peakGap ? a : b);
+%>
+
+<!-- ═══════════════════════════════════════════════════════════
+     PAGE 1 — Energy Alignment Snapshot
+     ═══════════════════════════════════════════════════════════ -->
+<div class="page page-break">
+  <div class="page-header">
+    <img class="logo" src="./assets/logo.png" alt="HILeadership">
+    <span class="header-tagline">PAEI Energy Alignment Profile</span>
+  </div>
+
+  <div class="snapshot-hero">
+    <div class="snapshot-name"><%= user_name %></div>
+    <div class="snapshot-date"><%= dateStr %></div>
+    <div class="identity-badge"><%= identityLine %></div>
+  </div>
+
+  <div class="section-label">Energy Alignment Matrix</div>
+  <div class="matrix-grid">
+    <% ROLES.forEach(function(role) {
+         const t = tensions[role];
+         const isHighest = (role === highestTensionRole);
+    %>
+    <div class="matrix-card<%= isHighest ? ' highlight-' + role : '' %>">
+      <div class="matrix-card-header" style="background:<%- ROLE_TINTS[role] %>;">
+        <div style="display:flex;align-items:center;gap:6pt;">
+          <div class="role-circle" style="background:<%- ROLE_COLORS[role] %>;"><%= role %></div>
+          <span class="role-full-name"><%= ROLE_NAMES[role] %></span>
+        </div>
+        <span class="tension-badge badge-<%= t.level %>"><%= badgeText(t.level) %></span>
+      </div>
+      <div class="matrix-card-bars">
+        <div class="bar-row">
+          <span class="bar-row-label">IS</span>
+          <div class="bar-track"><div class="bar-fill" style="width:<%- barW(t.is) %>%;background:<%- ROLE_COLORS[role] %>;"></div></div>
+          <span class="bar-val"><%= t.is %></span>
+        </div>
+        <div class="bar-row">
+          <span class="bar-row-label">SHOULD</span>
+          <div class="bar-track"><div class="bar-fill" style="width:<%- barW(t.should) %>%;background:<%- ROLE_COLORS[role] %>;opacity:0.55;"></div></div>
+          <span class="bar-val"><%= t.should %></span>
+        </div>
+        <div class="bar-row">
+          <span class="bar-row-label">WANT</span>
+          <div class="bar-track"><div class="bar-fill" style="width:<%- barW(t.want) %>%;background:<%- ROLE_COLORS[role] %>;opacity:0.3;"></div></div>
+          <span class="bar-val"><%= t.want %></span>
+        </div>
+      </div>
+    </div>
+    <% }); %>
+  </div>
+
+  <div class="section-label">Core Insight</div>
+  <div class="core-insight"><%= interpretation.combined_description || interpretation.style_tagline %></div>
+
+  <div class="section-label">Top Tensions</div>
+  <div class="top-tensions">
+    <% topTensions.forEach(function(tt) { %>
+    <div class="tension-pill">
+      <div class="pill-dot <%= tt.level %>"></div>
+      <span><%= ROLE_NAMES[tt.role] %> (<%= tt.role %>) — <%= TYPE_LABELS[tt.type] %>: <%= badgeText(tt.level) %> (<%= signedDelta(tt.delta) %>)</span>
+    </div>
+    <% }); %>
+  </div>
+
+  <div class="page-footer">
+    <span>HILeadership | PAEI Energy Alignment Profile</span>
+    <span>Confidential — Page 1</span>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     PAGE 2 — Tension Map
+     ═══════════════════════════════════════════════════════════ -->
+<div class="page page-break">
+  <div class="page-header">
+    <img class="logo" src="./assets/logo.png" alt="HILeadership">
+    <span class="header-tagline">PAEI Energy Alignment Profile — Tension Map</span>
+  </div>
+
+  <h2 style="margin-bottom:4pt;">Tension Map</h2>
+  <p style="font-size:8.5pt;color:#6b7280;margin-bottom:14pt;">
+    For each role: how your current behaviour (IS), role demands (SHOULD), and natural preference (WANT) compare.
+    Role Pressure = IS vs SHOULD · Energy Tension = WANT vs SHOULD · Identity Drift = WANT vs IS.
+  </p>
+
+  <div class="tension-grid">
+    <% ROLES.forEach(function(role) {
+         const t = tensions[role];
+         const gap = gapsMap[role];
+         const isHighest = (role === highestTensionRole);
+         let primaryMessage = '';
+         let primaryActionCue = '';
+         if (t.primaryType === 'rolePressure') {
+           primaryMessage   = gap ? gap.external_message : '';
+           primaryActionCue = ACTION_CUES.rolePressure[role][t.rolePressureDelta > 0 ? 'high' : 'low'];
+         } else if (t.primaryType === 'energyTension') {
+           primaryMessage   = t.energyTensionMessage;
+           primaryActionCue = ACTION_CUES.energyTension[role][t.energyTensionDelta < 0 ? 'high' : 'low'];
+         } else {
+           primaryMessage   = gap ? gap.internal_message : '';
+           primaryActionCue = ACTION_CUES.identityDrift[role][t.identityDriftDelta > 0 ? 'low' : 'high'];
+         }
+    %>
+    <div class="tension-card<%= isHighest ? ' highlight-' + role : '' %>">
+      <div class="tension-card-header" style="background:<%- ROLE_TINTS[role] %>;">
+        <div style="display:flex;align-items:center;gap:6pt;">
+          <div class="role-circle" style="background:<%- ROLE_COLORS[role] %>;"><%= role %></div>
+          <span class="role-full-name"><%= ROLE_NAMES[role] %></span>
+        </div>
+        <span class="tension-badge badge-<%= t.level %>"><%= badgeText(t.level) %></span>
+      </div>
+      <div class="tension-card-bars">
+        <div class="bar-row">
+          <span class="bar-row-label">IS</span>
+          <div class="bar-track"><div class="bar-fill" style="width:<%- barW(t.is) %>%;background:<%- ROLE_COLORS[role] %>;"></div></div>
+          <span class="bar-val"><%= t.is %></span>
+        </div>
+        <div class="bar-row">
+          <span class="bar-row-label">SHOULD</span>
+          <div class="bar-track"><div class="bar-fill" style="width:<%- barW(t.should) %>%;background:<%- ROLE_COLORS[role] %>;opacity:0.55;"></div></div>
+          <span class="bar-val"><%= t.should %></span>
+        </div>
+        <div class="bar-row">
+          <span class="bar-row-label">WANT</span>
+          <div class="bar-track"><div class="bar-fill" style="width:<%- barW(t.want) %>%;background:<%- ROLE_COLORS[role] %>;opacity:0.3;"></div></div>
+          <span class="bar-val"><%= t.want %></span>
+        </div>
+      </div>
+      <div class="tension-card-body">
+        <% if (t.level === 'aligned') { %>
+        <div class="well-aligned-box">Well aligned — IS, SHOULD, and WANT are closely matched.</div>
+        <% } else { %>
+        <div class="tension-highlight <%= t.level %>">
+          <div class="tension-highlight-label <%= t.level %>">
+            <%= TYPE_LABELS[t.primaryType] %> (<%= signedDelta(
+              t.primaryType === 'rolePressure'  ? t.rolePressureDelta  :
+              t.primaryType === 'energyTension' ? t.energyTensionDelta :
+              t.identityDriftDelta
+            ) %>)
+          </div>
+          <div class="tension-highlight-text"><%= primaryMessage %></div>
+        </div>
+        <div class="action-cue <%= role %>">→ <%= primaryActionCue %></div>
+        <% } %>
+      </div>
+    </div>
+    <% }); %>
+  </div>
+
+  <div class="page-footer">
+    <span>HILeadership | PAEI Energy Alignment Profile</span>
+    <span>Confidential — Page 2</span>
+  </div>
+</div>
+
+</body>
+</html>
