@@ -174,5 +174,143 @@
   </div>
 </div>
 
+<!-- ═══════════════════════════════════════════════════════════
+     PAGE 3 — What This Means
+     ═══════════════════════════════════════════════════════════ -->
+<div class="page page-break">
+  <div class="page-header">
+    <img class="logo" src="./assets/logo.png" alt="HILeadership">
+    <span class="header-tagline">PAEI Energy Alignment Profile — What This Means</span>
+  </div>
+
+  <h2 style="margin-bottom:14pt;">What This Means</h2>
+
+  <div class="meaning-grid">
+    <div class="meaning-card best">
+      <h3>✓ When you are at your best</h3>
+      <p><%= interpretation.strengths %></p>
+    </div>
+    <div class="meaning-card friction">
+      <h3>⚠ Where friction shows up</h3>
+      <p><%= interpretation.blind_spots %></p>
+    </div>
+  </div>
+
+  <div class="section-label">Early Warning Signs</div>
+  <% interpretation.mismanagement_risks.forEach(function(risk) { %>
+  <div class="warning-card"><%= risk %></div>
+  <% }); %>
+
+  <div class="page-footer">
+    <span>HILeadership | PAEI Energy Alignment Profile</span>
+    <span>Confidential — Page 3</span>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     PAGE 4 — Style Summary
+     ═══════════════════════════════════════════════════════════ -->
+<div class="page page-break">
+  <div class="page-header">
+    <img class="logo" src="./assets/logo.png" alt="HILeadership">
+    <span class="header-tagline">PAEI Energy Alignment Profile — Style Summary</span>
+  </div>
+
+  <h2 style="margin-bottom:12pt;">Style Summary</h2>
+
+  <div class="style-hero">
+    <div class="style-hero-label"><%= interpretation.style_label %></div>
+    <div class="style-hero-tagline"><%= interpretation.style_tagline %></div>
+    <% if (interpretation.combined_description) { %>
+    <div class="style-hero-desc"><%= interpretation.combined_description %></div>
+    <% } %>
+  </div>
+
+  <div class="summary-grid">
+    <div class="summary-card strengths">
+      <h3>Strengths</h3>
+      <p><%= interpretation.strengths %></p>
+    </div>
+    <div class="summary-card watchouts">
+      <h3>Watchouts</h3>
+      <p><%= interpretation.blind_spots %></p>
+    </div>
+    <div class="summary-card stress">
+      <h3>Under Stress</h3>
+      <% interpretation.mismanagement_risks.forEach(function(risk) { %>
+      <p style="margin-bottom:5pt;"><%= risk %></p>
+      <% }); %>
+    </div>
+  </div>
+
+  <div class="page-footer">
+    <span>HILeadership | PAEI Energy Alignment Profile</span>
+    <span>Confidential — Page 4</span>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     PAGE 5 — Action Path
+     ═══════════════════════════════════════════════════════════ -->
+<div class="page">
+  <div class="page-header">
+    <img class="logo" src="./assets/logo.png" alt="HILeadership">
+    <span class="header-tagline">PAEI Energy Alignment Profile — Action Path</span>
+  </div>
+
+  <h2 style="margin-bottom:4pt;">Your Action Path</h2>
+  <p style="font-size:8.5pt;color:#6b7280;margin-bottom:16pt;">Three directions drawn from your energy alignment data. Focus on Stretch first, use Balance to recalibrate, and hold Protect as your anchor.</p>
+
+  <div class="action-path-cards">
+    <div class="action-card" style="border-left:3pt solid <%- actionPath.stretch.roleColor %>;">
+      <div class="action-card-left">
+        <div class="action-icon" style="background:<%- actionPath.stretch.roleColor %>;"><%= actionPath.stretch.role %></div>
+        <div class="action-type-label stretch">Stretch</div>
+      </div>
+      <div class="action-card-right">
+        <h3><%= actionPath.stretch.roleName %></h3>
+        <p><%= actionPath.stretch.description %></p>
+        <div class="action-prompt">→ <%= actionPath.stretch.action %></div>
+      </div>
+    </div>
+
+    <div class="action-card" style="border-left:3pt solid <%- actionPath.balance.roleColor %>;">
+      <div class="action-card-left">
+        <div class="action-icon" style="background:<%- actionPath.balance.roleColor %>;"><%= actionPath.balance.role %></div>
+        <div class="action-type-label balance">Balance</div>
+      </div>
+      <div class="action-card-right">
+        <h3><%= actionPath.balance.roleName %></h3>
+        <p><%= actionPath.balance.description %></p>
+        <div class="action-prompt">→ <%= actionPath.balance.action %></div>
+      </div>
+    </div>
+
+    <div class="action-card" style="border-left:3pt solid <%- actionPath.protect.roleColor %>;">
+      <div class="action-card-left">
+        <div class="action-icon" style="background:<%- actionPath.protect.roleColor %>;"><%= actionPath.protect.role %></div>
+        <div class="action-type-label protect">Protect</div>
+      </div>
+      <div class="action-card-right">
+        <h3><%= actionPath.protect.roleName %></h3>
+        <p><%= actionPath.protect.description %></p>
+        <div class="action-prompt">→ <%= actionPath.protect.action %></div>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-top:18pt;padding:10pt 12pt;background:#f9fafb;border-radius:5pt;border:1pt solid #e5e7eb;">
+    <p style="font-size:8pt;color:#6b7280;line-height:1.6;">
+      <strong style="color:#374151;">How to use this report:</strong> Your PAEI profile is a tool for self-awareness, not a fixed label.
+      Strengths become liabilities when over-used. Use this report to open conversations with colleagues, coaches, and managers.
+    </p>
+  </div>
+
+  <div class="page-footer">
+    <span>HILeadership | PAEI Energy Alignment Profile</span>
+    <span>Confidential — Page 5</span>
+  </div>
+</div>
+
 </body>
 </html>
