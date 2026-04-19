@@ -10,7 +10,8 @@ FastAPI backend for the **Adizes PAEI Management Style Assessment** platform.
 | Framework | FastAPI |
 | Database | Supabase PostgreSQL |
 | Auth | Supabase Auth (JWT — ES256 local / HS256 cloud) |
-| PDF (primary) | AWS Lambda Docker + Puppeteer 22 + EJS + Chart.js → S3 |
+| PDF (v2, active) | AWS Lambda Docker + Puppeteer + EJS + HTML div bars → S3 (`adizes-pdf-generator-v2`) |
+| PDF (v1, preserved) | AWS Lambda Docker + Puppeteer 22 + EJS + Chart.js → S3 (`adizes-pdf-generator`) |
 | PDF (fallback) | WeasyPrint + Jinja2 (server-side, used for email attachments) |
 | Email | Python smtplib (AWS SES / Gmail / Resend / Custom SMTP) |
 | Container | Docker |
@@ -130,8 +131,10 @@ FRONTEND_URL              = https://your-netlify-app.netlify.app
 AWS_REGION                = ap-south-1
 AWS_ACCESS_KEY_ID         = <IAM user key for Lambda invocation>
 AWS_SECRET_ACCESS_KEY     = <IAM user secret for Lambda invocation>
-PDF_LAMBDA_FUNCTION_NAME  = adizes-pdf-generator
+PDF_LAMBDA_FUNCTION_NAME  = adizes-pdf-generator-v2
 ```
+
+> **Rollback:** Set `PDF_LAMBDA_FUNCTION_NAME=adizes-pdf-generator` to revert to v1 instantly — no code changes required.
 
 5. **Create & deploy** — App Runner provisions the service and gives you a URL like:
    `https://xxxxxxxxxxxx.ap-south-1.awsapprunner.com`
@@ -415,27 +418,71 @@ pytest tests/ -v
 ## Lambda PDF Generator
 
 The primary PDF report is generated asynchronously by a Docker Lambda function.
+Two versions are deployed; v2 is active (controlled by `PDF_LAMBDA_FUNCTION_NAME` env var on App Runner).
 
 ```
 POST /assessment/submit
   └── BackgroundTask: boto3.invoke(Lambda, InvocationType="Event")
 
-Lambda (lambda/pdf-generator/):
-  EJS render → inline assets → Puppeteer → Chart.js charts
+Lambda v2 (lambda/pdf-generator-v2/):   ← ACTIVE
+  EJS render → inline assets → Puppeteer → HTML div bars (no Chart.js)
   → page.pdf() → S3 PutObject (public-read)
   → Supabase PATCH assessments.pdf_url
+
+Lambda v1 (lambda/pdf-generator/):      ← PRESERVED, not active
+  EJS render → inline assets → Puppeteer → Chart.js charts
+  → page.pdf() → S3 PutObject → Supabase PATCH
 ```
 
-### Deploy Lambda
+### Report: v2 vs v1
+
+| | v2 (PAEI Energy Alignment Profile) | v1 (AMSI) |
+|---|---|---|
+| Pages | 5 | 9 |
+| Primary visual | Role card matrix + tension bars | Radar chart |
+| Chart.js | No — pure HTML div bars | Yes |
+| Key concept | Role Pressure / Energy Tension / Identity Drift | External Gap / Internal Gap |
+| Lambda name | `adizes-pdf-generator-v2` | `adizes-pdf-generator` |
+
+### Deploy Lambda v2
 
 ```bash
-# Set required env vars first
 export SUPABASE_URL=https://...
 export SUPABASE_SERVICE_ROLE_KEY=...
 export S3_BUCKET_NAME=adizes-pdf-reports
 
-cd lambda/pdf-generator
+cd lambda/pdf-generator-v2
 ./deploy.sh
+```
+
+### Cutover / Rollback
+
+Set `PDF_LAMBDA_FUNCTION_NAME` on the App Runner service:
+- `adizes-pdf-generator-v2` → v2 active (current)
+- `adizes-pdf-generator` → rollback to v1
+
+No code changes or redeployment needed — App Runner env var change takes effect immediately.
+
+### Re-trigger PDF for a stuck assessment (pdf_url = null)
+
+If a user's `pdf_url` is null after submission (Lambda failed silently), invoke v2 directly:
+
+```bash
+AWS_PROFILE=lax-t3-assumed aws lambda invoke \
+  --function-name adizes-pdf-generator-v2 \
+  --region ap-south-1 \
+  --invocation-type RequestResponse \
+  --payload '{"assessment_id":"<uuid>","user_name":"...","completed_at":"...","profile":{...},"scaled_scores":{...},"gaps":[...],"interpretation":{...}}' \
+  --cli-binary-format raw-in-base64-out \
+  /tmp/response.json && cat /tmp/response.json
+```
+
+Fetch the full payload from Supabase first:
+```bash
+SUPA_URL="https://swiznkamzxyfzgckebqi.supabase.co"
+SUPA_KEY="<service-role-key>"
+curl -s "${SUPA_URL}/rest/v1/assessments?id=eq.<uuid>&select=*" \
+  -H "apikey: ${SUPA_KEY}" -H "Authorization: Bearer ${SUPA_KEY}"
 ```
 
 ### AWS Pre-requisites (one-time)
@@ -451,7 +498,17 @@ aws s3api create-bucket --bucket adizes-pdf-reports --region ap-south-1 ...
 aws iam create-user --user-name adizes-backend-lambda-invoker
 ```
 
-See `lambda/pdf-generator/deploy.sh` for full AWS CLI commands.
+See `lambda/pdf-generator-v2/deploy.sh` for full AWS CLI commands.
+
+### IAM: power-admin-role requirements for deploy
+
+The deploying IAM role needs:
+- `AWSLambda_FullAccess` managed policy
+- `PowerUserAccess` managed policy
+- Inline policy `iam-pass-for-lambda`:
+  ```json
+  { "Effect": "Allow", "Action": "iam:PassRole", "Resource": "arn:aws:iam::*:role/adizes-pdf-lambda-role" }
+  ```
 
 ## Related
 
