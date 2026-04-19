@@ -48,7 +48,6 @@ function inlineAssets(html) {
 
 exports.handler = async (event) => {
   const {
-    assessment_id,
     user_name,
     completed_at,
     profile,
@@ -56,6 +55,8 @@ exports.handler = async (event) => {
     gaps,
     interpretation,
   } = event;
+  // Backend sends result_id; support both for backwards compatibility
+  const assessment_id = event.result_id || event.assessment_id;
 
   console.log(`[pdf-v2] Starting PDF for assessment ${assessment_id}, user: ${user_name}`);
 
