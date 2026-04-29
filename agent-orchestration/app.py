@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 from agents.parser import run_parser
 from agents.specialists import run_specialists
 from agents.synthesizer import run_synthesizer
-from agents.guardrails import check_guardrail, extract_report_text
+from agents.guardrails import check_guardrail, extract_report_text, scan_jd_for_violations
 from models.context import JDQIContext
 from agents.jd_builder_gather import gather_turn, greeting
 from agents.jd_builder_draft import draft_jd
@@ -197,6 +197,9 @@ def run_pipeline(jd_text: str, industry: str, client: anthropic.Anthropic) -> No
         output_ph.error(
             f"🚫 **Bedrock Guardrail (OUTPUT) — Blocked.**  {gr_out.blocked_reason or 'content policy violation'}"
         )
+        with st.spinner("Scanning JD for problematic phrases…"):
+            phrases = scan_jd_for_violations(jd_text, gr_out.blocked_reason or "", client)
+        _render_jd_with_highlights(jd_text, phrases)
         return
     output_ph.success("✅ **Bedrock Guardrail (OUTPUT)**  Passed")
 
