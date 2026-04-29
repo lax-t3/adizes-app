@@ -21,6 +21,8 @@ Push: `git push jdqi master:main` (remote `jdqi` = subtree-split of `agent-orche
 | Analyse JD plan | `docs/superpowers/plans/2026-04-10-jdqi-advisor-strategy.md` |
 | Build JD spec | `docs/superpowers/specs/2026-04-14-jd-builder-design.md` |
 | Build JD plan | `docs/superpowers/plans/2026-04-14-jd-builder.md` |
+| Guardrail highlighter spec | `docs/superpowers/specs/2026-04-29-guardrail-jd-highlighter-design.md` |
+| Guardrail highlighter plan | `docs/superpowers/plans/2026-04-29-guardrail-jd-highlighter.md` |
 
 ## Architecture
 
@@ -46,9 +48,9 @@ Agent 8: Synthesis Executor (Sonnet)  → calls consult_advisor tool
 Agent 9: Advisor (Opus, on-demand)    → advisor_report
     │
     ▼  🛡️ Bedrock Guardrail (OUTPUT)
-    │
-    ▼
-JDQI Report UI
+    ├── passed → JDQI Report UI
+    └── blocked → scan_jd_for_violations (Haiku, ~2s)
+                  → highlight problematic phrases in JD text
 ```
 
 All agents share a plain Python dict (`JDQIContext`) as shared context.
@@ -96,9 +98,10 @@ Branded .docx download               [agents/jd_docx.py]
 | `agents/jd_builder_gather.py` | Phase 1 gather agent — adaptive chat, `signal_ready` tool |
 | `agents/jd_builder_draft.py` | Phase 2 draft agent — JDQIBrief → JDDocument prose |
 | `agents/jd_docx.py` | python-docx builder — branded `.docx` with color + logo |
-| `agents/guardrails.py` | AWS Bedrock `apply_guardrail` — input + output gate |
+| `agents/guardrails.py` | AWS Bedrock `apply_guardrail` — input + output gate; `scan_jd_for_violations()` — Haiku call to identify problematic JD phrases |
 | `models/context.py` | TypedDict schemas — JDQIContext, JDQIBrief, JDDocument, etc. |
 | `tests/test_jd_docx.py` | Unit tests for the docx builder (7 tests) |
+| `tests/test_guardrail_highlighter.py` | Unit tests for `scan_jd_for_violations` and `_build_highlighted_html` (14 tests) |
 
 ## Local Dev
 ```bash
@@ -145,7 +148,7 @@ AWS_REGION=ap-south-1
 
 **Behavior on blocked INPUT**: pipeline halts, red error shown, no LLM call made.
 **Behavior on blocked OUTPUT (Build JD)**: course-correction loop — block reasons fed back to `draft_jd(guardrail_feedback=...)`, redraft up to 3 times before showing a persistent error.
-**Behavior on blocked OUTPUT (Analyse JD)**: pipeline halts, red error shown.
+**Behavior on blocked OUTPUT (Analyse JD)**: red error shown → Haiku call scans original JD → problematic phrases highlighted in amber in the JD text panel.
 **Behavior on AWS error**: pipeline halts, red error shown — guardrail is a hard gate.
 
 ## JDQI Dimensions
@@ -169,12 +172,14 @@ AWS_REGION=ap-south-1
 - **Guardrail output course-correction loop** — when the OUTPUT guardrail blocks a drafted JD, the block reasons (topic policies, blocked words/phrases, PII) are extracted from `assessments` and passed back to `draft_jd(guardrail_feedback=...)` as explicit rewrite instructions. The loop retries up to `_MAX_DRAFT_RETRIES = 3` times. Each redraft is told exactly which words to remove and which patterns triggered topic blocks (e.g. `Discriminatory_Hiring_Criteria`, `Sensitive_Demographic_Questions`). This avoids surfacing a guardrail error to the user in the common case where the first draft uses protected-characteristic language in the EEO statement.
 - **`tool_choice="any"` forced follow-up in gather_turn** — if the gather agent previously declared readiness in text without calling `signal_ready`, the next `gather_turn` call uses `tool_choice={"type": "any"}` to force the tool call. A secondary safety net fires a follow-up call with `tool_choice="any"` if the current reply also contains ready phrases but no tool call. Follow-up messages use the plain text `reply` string (not raw `response.content` Pydantic objects) to avoid `tool_use`-without-`tool_result` 400 errors.
 - **No database** — all state is in-memory per Streamlit session.
+- **Guardrail OUTPUT block → JD highlighter** — when the OUTPUT guardrail blocks the advisor report in Analyse JD, `scan_jd_for_violations()` (Haiku, `claude-haiku-4-5-20251001`, max_tokens=512) scans the original JD text and returns verbatim phrases that match the block reason. `_build_highlighted_html()` renders the JD with those phrases in amber `<mark>` spans using case-insensitive matching and substring deduplication (longer phrases absorb substrings to prevent nested tags). Falls back to a plain caption if Haiku returns nothing. Only fires on OUTPUT block; INPUT block has no highlighting (JD is still visible in the form).
+- **`_build_highlighted_html()` phrase matching** — phrases are sorted longest-first before replacement, then deduplicated (drop any phrase that is a substring of a longer phrase in the list). Replacement uses `re.sub` with `re.IGNORECASE` and `lambda m: m.group(0)` to preserve the original JD casing inside the highlight span. The full JD text is HTML-escaped before any substitution to prevent XSS.
 
 ## Running Tests
 ```bash
 source .venv/bin/activate
 python -m pytest tests/ -v
-# 7 passed
+# 21 passed
 ```
 
 ## Target Segments

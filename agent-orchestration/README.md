@@ -41,9 +41,8 @@ Agent 8: Synthesis Executor (Sonnet)  → calls consult_advisor tool
 Agent 9: Advisor (Opus, on-demand)    → advisor_report
     │
     ▼  🛡️ Bedrock Guardrail (OUTPUT)
-    │
-    ▼
-JDQI Report + Suggested Additions
+    ├── passed → JDQI Report + Suggested Additions
+    └── blocked → Haiku scans JD → highlights problematic phrases
 ```
 
 ### Build JD — Two-Phase Chat Pipeline
@@ -107,9 +106,10 @@ Branded .docx download
 | `agents/jd_builder_gather.py` | Phase 1 gather agent — adaptive chat, `signal_ready` tool |
 | `agents/jd_builder_draft.py` | Phase 2 draft agent — JDQIBrief → JDDocument prose |
 | `agents/jd_docx.py` | python-docx builder — branded `.docx` with color + logo |
-| `agents/guardrails.py` | AWS Bedrock `apply_guardrail` — input + output gate |
+| `agents/guardrails.py` | AWS Bedrock `apply_guardrail` — input + output gate; `scan_jd_for_violations()` Haiku phrase scan |
 | `models/context.py` | TypedDict schemas — JDQIContext, JDQIBrief, JDDocument, etc. |
 | `tests/test_jd_docx.py` | Unit tests for the docx builder |
+| `tests/test_guardrail_highlighter.py` | Unit tests for guardrail scan + HTML highlighter |
 
 ---
 
@@ -158,6 +158,12 @@ AWS_REGION=ap-south-1
 | Version | `2` |
 | Region | `ap-south-1` |
 
+| Path | Behaviour on block |
+|------|--------------------|
+| INPUT (both tabs) | Pipeline halts, red error, no LLM call |
+| OUTPUT (Build JD) | Course-correction loop — redraft up to 3× with block reasons as feedback |
+| OUTPUT (Analyse JD) | Red error + Haiku scans the JD and highlights the offending phrases in amber |
+
 ---
 
 ## Tech Stack
@@ -179,5 +185,5 @@ AWS_REGION=ap-south-1
 ```bash
 source .venv/bin/activate
 python -m pytest tests/ -v
-# 7 passed
+# 21 passed
 ```
