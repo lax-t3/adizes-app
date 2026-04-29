@@ -14,15 +14,17 @@ Credential resolution order (first match wins):
 AWS_REGION defaults to ap-south-1.
 """
 
+import json
 import os
 from dataclasses import dataclass
 from typing import Optional
 
+import anthropic
 import boto3
 from botocore.exceptions import BotoCoreError, ClientError
 
 _GUARDRAIL_ID = "ovpwtkmupag5"
-_GUARDRAIL_VERSION = "2"
+_GUARDRAIL_VERSION = "3"
 
 
 @dataclass
@@ -175,3 +177,48 @@ def extract_report_text(report: dict) -> str:
             parts.append(imp)
 
     return "\n\n".join(parts)
+
+
+def scan_jd_for_violations(
+    jd_text: str,
+    blocked_reason: str,
+    client: anthropic.Anthropic,
+) -> list[str]:
+    """Call Claude Haiku to find verbatim phrases in jd_text that match the block reason.
+
+    Returns a list of exact quoted strings from jd_text, or [] on any failure.
+    """
+    if not jd_text or not jd_text.strip():
+        return []
+
+    prompt = (
+        f"You are analysing a job description that triggered an AI content guardrail.\n\n"
+        f"Guardrail block reason: {blocked_reason}\n\n"
+        "Scan the job description below and identify EXACT verbatim phrases or sentences "
+        "that likely caused this guardrail violation.\n\n"
+        "Guidelines by block type:\n"
+        "- Discriminatory_Hiring_Criteria: age requirements, gender/race/religion/nationality "
+        "preferences, physical appearance requirements, overly restrictive experience filters "
+        "that exclude protected groups (e.g. 'young and energetic', 'candidates aged 25–35')\n"
+        "- Content filter (hate/violence/sexual/insults): offensive language, slurs, explicit content\n"
+        "- Blocked word/phrase: look for that exact word or phrase\n"
+        "- PII detected: personal names, phone numbers, personal email addresses in the JD body\n\n"
+        f"Job Description:\n{jd_text[:10_000]}\n\n"
+        "Return ONLY a JSON array of verbatim strings copied exactly from the text above. "
+        "If nothing specific is identifiable, return: []"
+    )
+
+    try:
+        response = client.messages.create(
+            model="claude-haiku-4-5-20251001",
+            max_tokens=512,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        raw = response.content[0].text if response.content else ""
+        start = raw.find("[")
+        end = raw.rfind("]")
+        if start == -1 or end == -1 or end <= start:
+            return []
+        return json.loads(raw[start : end + 1])
+    except Exception:
+        return []
