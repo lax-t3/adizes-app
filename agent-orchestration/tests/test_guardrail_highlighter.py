@@ -51,3 +51,39 @@ def test_scan_returns_empty_list_for_empty_array_response():
     client = _make_client("[]")
     result = scan_jd_for_violations("Normal JD text.", "Topic blocked: X", client)
     assert result == []
+
+
+from app import _build_highlighted_html
+
+
+def test_build_html_highlights_phrase():
+    html = _build_highlighted_html(
+        "We want young professionals only.", ["young professionals only"]
+    )
+    assert "<mark" in html
+    assert "young professionals only" in html
+
+
+def test_build_html_highlights_all_occurrences():
+    html = _build_highlighted_html(
+        "male preferred, yes male preferred.", ["male preferred"]
+    )
+    assert html.count("<mark") == 2
+
+
+def test_build_html_no_highlights_for_empty_phrases():
+    html = _build_highlighted_html("Normal JD text.", [])
+    assert "<mark" not in html
+    assert "Normal JD text." in html
+
+
+def test_build_html_escapes_html_chars_in_jd():
+    html = _build_highlighted_html("JD with <b>bold</b> & symbols.", [])
+    assert "<b>" not in html
+    assert "&lt;b&gt;" in html
+    assert "&amp;" in html
+
+
+def test_build_html_phrase_not_in_jd_is_skipped():
+    html = _build_highlighted_html("Normal JD text.", ["phrase not present"])
+    assert "<mark" not in html

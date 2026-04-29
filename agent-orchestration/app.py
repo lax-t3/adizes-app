@@ -53,6 +53,57 @@ def _get_client() -> anthropic.Anthropic:
     return anthropic.Anthropic(api_key=key)
 
 
+def _build_highlighted_html(jd_text: str, phrases: list[str]) -> str:
+    """Return the JD as an HTML block with each phrase wrapped in an amber <mark>."""
+    import html as html_lib
+    safe = html_lib.escape(jd_text)
+    for phrase in phrases:
+        safe_phrase = html_lib.escape(phrase)
+        highlighted = (
+            '<mark style="background:#FEF3C7;color:#92400E;'
+            'padding:1px 4px;border-radius:3px;font-weight:600;">'
+            f"{safe_phrase}</mark>"
+        )
+        safe = safe.replace(safe_phrase, highlighted)
+    return (
+        '<div style="background:white;border:1px solid #e2e8f0;border-radius:6px;'
+        "padding:14px;font-family:monospace;font-size:13px;line-height:1.7;"
+        'white-space:pre-wrap;max-height:300px;overflow-y:auto;">'
+        f"{safe}</div>"
+    )
+
+
+def _render_jd_with_highlights(jd_text: str, phrases: list[str]) -> None:
+    """Render the JD panel with highlighted phrases below the guardrail error banner."""
+    count = len(phrases)
+    badge_color = "#ef4444" if count > 0 else "#64748b"
+    badge_text = (
+        f"{count} phrase{'s' if count != 1 else ''} flagged"
+        if count > 0
+        else "no specific phrases identified"
+    )
+    st.markdown(
+        '<div style="border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;margin-top:8px;">'
+        '<div style="background:#1e293b;color:#f8fafc;padding:10px 14px;'
+        'font-size:13px;font-weight:600;">'
+        f'🔍 Issues found in your JD '
+        f'<span style="background:{badge_color};color:white;font-size:11px;'
+        f'padding:2px 8px;border-radius:10px;margin-left:6px;">{badge_text}</span>'
+        "</div></div>",
+        unsafe_allow_html=True,
+    )
+    if phrases:
+        st.caption(
+            "Highlighted phrases likely triggered the guardrail — revise them and re-analyse."
+        )
+        st.markdown(_build_highlighted_html(jd_text, phrases), unsafe_allow_html=True)
+    else:
+        st.caption(
+            "Could not automatically pinpoint specific phrases. "
+            "Review your JD for language that could be considered discriminatory or exclusionary."
+        )
+
+
 def run_pipeline(jd_text: str, industry: str, client: anthropic.Anthropic) -> None:
     context: JDQIContext = {"jd_text": jd_text, "industry": industry}
 
