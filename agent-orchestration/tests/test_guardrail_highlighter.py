@@ -92,4 +92,12 @@ def test_build_html_highlights_case_insensitive():
         "We want Young Professionals only.", ["young professionals"]
     )
     assert "<mark" in html
-    assert "young professionals" in html
+    assert "Young Professionals" in html  # original JD casing preserved
+
+
+def test_build_html_deduplicates_overlapping_phrases():
+    html = _build_highlighted_html(
+        "young professionals only.", ["young professionals only", "young professionals"]
+    )
+    # Longer phrase absorbs shorter; exactly one mark, no nesting
+    assert html.count("<mark") == 1

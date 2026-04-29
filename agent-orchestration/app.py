@@ -55,18 +55,27 @@ def _get_client() -> anthropic.Anthropic:
 
 def _build_highlighted_html(jd_text: str, phrases: list[str]) -> str:
     """Return the JD as an HTML block with each phrase wrapped in an amber <mark>."""
-    import re
     import html as html_lib
+    import re
     safe = html_lib.escape(jd_text)
-    for phrase in sorted(phrases, key=len, reverse=True):
+
+    sorted_phrases = sorted(phrases, key=len, reverse=True)
+    deduped: list[str] = []
+    for p in sorted_phrases:
+        if not any(p.lower() in longer.lower() for longer in deduped):
+            deduped.append(p)
+
+    mark_open = (
+        '<mark style="background:#FEF3C7;color:#92400E;'
+        'padding:1px 4px;border-radius:3px;font-weight:600;">'
+    )
+    mark_close = "</mark>"
+
+    for phrase in deduped:
         safe_phrase = html_lib.escape(phrase)
-        highlighted = (
-            '<mark style="background:#FEF3C7;color:#92400E;'
-            'padding:1px 4px;border-radius:3px;font-weight:600;">'
-            f"{safe_phrase}</mark>"
-        )
         pattern = re.compile(re.escape(safe_phrase), re.IGNORECASE)
-        safe = pattern.sub(highlighted, safe)
+        safe = pattern.sub(lambda m: f"{mark_open}{m.group(0)}{mark_close}", safe)
+
     return (
         '<div style="background:white;border:1px solid #e2e8f0;border-radius:6px;'
         "padding:14px;font-family:monospace;font-size:13px;line-height:1.7;"
