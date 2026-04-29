@@ -1,4 +1,6 @@
+import html as html_lib
 import os
+import re
 import anthropic
 import streamlit as st
 from dotenv import load_dotenv
@@ -55,8 +57,6 @@ def _get_client() -> anthropic.Anthropic:
 
 def _build_highlighted_html(jd_text: str, phrases: list[str]) -> str:
     """Return the JD as an HTML block with each phrase wrapped in an amber <mark>."""
-    import html as html_lib
-    import re
     safe = html_lib.escape(jd_text)
 
     sorted_phrases = sorted(phrases, key=len, reverse=True)

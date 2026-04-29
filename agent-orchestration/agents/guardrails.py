@@ -219,6 +219,9 @@ def scan_jd_for_violations(
         end = raw.rfind("]")
         if start == -1 or end == -1 or end <= start:
             return []
-        return json.loads(raw[start : end + 1])
+        parsed = json.loads(raw[start : end + 1])
+        if not isinstance(parsed, list):
+            return []
+        return [item for item in parsed if isinstance(item, str)]
     except Exception:
         return []
