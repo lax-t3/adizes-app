@@ -1,6 +1,7 @@
 import pytest
 from unittest.mock import MagicMock
 from agents.guardrails import scan_jd_for_violations
+from app import _build_highlighted_html
 
 
 def _make_client(response_text: str) -> MagicMock:
@@ -53,9 +54,6 @@ def test_scan_returns_empty_list_for_empty_array_response():
     assert result == []
 
 
-from app import _build_highlighted_html
-
-
 def test_build_html_highlights_phrase():
     html = _build_highlighted_html(
         "We want young professionals only.", ["young professionals only"]
@@ -87,3 +85,11 @@ def test_build_html_escapes_html_chars_in_jd():
 def test_build_html_phrase_not_in_jd_is_skipped():
     html = _build_highlighted_html("Normal JD text.", ["phrase not present"])
     assert "<mark" not in html
+
+
+def test_build_html_highlights_case_insensitive():
+    html = _build_highlighted_html(
+        "We want Young Professionals only.", ["young professionals"]
+    )
+    assert "<mark" in html
+    assert "young professionals" in html
