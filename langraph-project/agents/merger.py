@@ -7,8 +7,12 @@ def merger(state: ResearchState) -> dict:
 
     f = state.get("fundamentals") or {}
     if f:
-        lines = [f"**Fundamentals — {state.get('ticker', '')}**"]
-        lines += [f"  {k}: {v}" for k, v in f.items() if v is not None]
+        ticker_label = state.get("ticker") or "unknown"
+        if "error" in f:
+            lines = [f"**Fundamentals — {ticker_label}** ⚠ data unavailable: {f['error']}"]
+        else:
+            lines = [f"**Fundamentals — {ticker_label}**"]
+            lines += [f"  {k}: {v}" for k, v in f.items() if v is not None]
         sections.append("\n".join(lines))
 
     for items, header in [
