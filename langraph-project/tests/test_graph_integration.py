@@ -62,6 +62,7 @@ def test_approve_produces_final_brief():
 
         assert final["final_brief"]
         assert "APPROVED" in final["final_brief"]
+        assert "AAPL" in final["final_brief"]
 
 
 def test_reject_stop_ends_without_final_brief():
