@@ -5,11 +5,15 @@ from tools.yfinance_tool import get_stock_fundamentals
 
 def fundamentals(state: ResearchState) -> dict:
     data = get_stock_fundamentals(state["ticker"])
+    if "error" in data:
+        summary = f"yfinance error for {state['ticker']}: {data['error']}"
+    else:
+        summary = f"Fetched yfinance data for {state['ticker']}: price={data.get('price')}"
     return {
         "fundamentals": data,
         "execution_trace": [{
             "node": "fundamentals",
             "timestamp": datetime.now().isoformat(),
-            "summary": f"Fetched yfinance data for {state['ticker']}: price={data.get('price')}",
+            "summary": summary,
         }],
     }
