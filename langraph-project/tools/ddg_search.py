@@ -1,0 +1,7 @@
+from duckduckgo_search import DDGS
+
+
+def search_web(query: str, max_results: int = 5) -> list[str]:
+    with DDGS() as ddgs:
+        results = list(ddgs.text(query, max_results=max_results))
+    return [r["body"] for r in results if r.get("body")]
