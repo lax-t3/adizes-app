@@ -1,0 +1,39 @@
+import json
+from datetime import datetime
+import anthropic
+from state import ResearchState
+
+client = anthropic.Anthropic()
+
+_SYSTEM = """You are an investment research planner. Output a JSON object only:
+{
+  "plan": ["step 1", "step 2", "step 3"],
+  "complexity": "simple"
+}
+Rules:
+- complexity "simple": price check, quick overview, single metric
+- complexity "complex": full analysis, comparison, deep dive, multiple aspects
+- plan: 3-5 short action strings
+Output ONLY valid JSON, no other text."""
+
+
+def planner(state: ResearchState) -> dict:
+    response = client.messages.create(
+        model="claude-haiku-4-5-20251001",
+        max_tokens=512,
+        system=[{"type": "text", "text": _SYSTEM, "cache_control": {"type": "ephemeral"}}],
+        messages=[{
+            "role": "user",
+            "content": f"Query: {state['query']}\nTicker: {state['ticker']}",
+        }],
+    )
+    data = json.loads(response.content[0].text)
+    return {
+        "plan": data["plan"],
+        "complexity": data["complexity"],
+        "execution_trace": [{
+            "node": "planner",
+            "timestamp": datetime.now().isoformat(),
+            "summary": f"complexity={data['complexity']}, {len(data['plan'])} steps planned",
+        }],
+    }
