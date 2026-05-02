@@ -1,4 +1,4 @@
-from typing import Annotated, TypedDict
+from typing import Annotated, Literal, TypedDict
 import operator
 
 
@@ -8,7 +8,7 @@ class ResearchState(TypedDict):
     ticker: str
     # Planning
     plan: list[str]
-    complexity: str          # "simple" | "complex"
+    complexity: Literal["simple", "complex"]
     # Research (one field per worker — no overlapping writes)
     fundamentals: dict
     news_data: list[str]
@@ -17,7 +17,7 @@ class ResearchState(TypedDict):
     # Synthesis & review
     draft_brief: str
     human_feedback: str
-    approval_status: str     # "pending"|"approved"|"rejected_stop"|"rejected_revise"
+    approval_status: Literal["pending", "approved", "rejected_stop", "rejected_revise"]
     iteration: int           # caps Reject+Revise loop at 3
     # Output
     final_brief: str
