@@ -27,13 +27,20 @@ def planner(state: ResearchState) -> dict:
             "content": f"Query: {state['query']}\nTicker: {state['ticker']}",
         }],
     )
-    data = json.loads(response.content[0].text)
+    try:
+        data = json.loads(response.content[0].text)
+        plan = data["plan"]
+        complexity = data["complexity"]
+    except (json.JSONDecodeError, KeyError) as exc:
+        raise ValueError(
+            f"Planner: malformed Claude response — {exc}\n{response.content[0].text!r}"
+        ) from exc
     return {
-        "plan": data["plan"],
-        "complexity": data["complexity"],
+        "plan": plan,
+        "complexity": complexity,
         "execution_trace": [{
             "node": "planner",
             "timestamp": datetime.now().isoformat(),
-            "summary": f"complexity={data['complexity']}, {len(data['plan'])} steps planned",
+            "summary": f"complexity={complexity}, {len(plan)} steps planned",
         }],
     }

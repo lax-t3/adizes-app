@@ -41,6 +41,6 @@ def test_planner_calls_claude_with_cache_control():
     with patch("agents.planner.client") as mock_client:
         mock_client.messages.create.return_value = resp
         planner({"query": "q", "ticker": "X", "execution_trace": []})
-    call_kwargs = mock_client.messages.create.call_args[1]
+    call_kwargs = mock_client.messages.create.call_args.kwargs
     system = call_kwargs["system"]
     assert system[0]["cache_control"] == {"type": "ephemeral"}
