@@ -1,14 +1,14 @@
+from dotenv import load_dotenv
+load_dotenv()  # Must run before any agent imports that create module-level Anthropic clients
+
 import uuid
 import streamlit as st
-from dotenv import load_dotenv
 from graph.builder import build_graph
 from checkpointing.setup import make_checkpointer, make_config, get_checkpoint_history
 from state import initial_state
 from ui.cards import CONCEPT_CARDS
 from ui.trace_display import render_trace
 from ui.hitl_panel import render_hitl_panel
-
-load_dotenv()
 
 st.set_page_config(page_title="LangGraph Investment Research Demo", layout="wide")
 st.title("Investment Research Brief — LangGraph Multi-Agent Demo")

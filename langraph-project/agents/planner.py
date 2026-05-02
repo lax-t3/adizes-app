@@ -1,9 +1,17 @@
 import json
+import re
 from datetime import datetime
 import anthropic
 from state import ResearchState
 
 client = anthropic.Anthropic()
+
+def _strip_fences(text: str) -> str:
+    text = text.strip()
+    text = re.sub(r'^```(?:json)?\s*', '', text)
+    text = re.sub(r'\s*```$', '', text)
+    return text.strip()
+
 
 _SYSTEM = """You are an investment research planner. Output a JSON object only:
 {
@@ -28,7 +36,7 @@ def planner(state: ResearchState) -> dict:
         }],
     )
     try:
-        data = json.loads(response.content[0].text)
+        data = json.loads(_strip_fences(response.content[0].text))
         plan = data["plan"]
         complexity = data["complexity"]
     except (json.JSONDecodeError, KeyError) as exc:
