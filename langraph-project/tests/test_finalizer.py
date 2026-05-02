@@ -7,6 +7,7 @@ def test_review_gate_returns_only_trace():
     assert set(result.keys()) == {"execution_trace"}
     assert result["execution_trace"][0]["node"] == "review_gate"
     assert "approved" in result["execution_trace"][0]["summary"]
+    assert "timestamp" in result["execution_trace"][0]
 
 
 def test_review_gate_records_rejection():
@@ -30,3 +31,4 @@ def test_finalizer_appends_trace():
     result = finalizer({"ticker": "TSLA", "draft_brief": "brief", "execution_trace": []})
     assert result["execution_trace"][0]["node"] == "finalizer"
     assert "TSLA" in result["execution_trace"][0]["summary"]
+    assert "timestamp" in result["execution_trace"][0]
