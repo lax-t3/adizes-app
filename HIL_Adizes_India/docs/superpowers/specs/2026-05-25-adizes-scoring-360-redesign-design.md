@@ -404,14 +404,103 @@ Handles all aggregation logic described in Section 8. Called exclusively by the 
 
 ---
 
-## 11. Phase 2: Frontend Additions
+## 11. Frontend Changes
 
-| Screen | Who | Purpose |
-|---|---|---|
-| Admin: 360 Sessions list | Admin | List sessions per cohort with status and completion counts |
-| Admin: Session detail | Admin | Add/remove respondents, monitor completion, close session |
-| Respondent: 360 assessment | Assessor | 24-question flow (IS + SHOULD), subject name shown, text_360 phrasing used |
-| Subject: Results / 360 status | Subject | Session open/closed/report-ready status + PDF download when available |
+### 11.1 Phase 1 — Existing Pages Modified
+
+#### `Results.tsx` (user-facing results page)
+
+The current page shows a radar chart, a 2-gap bar chart, and an interpretation panel. All three sections need updating:
+
+**Replace radar chart with Energy Alignment Matrix:**
+- Remove `RadarChart` (Recharts) — replaced by the 3-row × 4-column matrix bar layout matching the PDF design
+- Bars use display% (0–100), role colors (P=#C8102E, A=#1D3557, E=#E87722, I=#2A9D8F)
+- Rows: Current State / Role Expectations / Intrinsic Preference
+
+**Update gap display:**
+- Remove 2-gap layout (External / Internal) — replace with 3-gap cards (Execution / Engagement / Authenticity)
+- New severity thresholds: <6 low (not shown), 6–15 🟡 MODERATE, >15 🔴 HIGH — all on 132 scale
+- Show only top 3 gaps (not all 12 values)
+- Show signed direction alongside absolute severity (e.g. "+27 pts — role expects more than current behaviour")
+
+**Update ScoresTable component:**
+- Change scale display from 12–48 to display% (0–100)
+- Update InfoTooltip copy to use new terminology (Current State / Role Expectations / Intrinsic Preference)
+
+**Update dominant style badge:**
+- Change tooltip: threshold is now raw > 33 (not > 30 scaled)
+
+**PDF sticky bar:** no change — still polls `pdf_url` and opens in new tab when ready.
+
+---
+
+#### `AdminCohortDetail.tsx` (admin cohort management page)
+
+**Team analytics section:**
+- Remove radar chart — replace with matrix bar visualization using display% (aggregate average across completed members)
+- Update score axis labels (0–100 instead of 12–48)
+
+**Members table — per-row changes:**
+- "Dominant Style" column: profile string generated with new threshold (raw > 33)
+- "Status" column: add `expired` as a valid badge state (amber, distinct from pending) — existing expired assessments show as expired, not pending
+- "Actions" column for completed members: "View Results" link unchanged
+
+---
+
+#### `AdminRespondent.tsx` (admin view of individual member results)
+
+- Update score display to display% (0–100)
+- Update gap display to 3-gap model (Execution / Engagement / Authenticity) with new thresholds
+- Remove radar chart, add matrix bar layout (consistent with Results.tsx and PDF)
+
+---
+
+### 11.2 Phase 2 — Existing Pages Modified
+
+#### `Results.tsx` — 360 status section
+
+Add a new section below the existing content (visible only when the user has an active 360 session for the current cohort):
+
+```
+┌─────────────────────────────────────────────────────┐
+│  360° Assessment                                     │
+│  Status: Open — 3 of 5 respondents completed        │
+│  Waiting for: 1 superior, 1 peer                    │
+│                                                      │
+│  [Download 360 Report]  ← shown when report_generated│
+└─────────────────────────────────────────────────────┘
+```
+
+- Polls `/assessment/360/session-status?cohort_id=<id>` on load
+- Shows spinner + "Generating…" state while `status = closed` and `pdf_url = null`
+- Shows download button when `pdf_url` is set
+
+---
+
+#### `AdminCohortDetail.tsx` — 360 management integration
+
+**Members table — new 360 column:**
+
+| 360 Status | Display |
+|---|---|
+| No session | "— " + "Start 360" button |
+| Open, incomplete | "Open · X/Y done" + "Manage" link |
+| Closed, generating | "Generating report…" |
+| Report ready | "Report Ready" + "Download" button |
+
+**New "Manage 360" action per member row:**
+- Opens a slide-over/modal OR routes to `/admin/cohorts/:id/360/:session_id`
+- Shows: respondent list (type + name + status), add respondent form, close session button
+- Close session disabled until at least 1 respondent has completed (per type OR total — admin's discretion)
+
+---
+
+### 11.3 Phase 2 — New Pages
+
+| Screen | Route | Who | Purpose |
+|---|---|---|---|
+| Respondent: 360 assessment | `/assess/360/:session_id` | Assessor | 24-question flow (IS + SHOULD), subject name shown, `text_360` phrasing |
+| Admin: 360 session detail | `/admin/cohorts/:id/360/:session_id` | Admin | Add/remove respondents, completion tracking, close session |
 
 ---
 
