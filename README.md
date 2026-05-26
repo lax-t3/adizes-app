@@ -271,7 +271,9 @@ adizes-backend/
       assessment.py            # Questions, submit (requires cohort_id), options
       results.py               # ResultResponse (includes pdf_url), GapDetail, Interpretation
       admin.py                 # Cohorts, members, bulk enroll, admin users, RespondentDetail,
-                               #   Organisation, OrgNode, OrgEmployee schemas
+                               #   Organisation, OrgNode, OrgEmployee schemas.
+                               #   RespondentSummary includes `activated: bool` (True if
+                               #   email_confirmed_at is set in auth.users)
       settings.py              # SmtpConfig, EmailTemplate CRUD
   migrations/
     001_initial_schema.sql              # Full DB schema + RLS policies
@@ -343,7 +345,7 @@ adizes-backend/
 | GET | `/admin/cohorts` | Admin | List all cohorts |
 | POST | `/admin/cohorts` | Admin | Create cohort |
 | DELETE | `/admin/cohorts/{id}` | Admin | Delete cohort — only if it has 0 enrolled members; returns 400 otherwise |
-| GET | `/admin/cohorts/{id}` | Admin | Cohort detail + team scores |
+| GET | `/admin/cohorts/{id}` | Admin | Cohort detail + team scores. Each respondent includes `activated: bool` (email confirmed) |
 | PATCH | `/admin/cohorts/{id}/status` | Admin | Update cohort lifecycle status (`active` / `completed` / `archived`) |
 | POST | `/admin/cohorts/{id}/members` | Admin | Enroll user by email (auto-invites new users). Returns 409 if cohort is not `active`. |
 | POST | `/admin/cohorts/{id}/members/bulk` | Admin | Bulk enroll from list. Returns 409 if cohort is not `active`. |

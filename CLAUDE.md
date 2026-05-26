@@ -116,6 +116,10 @@ Build `payload` from the full assessment row (all fields including gaps + interp
 
 ## Key Notes
 
+- **`RespondentSummary.activated`** (added 2026-05-26): `GET /admin/cohorts/{id}` now returns `activated: bool`
+  per respondent. `True` if `email_confirmed_at` is set in `auth.users`; `False` if the user has never clicked
+  the invite link and set their password. Derived via `getattr(auth_user, "email_confirmed_at", None) is not None`.
+  Frontend uses this to show green "Active" / amber "Invite Pending" badges and control when "Resend Invite" appears.
 - **Cohort lifecycle status** (migration 011): `cohorts.cohort_status` column (`active` | `completed` | `archived`, default `active`).
   `PATCH /admin/cohorts/{id}/status` updates it. `enroll_user`, `bulk_enroll`, and `enroll_from_org` raise HTTP 409
   if `cohort_status != 'active'`. Migration applied directly to production via Supabase MCP (not `supabase db push`).
