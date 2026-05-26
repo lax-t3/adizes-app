@@ -522,7 +522,7 @@ export function Dashboard() {
         >
           <div className="mb-6">
             <h1 className="text-2xl sm:text-3xl font-display font-bold text-gray-900">
-              Welcome, {user?.name}
+              Welcome, {user?.name || user?.email?.split('@')[0]}
             </h1>
             <p className="mt-1 text-gray-500">
               Your Adizes Management Style Indicator (AMSI) overview.
