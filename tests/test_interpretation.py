@@ -35,9 +35,10 @@ class TestInterpret:
 
     def test_interpretation_has_all_keys(self):
         result = interpret(_scaled({"A": 40}), {})
-        for key in ["dominant_roles", "style_label", "style_tagline",
-                    "strengths", "blind_spots", "working_with_others",
-                    "mismanagement_risks"]:
+        for key in ["dominant_roles", "identity_line", "style_label", "style_tagline",
+                    "strengths", "watchouts", "working_with_others",
+                    "combined_description", "mismanagement_risks",
+                    "at_your_best", "friction_shows_up", "early_warnings"]:
             assert key in result
 
     def test_mismanagement_risk_for_P(self):
