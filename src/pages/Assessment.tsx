@@ -400,7 +400,9 @@ export function Assessment() {
               {/* Rank prompt */}
               <p className="text-center text-sm font-medium text-gray-500 mb-6">
                 {isComplete ? (
-                  <span className="text-primary">All ranked — advancing…</span>
+                  <span className="text-primary">
+                    {isLastQuestion && isLastSection ? "All ranked — click Complete Assessment below." : "All ranked — advancing…"}
+                  </span>
                 ) : (
                   <>Select your <strong className="text-gray-800">{nextRankOrdinal}</strong> choice — {4 - rankedCount} remaining</>
                 )}
