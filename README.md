@@ -21,13 +21,14 @@ FastAPI backend for the **Adizes PAEI Management Style Assessment** platform (**
 | Concept | Value |
 |---------|-------|
 | Sections | 3 (Is / Should / Want) |
-| Questions per section | 12 |
+| Questions per section | 12 (interleaved — NOT sequential Q0-Q11/Q12-Q23/Q24-Q35) |
 | Options per question | 4 (P, A, E, I — ranked 1st → 4th) |
 | Rank points | 1st = 5 · 2nd = 3 · 3rd = 2 · 4th = 1 |
 | Total per section | 12 × 11 = **132 points** |
 | Dominant threshold | **33** (= 132 ÷ 4); score > 33 → capital letter |
 | Gap types | Execution `\|should−is\|` · Engagement `\|should−want\|` · Authenticity `\|is−want\|` |
 | Severity thresholds | < 6 low · 6–15 medium · > 15 high |
+| Section map | Is: Q0,Q4,Q7,Q9,Q10,Q14,Q19,Q21,Q23,Q29,Q33,Q35 · Should: Q2,Q5,Q6,Q12,Q13,Q18,Q20,Q24,Q26,Q27,Q31,Q34 · Want: Q1,Q3,Q8,Q11,Q15,Q16,Q17,Q22,Q25,Q28,Q30,Q32 |
 
 ## Local Development
 
@@ -54,6 +55,8 @@ docker exec -i $DB psql -U postgres -d postgres < migrations/007_organizations.s
 docker exec -i $DB psql -U postgres -d postgres < migrations/008_employee_extended_fields.sql
 docker exec -i $DB psql -U postgres -d postgres < migrations/009_employee_name_column.sql
 docker exec -i $DB psql -U postgres -d postgres < migrations/011_cohort_status.sql
+docker exec -i $DB psql -U postgres -d postgres < migrations/012_fix_question_sections.sql
+docker exec -i $DB psql -U postgres -d postgres < migrations/013_fix_q9_q26_sections.sql
 
 # 3. Copy and edit env (use http://127.0.0.1:54321 for local Supabase)
 cp .env.example .env
@@ -255,7 +258,7 @@ adizes-backend/
                                #   GET /admin/organizations/{id}/reporting-tree (manager→report chain)
       settings.py              # SMTP config CRUD, email template CRUD + reset
     services/
-      scoring.py               # PAEI scoring engine (36-question key)
+      scoring.py               # PAEI scoring engine (36-question key); SECTION_MAP holds correct interleaved indices; score_answers() accepts optional section_map from DB
       gap_analysis.py          # Gap calculator + severity classification
       interpretation.py        # Dominant style + narrative text
       pdf_service.py           # WeasyPrint HTML→PDF
@@ -282,6 +285,8 @@ adizes-backend/
     009_employee_name_column.sql        # adds name (first name) column to org_employees (was missing from original schema)
     010_clean_slate.sql                 # DELETE FROM assessments — pilot data wipe (applied 2026-05-26)
     011_cohort_status.sql               # adds cohort_status VARCHAR(20) DEFAULT 'active' to cohorts
+    012_fix_question_sections.sql       # corrects interleaved section assignments for all 36 questions
+    013_fix_q9_q26_sections.sql         # patches two errors in 012: Q9→is, Q26→should
   # Note: org_employees has NO email column — email is in auth.users, resolved via user_id → _get_auth_users_map()
   # Note: migrations 010+ were applied directly to production via Supabase MCP execute_sql (not supabase db push)
   #       supabase db push --linked only tracks supabase/migrations/ (CLI-managed folder), not migrations/

@@ -26,6 +26,9 @@ Provides REST API for auth, assessment scoring, results, admin, email, and PDF g
 - Dominant threshold = **33** (= 132 ÷ 4); score > 33 → capital letter
 - 3 gap types per role: Execution `|should−is|`, Engagement `|should−want|`, Authenticity `|is−want|`
 - Severity thresholds: < 6 low · 6–15 medium · > 15 high
+- **Section assignments are interleaved** (NOT sequential Q0-Q11/Q12-Q23/Q24-Q35). `scoring.py`
+  has a `SECTION_MAP` constant with correct indices. `assessment.py` fetches `section_map` from
+  the DB at submit time and passes it to `score_answers()` so scoring always matches the questions table.
 
 ## Local Dev Quick Start
 
@@ -38,7 +41,7 @@ supabase status -o env   # copy ANON_KEY + SERVICE_ROLE_KEY into .env
 
 # 3. Apply DB migrations (all, in order)
 DB=supabase_db_adizes-backend
-for m in 001 002 003 004 005 006 007 008 009 011; do
+for m in 001 002 003 004 005 006 007 008 009 011 012 013; do
   docker exec -i $DB psql -U postgres -d postgres < migrations/${m}_*.sql
 done
 
@@ -120,8 +123,12 @@ Build `payload` from the full assessment row (all fields including gaps + interp
   threshold `> 25` (equal share 100/4). Raw 132-scale dominant threshold is `> 33`. Mixing these up causes the
   style distribution chart to show all zeros.
 - **`supabase db push --linked` limitation**: only tracks migrations in `supabase/migrations/`. The custom
-  `migrations/` folder is not Supabase CLI-managed. Apply new migrations (like 011) directly via Supabase
+  `migrations/` folder is not Supabase CLI-managed. Apply new migrations (like 011–013) directly via Supabase
   MCP `execute_sql` or the Supabase Dashboard SQL editor.
+- **Question section assignments are interleaved** (migrations 012 + 013): the original seed had sequential
+  blocks (Q0-Q11=Is, etc.). Correct distribution: Is={0,4,7,9,10,14,19,21,23,29,33,35}, Should={2,5,6,12,13,18,20,24,26,27,31,34}, Want={1,3,8,11,15,16,17,22,25,28,30,32}.
+  Both migrations applied to local and production. `scoring.py` `SECTION_MAP` constant holds this map.
+  `assessment.py` always fetches section_map from DB at submit time — if the DB changes, scoring adapts automatically.
 
 ## Adizes360 — Phase 2 (not yet implemented)
 
