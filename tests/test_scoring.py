@@ -125,3 +125,83 @@ class TestScoreAnswers:
         for dim in ["is", "should", "want"]:
             for role in ["P", "A", "E", "I"]:
                 assert result["raw"][dim][role] == 0
+
+
+class TestDominanceFactor:
+    def test_dominance_factor_boosts_and_rebalances(self):
+        """Role ranked top-2 in 10/12 questions (83%) gets 1.05x boost, total stays 132."""
+        from app.services.scoring import _apply_dominance_factor
+
+        # P options in Is section: Q0=b, Q1=a, Q2=b, Q3=c, Q4=a, Q5=c,
+        #                           Q6=d, Q7=c, Q8=b, Q9=a, Q10=d, Q11=c
+        # Rank P=rank1 in Q0-Q9 (10 questions), default for Q10-Q11 (P=rank4,rank3)
+        overrides = {
+            0: {"b":1,"a":2,"c":3,"d":4},
+            1: {"a":1,"b":2,"c":3,"d":4},
+            2: {"b":1,"a":2,"c":3,"d":4},
+            3: {"c":1,"a":2,"b":3,"d":4},
+            4: {"a":1,"b":2,"c":3,"d":4},
+            5: {"c":1,"a":2,"b":3,"d":4},
+            6: {"d":1,"a":2,"b":3,"c":4},
+            7: {"c":1,"a":2,"b":3,"d":4},
+            8: {"b":1,"a":2,"c":3,"d":4},
+            9: {"a":1,"b":2,"c":3,"d":4},
+            10: {"a":1,"b":2,"c":3,"d":4},   # P=d → rank 4 (not top-2)
+            11: {"a":1,"b":2,"c":3,"d":4},   # P=c → rank 3 (not top-2)
+        }
+        answers = [
+            {"question_index": q, "ranks": overrides.get(q, {"a":1,"b":2,"c":3,"d":4})}
+            for q in range(36)
+        ]
+        # Seed section_scores with plausible values summing to 132
+        section_scores = {"P": 53.0, "A": 28.0, "E": 30.0, "I": 21.0}
+        result = _apply_dominance_factor(section_scores, answers, 0)
+
+        assert abs(sum(result.values()) - 132) < 0.1   # rebalanced to 132
+        assert result["P"] > section_scores["P"]        # P was boosted
+
+    def test_no_boost_below_threshold(self):
+        """Role ranked top-2 in exactly 9/12 questions (75%) does NOT get boosted."""
+        from app.services.scoring import _apply_dominance_factor
+
+        # P top-2 in Q0-Q8 only (9 questions), Q9-Q11 P not in top-2
+        overrides = {
+            0: {"b":1,"a":2,"c":3,"d":4},   # P=b rank 1
+            1: {"a":1,"b":2,"c":3,"d":4},   # P=a rank 1
+            2: {"b":1,"a":2,"c":3,"d":4},   # P=b rank 1
+            3: {"c":1,"a":2,"b":3,"d":4},   # P=c rank 1
+            4: {"a":1,"b":2,"c":3,"d":4},   # P=a rank 1
+            5: {"c":1,"a":2,"b":3,"d":4},   # P=c rank 1
+            6: {"d":1,"a":2,"b":3,"c":4},   # P=d rank 1
+            7: {"c":1,"a":2,"b":3,"d":4},   # P=c rank 1
+            8: {"b":1,"a":2,"c":3,"d":4},   # P=b rank 1
+            9: {"b":1,"c":2,"a":3,"d":4},   # P=a rank 3 (not top-2)
+            10: {"a":1,"b":2,"c":3,"d":4},  # P=d rank 4 (not top-2)
+            11: {"a":1,"b":2,"c":3,"d":4},  # P=c rank 3 (not top-2)
+        }
+        answers = [
+            {"question_index": q, "ranks": overrides.get(q, {"a":1,"b":2,"c":3,"d":4})}
+            for q in range(36)
+        ]
+        section_scores = {"P": 48.0, "A": 28.0, "E": 30.0, "I": 26.0}
+        result = _apply_dominance_factor(section_scores, answers, 0)
+
+        # 9/12 = 75% which is NOT > 75%, no boost, scores returned unchanged
+        assert result == section_scores
+
+    def test_full_score_answers_with_dominance_total_132(self):
+        """End-to-end: score_answers always returns raw totals = 132 per section."""
+        # Use answers that trigger P dominance (all 12 Is questions, P=rank1)
+        p_opts = {0:"b",1:"a",2:"b",3:"c",4:"a",5:"c",6:"d",7:"c",8:"b",9:"a",10:"d",11:"c"}
+        answers = []
+        for q in range(36):
+            if q < 12:
+                p_opt = p_opts[q]
+                non_p = [o for o in "abcd" if o != p_opt]
+                answers.append({"question_index": q, "ranks": {p_opt:1, non_p[0]:2, non_p[1]:3, non_p[2]:4}})
+            else:
+                answers.append({"question_index": q, "ranks": {"a":1,"b":2,"c":3,"d":4}})
+        result = score_answers(answers)
+        for section in ["is", "should", "want"]:
+            total = sum(result["raw"][section].values())
+            assert total == 132, f"{section} raw total = {total}"
