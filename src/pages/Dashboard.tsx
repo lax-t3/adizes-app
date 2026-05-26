@@ -138,7 +138,7 @@ function ResultsDashboard({ resultId }: { resultId: string }) {
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div>
             <h2 className="text-2xl font-display font-bold tracking-tight mb-1">
-              {result.user_name}'s Results
+              {result.user_name ? `${result.user_name}'s Results` : "Your Results"}
             </h2>
             <p className="text-gray-400">
               Completed on {new Date(result.completed_at).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}

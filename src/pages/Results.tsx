@@ -118,7 +118,7 @@ export function Results() {
           >
             <div>
               <h1 className="text-4xl font-display font-bold tracking-tight mb-2">
-                {result.user_name}'s Results
+                {result.user_name ? `${result.user_name}'s Results` : "Your Results"}
               </h1>
               <p className="text-gray-400 text-lg">
                 Completed on {new Date(result.completed_at).toLocaleDateString()}
