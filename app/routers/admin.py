@@ -243,11 +243,17 @@ def get_cohort(cohort_id: str, admin: dict = Depends(require_admin)):
         if a_status == "completed" and a and a.get("scaled_scores"):
             all_scaled.append(a["scaled_scores"])
 
+        activated = (
+            getattr(auth_user, "email_confirmed_at", None) is not None
+            if auth_user else False
+        )
+
         respondents.append(RespondentSummary(
             user_id=uid,
             name=name,
             email=email,
             status=a_status,
+            activated=activated,
             dominant_style=dominant,
             completed_at=a["completed_at"] if a else None,
         ))

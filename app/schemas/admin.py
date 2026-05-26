@@ -66,6 +66,7 @@ class RespondentSummary(BaseModel):
     name: str
     email: str
     status: str           # 'pending' | 'in_progress' | 'completed' | 'expired'
+    activated: bool       # True if email_confirmed_at is not None in auth.users
     dominant_style: Optional[str] = None
     completed_at: Optional[str] = None
 
