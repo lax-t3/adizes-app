@@ -53,6 +53,7 @@ docker exec -i $DB psql -U postgres -d postgres < migrations/006_cohort_scoped_a
 docker exec -i $DB psql -U postgres -d postgres < migrations/007_organizations.sql
 docker exec -i $DB psql -U postgres -d postgres < migrations/008_employee_extended_fields.sql
 docker exec -i $DB psql -U postgres -d postgres < migrations/009_employee_name_column.sql
+docker exec -i $DB psql -U postgres -d postgres < migrations/011_cohort_status.sql
 
 # 3. Copy and edit env (use http://127.0.0.1:54321 for local Supabase)
 cp .env.example .env
@@ -175,7 +176,9 @@ docker buildx build \
 
 ### Step 5 — Run new migrations on production Supabase
 
-The project `swiznkamzxyfzgckebqi` is already linked in the Supabase CLI. After adding a new migration file under `supabase/migrations/`, apply it with:
+> **Important:** `supabase db push --linked` only tracks migrations in `supabase/migrations/` (the CLI-managed folder). The project's custom `migrations/` folder is NOT tracked. Apply new migrations in `migrations/` directly via the Supabase Dashboard SQL editor or the Supabase MCP `execute_sql` tool.
+
+The project `swiznkamzxyfzgckebqi` is already linked in the Supabase CLI. For migrations in `supabase/migrations/`:
 
 ```bash
 supabase db push --linked        # dry-run first: add --dry-run
@@ -278,7 +281,10 @@ adizes-backend/
     008_employee_extended_fields.sql    # 9 new HR columns on org_employees (emp_status, last/middle name, gender, language, manager_email, DOB, emp_date, head_of_dept)
     009_employee_name_column.sql        # adds name (first name) column to org_employees (was missing from original schema)
     010_clean_slate.sql                 # DELETE FROM assessments — pilot data wipe (applied 2026-05-26)
+    011_cohort_status.sql               # adds cohort_status VARCHAR(20) DEFAULT 'active' to cohorts
   # Note: org_employees has NO email column — email is in auth.users, resolved via user_id → _get_auth_users_map()
+  # Note: migrations 010+ were applied directly to production via Supabase MCP execute_sql (not supabase db push)
+  #       supabase db push --linked only tracks supabase/migrations/ (CLI-managed folder), not migrations/
   supabase/migrations/
     20260319000007_organizations.sql    # Supabase CLI-tracked copy of 007 (applied to cloud via supabase db push)
     20260320000008_employee_extended_fields.sql  # Supabase CLI-tracked copy of 008
@@ -333,8 +339,9 @@ adizes-backend/
 | POST | `/admin/cohorts` | Admin | Create cohort |
 | DELETE | `/admin/cohorts/{id}` | Admin | Delete cohort — only if it has 0 enrolled members; returns 400 otherwise |
 | GET | `/admin/cohorts/{id}` | Admin | Cohort detail + team scores |
-| POST | `/admin/cohorts/{id}/members` | Admin | Enroll user by email (auto-invites new users) |
-| POST | `/admin/cohorts/{id}/members/bulk` | Admin | Bulk enroll from list |
+| PATCH | `/admin/cohorts/{id}/status` | Admin | Update cohort lifecycle status (`active` / `completed` / `archived`) |
+| POST | `/admin/cohorts/{id}/members` | Admin | Enroll user by email (auto-invites new users). Returns 409 if cohort is not `active`. |
+| POST | `/admin/cohorts/{id}/members/bulk` | Admin | Bulk enroll from list. Returns 409 if cohort is not `active`. |
 | POST | `/admin/cohorts/{id}/members/{uid}/resend-invite` | Admin | Resend enrollment email |
 | DELETE | `/admin/cohorts/{id}/members/{uid}` | Admin | Remove member |
 | GET | `/admin/respondents/{uid}?cohort_id=<uuid>` | Admin | Respondent results for a specific cohort. `cohort_id` query param required (400 if missing). Returns `result: null` if user hasn't submitted yet. |
@@ -361,7 +368,7 @@ adizes-backend/
 | GET | `/admin/cohorts/{id}/organizations` | Admin | List orgs linked to a cohort |
 | POST | `/admin/cohorts/{id}/organizations` | Admin | Link org to cohort |
 | DELETE | `/admin/cohorts/{id}/organizations/{oid}` | Admin | Unlink org from cohort |
-| POST | `/admin/cohorts/{id}/enroll-from-org` | Admin | Enrol org employees into cohort (by scope or individual list) |
+| POST | `/admin/cohorts/{id}/enroll-from-org` | Admin | Enrol org employees into cohort (by scope or individual list). Returns 409 if cohort is not `active`. |
 
 ### Admin — Users (`/admin`)
 

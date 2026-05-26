@@ -8,27 +8,27 @@
 <body>
 
 <%
-  /* ── Helpers ─────────────────────────────────────────────────────── */
-  function pct(val) { return Math.round(val); }  /* display% already 0-100 */
+  function pct(val) { return Math.round(val); }
   function signed(d) { return (d > 0 ? '+' : '') + d; }
+
   function severityBadge(sev) {
-    if (sev === 'high')   return { emoji: '🔴', label: 'HIGH',     cls: 'sev-high' };
-    if (sev === 'medium') return { emoji: '🟡', label: 'MODERATE', cls: 'sev-medium' };
-    return { emoji: '⚪', label: 'LOW', cls: 'sev-low' };
+    if (sev === 'high')   return { label: 'HIGH',     cls: 'sev-high',   color: '#991b1b', bg: '#fee2e2', border: '#fca5a5' };
+    if (sev === 'medium') return { label: 'MODERATE', cls: 'sev-medium', color: '#92400e', bg: '#fef9c3', border: '#fde68a' };
+    return                       { label: 'LOW',      cls: 'sev-low',    color: '#166534', bg: '#dcfce7', border: '#86efac' };
   }
-  function lensScore(role, lensKey) {
-    return pct(scaled_scores[lensKey][role]);
-  }
+
   const dateStr = new Date(completed_at).toLocaleDateString('en-GB',
     { year: 'numeric', month: 'long', day: 'numeric' });
 
-  /* Top gap for core insight narrative */
   const topGap = topGaps[0] || null;
 
-  const LENS_LABELS = {
-    is:     'Current State',
-    should: 'Role Expectations',
-    want:   'Intrinsic Preference',
+  const dominantRole  = (interpretation.dominant_roles || ['A'])[0];
+  const heroColor     = ROLE_COLORS[dominantRole] || '#1a1a1a';
+
+  const LENS_META = {
+    is:     { short: 'IS',  label: 'Current State'        },
+    should: { short: 'SHD', label: 'Role Expectations'    },
+    want:   { short: 'WNT', label: 'Intrinsic Preference' },
   };
 %>
 
@@ -41,74 +41,81 @@
     <span class="header-tagline">PAEI Energy Alignment Profile</span>
   </div>
 
+  <!-- Hero -->
   <div class="snapshot-hero">
     <div class="snapshot-name"><%= user_name %></div>
     <div class="snapshot-date"><%= dateStr %></div>
-    <div class="identity-badge"><%= interpretation.identity_line %></div>
+    <div class="identity-badge" style="background:<%- heroColor %>;"><%= interpretation.identity_line %></div>
   </div>
 
-  <!-- 3×4 Energy Alignment Matrix -->
+  <!-- 2×2 Energy Alignment Matrix -->
   <div class="section-label">Energy Alignment Matrix</div>
-  <div class="matrix-table">
-    <!-- Header row -->
-    <div class="matrix-row matrix-header">
-      <div class="matrix-lens-label"></div>
-      <% ROLES.forEach(function(role) { %>
-      <div class="matrix-role-header" style="color:<%- ROLE_COLORS[role] %>;">
-        <%= ROLE_NAMES[role] %>&nbsp;(<%= role %>)
-      </div>
-      <% }); %>
-    </div>
-    <!-- Data rows: IS, SHOULD, WANT -->
-    <% ['is','should','want'].forEach(function(lens, li) { %>
-    <div class="matrix-row<%= lens === 'want' ? ' matrix-row-want' : '' %>">
-      <div class="matrix-lens-label"><%= LENS_LABELS[lens] %></div>
-      <% ROLES.forEach(function(role) {
-           const val = pct(scaled_scores[lens][role]);
-           const opacity = lens === 'want' ? '0.65' : '1';
-      %>
-      <div class="matrix-cell">
-        <div class="matrix-bar-track">
-          <div class="matrix-bar-fill"
-               style="width:<%- val %>%;background:<%- ROLE_COLORS[role] %>;opacity:<%= opacity %>;"></div>
+  <div class="matrix-grid">
+    <% ROLES.forEach(function(role) {
+         const color    = ROLE_COLORS[role];
+         const isVal    = pct(scaled_scores.is[role]);
+         const shdVal   = pct(scaled_scores.should[role]);
+         const wntVal   = pct(scaled_scores.want[role]);
+         const maxGap   = Math.max(Math.abs(shdVal - isVal), Math.abs(isVal - wntVal));
+         const hasGap   = maxGap >= 10;
+    %>
+    <div class="matrix-card" style="border-color:<%- color %>44;">
+      <div class="matrix-card-header" style="background:linear-gradient(90deg,<%- color %>1a 0%,<%- color %>08 100%);">
+        <div class="matrix-role-info">
+          <div class="matrix-role-circle" style="background:<%- color %>;"><%= role %></div>
+          <span class="matrix-role-name"><%= ROLE_NAMES[role] %></span>
         </div>
-        <div class="matrix-bar-label"><%= val %>%</div>
+        <% if (hasGap) { %>
+        <span class="matrix-gap-badge" style="color:<%- color %>;background:<%- color %>1a;"><%- maxGap %>pt gap</span>
+        <% } %>
       </div>
-      <% }); %>
+      <div class="matrix-bars">
+        <% [['is', isVal], ['should', shdVal], ['want', wntVal]].forEach(function(pair) {
+             const lens = pair[0], val = pair[1];
+             const meta = LENS_META[lens];
+             const opacity = lens === 'want' ? '0.5' : '1';
+        %>
+        <div class="matrix-bar-row" style="opacity:<%= opacity %>;">
+          <span class="matrix-bar-label"><%= meta.short %></span>
+          <div class="matrix-bar-track">
+            <div class="matrix-bar-fill" style="width:<%- val %>%;background:<%- color %>;"></div>
+          </div>
+          <span class="matrix-bar-val"><%= val %>%</span>
+        </div>
+        <% }); %>
+      </div>
     </div>
     <% }); %>
   </div>
 
   <!-- Core Insight -->
   <div class="section-label">Core Insight</div>
-  <div class="core-insight-block">
-    <% if (topGap) {
-         const nb = severityBadge(topGap.severity);
-    %>
-    <span class="core-insight-accent" style="border-color:<%- ROLE_COLORS[topGap.role] %>;"></span>
+  <% if (topGap) { %>
+  <div class="core-insight-block" style="border-left-color:<%- ROLE_COLORS[topGap.role] %>;">
     <div class="core-insight-text">
       <strong><%= ROLE_NAMES[topGap.role] %> (<%= topGap.role %>) — <%= topGap.meta.label %>:</strong>
       <%= topGap.narrative %>
     </div>
-    <% } else { %>
-    <div class="core-insight-text"><%= interpretation.style_tagline %></div>
-    <% } %>
   </div>
+  <% } else { %>
+  <div class="core-insight-block" style="border-left-color:#22c55e;">
+    <div class="core-insight-text"><%= interpretation.style_tagline %></div>
+  </div>
+  <% } %>
 
   <!-- Top Energy Misalignments -->
   <div class="section-label">Top Energy Misalignments</div>
   <div class="top-gaps-row">
     <% topGaps.forEach(function(tg) {
-         const nb = severityBadge(tg.severity);
          if (tg.severity === 'low') return;
+         const nb    = severityBadge(tg.severity);
+         const color = ROLE_COLORS[tg.role];
     %>
-    <div class="gap-pill gap-pill-<%= nb.cls %>">
-      <div class="gap-pill-role" style="background:<%- ROLE_COLORS[tg.role] %>;">
-        <%= tg.role %>
-      </div>
-      <div class="gap-pill-text">
-        <span class="gap-pill-type"><%= tg.meta.label %></span>
-        <span class="gap-pill-sev"><%= nb.emoji %> <%= nb.label %> &nbsp;<%= signed(tg.gap_signed) %>&nbsp;pts</span>
+    <div class="gap-pill">
+      <div class="gap-pill-role" style="background:<%- color %>;"><%= tg.role %></div>
+      <div class="gap-pill-body">
+        <span class="gap-pill-type"><%= tg.meta.label %> — <%= ROLE_NAMES[tg.role] %></span>
+        <span class="gap-pill-meta" style="color:<%- nb.color %>;"><%- nb.label %> &nbsp;<%- signed(tg.gap_signed) %> pts</span>
       </div>
     </div>
     <% }); %>
@@ -129,50 +136,49 @@
     <span class="header-tagline">PAEI Energy Alignment Profile — Gap Map</span>
   </div>
 
-  <h2 style="margin-bottom:4pt;">Gap Map</h2>
+  <h2 style="margin-bottom:5pt;">Gap Map</h2>
   <p style="font-size:8.5pt;color:#6b7280;margin-bottom:18pt;line-height:1.6;">
     The 3 largest energy misalignments across your PAEI profile. Each gap reflects where your
     perceptions of current behaviour, role expectations, and intrinsic preferences diverge most.
   </p>
 
   <% topGaps.forEach(function(tg) {
-       const nb = severityBadge(tg.severity);
-       const meta = tg.meta;
-       const valA = pct(scaled_scores[meta.lensA][tg.role]);
-       const valB = pct(scaled_scores[meta.lensB][tg.role]);
-       const borderColor = tg.severity === 'high' ? '#C8102E' : '#E87722';
-       const pillBg      = tg.severity === 'high' ? '#fff0f0' : '#fffbf0';
+       const nb    = severityBadge(tg.severity);
+       const meta  = tg.meta;
+       const color = ROLE_COLORS[tg.role];
+       const valA  = pct(scaled_scores[meta.lensA][tg.role]);
+       const valB  = pct(scaled_scores[meta.lensB][tg.role]);
   %>
-  <div class="gap-card" style="border-color:<%= borderColor %>;">
-    <!-- Card header -->
-    <div class="gap-card-header">
+  <div class="gap-card" style="border-color:<%- color %>44;border-left:3.5pt solid <%- color %>;">
+    <!-- Header -->
+    <div class="gap-card-header" style="background:linear-gradient(90deg,<%- color %>0f 0%,white 100%);">
       <div class="gap-card-title-row">
-        <div class="role-circle" style="background:<%- ROLE_COLORS[tg.role] %>;"><%= tg.role %></div>
-        <div>
+        <div class="role-circle" style="background:<%- color %>;"><%= tg.role %></div>
+        <div class="gap-card-type-info">
           <div class="gap-card-type"><%= meta.label %></div>
           <div class="gap-card-formula"><%= meta.formula %></div>
         </div>
       </div>
-      <div class="gap-sev-pill" style="background:<%= pillBg %>;border-color:<%= borderColor %>;">
-        <%= nb.emoji %> <strong style="color:<%= borderColor %>;"><%= nb.label %> &nbsp;<%= signed(tg.gap_signed) %>&nbsp;pts</strong>
+      <div class="gap-sev-pill" style="color:<%- nb.color %>;background:<%- nb.bg %>;border-color:<%- nb.border %>;">
+        <%- nb.label %> &nbsp;<%- signed(tg.gap_signed) %> pts
       </div>
     </div>
 
     <!-- Comparison bars -->
     <div class="gap-bars">
       <div class="gap-bar-row">
-        <div class="gap-bar-label"><%= meta.lensALabel %></div>
+        <span class="gap-bar-label"><%= meta.lensALabel %></span>
         <div class="gap-bar-track">
-          <div class="gap-bar-fill" style="width:<%= valA %>%;background:<%- ROLE_COLORS[tg.role] %>;"></div>
+          <div class="gap-bar-fill" style="width:<%- valA %>%;background:<%- color %>;"></div>
         </div>
-        <div class="gap-bar-val"><%= valA %>%</div>
+        <span class="gap-bar-val"><%= valA %>%</span>
       </div>
       <div class="gap-bar-row">
-        <div class="gap-bar-label"><%= meta.lensBLabel %></div>
+        <span class="gap-bar-label"><%= meta.lensBLabel %></span>
         <div class="gap-bar-track">
-          <div class="gap-bar-fill" style="width:<%= valB %>%;background:<%- ROLE_COLORS[tg.role] %>;opacity:0.55;"></div>
+          <div class="gap-bar-fill" style="width:<%- valB %>%;background:<%- color %>;opacity:0.45;"></div>
         </div>
-        <div class="gap-bar-val"><%= valB %>%</div>
+        <span class="gap-bar-val"><%= valB %>%</span>
       </div>
     </div>
 
@@ -180,6 +186,10 @@
     <div class="gap-card-narrative"><%= tg.narrative %></div>
   </div>
   <% }); %>
+
+  <% if (topGaps.filter(function(g){return g.severity !== 'low';}).length === 0) { %>
+  <div class="well-aligned-box">Your energy profile is well-aligned — no significant misalignments detected.</div>
+  <% } %>
 
   <div class="page-footer">
     <span>HILeadership | PAEI Energy Alignment Profile</span>
@@ -210,8 +220,8 @@
   </div>
 
   <div class="section-label">Early Warning Signs</div>
-  <% (interpretation.early_warnings || []).forEach(function(warning) { %>
-  <div class="warning-card"><%= warning %></div>
+  <% (interpretation.early_warnings || []).forEach(function(w) { %>
+  <div class="warning-card"><%= w %></div>
   <% }); %>
   <% if (!interpretation.early_warnings || interpretation.early_warnings.length === 0) { %>
   <div class="well-aligned-box">No significant early warning signs — your energy profile is well-aligned.</div>
@@ -234,7 +244,7 @@
 
   <h2 style="margin-bottom:12pt;">Style Summary</h2>
 
-  <div class="style-hero">
+  <div class="style-hero" style="background:<%- heroColor %>;">
     <div class="style-hero-label"><%= interpretation.style_label %></div>
     <div class="style-hero-tagline"><%= interpretation.style_tagline %></div>
     <% if (interpretation.combined_description) { %>
@@ -254,7 +264,7 @@
     <div class="summary-card stress">
       <h3>Under Stress</h3>
       <% (interpretation.mismanagement_risks || []).forEach(function(risk) { %>
-      <p style="margin-bottom:5pt;"><%= risk %></p>
+      <p><%= risk %></p>
       <% }); %>
     </div>
   </div>
@@ -276,8 +286,8 @@
 
   <h2 style="margin-bottom:4pt;">Your Action Path</h2>
   <p style="font-size:8.5pt;color:#6b7280;margin-bottom:16pt;">
-    Four directions drawn from your energy alignment data. Internal shifts require personal adjustment;
-    external shifts involve your role, environment, or relationships.
+    Four directions drawn from your energy alignment data. Internal shifts require personal
+    adjustment; external shifts involve your role, environment, or relationships.
   </p>
 
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:12pt;">
@@ -292,7 +302,7 @@
         <div class="action-card-right">
           <h3><%= actionPath.stretch.roleName %></h3>
           <p><%= actionPath.stretch.description %></p>
-          <div class="action-prompt">→ <%= actionPath.stretch.action %></div>
+          <div class="action-prompt"><%= actionPath.stretch.action %></div>
         </div>
       </div>
       <!-- Balance -->
@@ -304,7 +314,7 @@
         <div class="action-card-right">
           <h3><%= actionPath.balance.roleName %></h3>
           <p><%= actionPath.balance.description %></p>
-          <div class="action-prompt">→ <%= actionPath.balance.action %></div>
+          <div class="action-prompt"><%= actionPath.balance.action %></div>
         </div>
       </div>
       <!-- Protect -->
@@ -316,7 +326,7 @@
         <div class="action-card-right">
           <h3><%= actionPath.protect.roleName %></h3>
           <p><%= actionPath.protect.description %></p>
-          <div class="action-prompt">→ <%= actionPath.protect.action %></div>
+          <div class="action-prompt"><%= actionPath.protect.action %></div>
         </div>
       </div>
     </div>
@@ -332,7 +342,7 @@
         <div class="action-card-right">
           <h3><%= actionPath.complement.roleName %></h3>
           <p><%= actionPath.complement.description %></p>
-          <div class="action-prompt">→ <%= actionPath.complement.action %></div>
+          <div class="action-prompt"><%= actionPath.complement.action %></div>
         </div>
       </div>
       <!-- Role Design -->
@@ -343,20 +353,21 @@
         </div>
         <div class="action-card-right">
           <h3>Reshaping your role</h3>
-          <p>Your Intrinsic Preference reveals the energy you find most natural.
-          Look for ways to redesign tasks, delegate, or negotiate responsibilities
-          so your role draws more on what energises you.</p>
-          <div class="action-prompt">→ Identify one responsibility that drains you and explore who could own it instead.</div>
+          <p>Your Intrinsic Preference reveals the energy you find most natural. Look for ways
+          to redesign tasks, delegate, or negotiate responsibilities so your role draws more on
+          what energises you.</p>
+          <div class="action-prompt">Identify one responsibility that drains you and explore who could own it instead.</div>
         </div>
       </div>
     </div>
   </div>
 
-  <div style="margin-top:14pt;padding:10pt 12pt;background:#f9fafb;border-radius:5pt;border:1pt solid #e5e7eb;">
-    <p style="font-size:8pt;color:#6b7280;line-height:1.6;">
-      <strong style="color:#374151;">How to use this report:</strong> Your PAEI profile is a tool for
-      self-awareness, not a fixed label. Strengths become liabilities when over-used. Use this report
-      to open conversations with colleagues, coaches, and managers.
+  <div style="margin-top:14pt;padding:10pt 13pt;background:#f9fafb;border-radius:6pt;border:1pt solid #e5e7eb;">
+    <p style="font-size:8pt;color:#6b7280;line-height:1.7;">
+      <strong style="color:#374151;">How to use this report:</strong>
+      Your PAEI profile is a tool for self-awareness, not a fixed label. Strengths become
+      liabilities when over-used. Use this report to open conversations with colleagues, coaches,
+      and managers.
     </p>
   </div>
 

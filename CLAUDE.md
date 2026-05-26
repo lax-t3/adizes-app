@@ -38,7 +38,7 @@ supabase status -o env   # copy ANON_KEY + SERVICE_ROLE_KEY into .env
 
 # 3. Apply DB migrations (all, in order)
 DB=supabase_db_adizes-backend
-for m in 001 002 003 004 005 006 007 008 009; do
+for m in 001 002 003 004 005 006 007 008 009 011; do
   docker exec -i $DB psql -U postgres -d postgres < migrations/${m}_*.sql
 done
 
@@ -110,6 +110,18 @@ print(json.loads(resp['Payload'].read()))
 ```
 
 Build `payload` from the full assessment row (all fields including gaps + interpretation).
+
+## Key Notes
+
+- **Cohort lifecycle status** (migration 011): `cohorts.cohort_status` column (`active` | `completed` | `archived`, default `active`).
+  `PATCH /admin/cohorts/{id}/status` updates it. `enroll_user`, `bulk_enroll`, and `enroll_from_org` raise HTTP 409
+  if `cohort_status != 'active'`. Migration applied directly to production via Supabase MCP (not `supabase db push`).
+- **scaled_scores are 0–100 percentages** (not 132-scale). Style distribution in `_compute_team_scores()` uses
+  threshold `> 25` (equal share 100/4). Raw 132-scale dominant threshold is `> 33`. Mixing these up causes the
+  style distribution chart to show all zeros.
+- **`supabase db push --linked` limitation**: only tracks migrations in `supabase/migrations/`. The custom
+  `migrations/` folder is not Supabase CLI-managed. Apply new migrations (like 011) directly via Supabase
+  MCP `execute_sql` or the Supabase Dashboard SQL editor.
 
 ## Adizes360 — Phase 2 (not yet implemented)
 
