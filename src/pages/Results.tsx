@@ -1,25 +1,40 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { useAuthStore } from "@/store/authStore";
 import { useAssessmentStore } from "@/store/assessmentStore";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
-import { GapBadge } from "@/components/ui/GapBadge";
 import { Button } from "@/components/ui/Button";
 import { Download, Loader2 } from "lucide-react";
 import { Users, CheckCircle2, Info } from "lucide-react";
 import { InfoTooltip } from "@/components/ui/InfoTooltip";
-import {
-  Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
-  ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
-} from "recharts";
 import { motion } from "motion/react";
-import { ScoresTable } from "@/components/ui/ScoresTable";
+import { EnergyMatrix } from "@/components/ui/EnergyMatrix";
+import { GapCard } from "@/components/ui/GapCard";
 import { getResult } from "@/api/results";
-import type { ResultResponse } from "@/types/api";
+import type { ResultResponse, TopGap } from "@/types/api";
+
+function getTopGaps(result: ResultResponse): TopGap[] {
+  const all: TopGap[] = [];
+  for (const g of result.gaps) {
+    for (const gapType of ["execution", "engagement", "authenticity"] as const) {
+      all.push({
+        role:       g.role,
+        role_name:  g.role_name,
+        gap_type:   gapType,
+        gap_abs:    g[`${gapType}_gap`],
+        gap_signed: g[`${gapType}_gap_signed`],
+        severity:   g[`${gapType}_severity`],
+        narrative:  g[`${gapType}_narrative`],
+        is_score:     g.is_score,
+        should_score: g.should_score,
+        want_score:   g.want_score,
+      });
+    }
+  }
+  return all.sort((a, b) => b.gap_abs - a.gap_abs).slice(0, 3);
+}
 
 export function Results() {
-  const { user } = useAuthStore();
   const { resultId } = useAssessmentStore();
   const [searchParams] = useSearchParams();
   const [result, setResult] = useState<ResultResponse | null>(null);
@@ -29,7 +44,6 @@ export function Results() {
   const [pdfCheckMessage, setPdfCheckMessage] = useState("");
   const [error, setError] = useState("");
 
-  // Result ID comes from URL param (set after submit) or store
   const id = searchParams.get("id") ?? resultId;
 
   useEffect(() => {
@@ -39,10 +53,7 @@ export function Results() {
       return;
     }
     getResult(id)
-      .then((r) => {
-        setResult(r);
-        setPdfUrl(r.pdf_url);
-      })
+      .then((r) => { setResult(r); setPdfUrl(r.pdf_url); })
       .catch(() => setError("Failed to load results. Please try again."))
       .finally(() => setLoading(false));
   }, [id]);
@@ -53,12 +64,8 @@ export function Results() {
     setPdfCheckMessage("");
     try {
       const r = await getResult(id);
-      if (r.pdf_url) {
-        setPdfUrl(r.pdf_url);
-        setPdfCheckMessage("");
-      } else {
-        setPdfCheckMessage("Still generating, try again shortly.");
-      }
+      if (r.pdf_url) { setPdfUrl(r.pdf_url); setPdfCheckMessage(""); }
+      else setPdfCheckMessage("Still generating, try again shortly.");
     } catch {
       setPdfCheckMessage("Could not check status. Please try again.");
     } finally {
@@ -89,26 +96,9 @@ export function Results() {
     );
   }
 
-  const { profile, scaled_scores, gaps, interpretation } = result;
+  const { profile, scaled_scores, interpretation } = result;
+  const topGaps = getTopGaps(result);
 
-  // Build radar chart data
-  const radarData = (["P", "A", "E", "I"] as const).map((role) => ({
-    subject: { P: "Producer (P)", A: "Administrator (A)", E: "Entrepreneur (E)", I: "Integrator (I)" }[role],
-    is: scaled_scores.is[role],
-    should: scaled_scores.should[role],
-    want: scaled_scores.want[role],
-    fullMark: 50,
-  }));
-
-  // Build gap chart data
-  const gapChartData = gaps.map((g) => ({
-    name: g.role_name,
-    is: g.is_score,
-    should: g.should_score,
-    gap: g.external_gap,
-  }));
-
-  // Build profile badge string (e.g. "paEI")
   const profileBadges = (profile.want ?? "paei").split("").map((char) => {
     const role = char.toUpperCase() as "P" | "A" | "E" | "I";
     const isDominant = char === char.toUpperCase();
@@ -137,18 +127,14 @@ export function Results() {
             <div className="flex items-center gap-4 bg-gray-800/50 p-4 rounded-xl border border-gray-700 backdrop-blur-sm">
               <div className="flex items-center gap-1.5">
                 <span className="text-sm text-gray-400 font-medium uppercase tracking-wider">Dominant Style</span>
-                <InfoTooltip text="Your PAEI profile based on the 'Want' dimension — how you want to behave. A CAPITAL letter means that role scored above 30 (dominant). A lowercase letter means it scored 30 or below (non-dominant). Scores range from 12–48. Most people have 1–2 dominant roles." />
+                <InfoTooltip text="Your PAEI profile based on the 'Want' (Intrinsic Preference) dimension. A CAPITAL letter means that role's raw score exceeded 33 out of 132 (its proportional share). A lowercase letter means it scored 33 or below." />
               </div>
               <div className="flex gap-1.5">
                 {profileBadges.map(({ role, char, isDominant }) =>
                   isDominant ? (
-                    <Badge key={role} variant={role} className="text-xl px-3 py-1 shadow-sm">
-                      {char}
-                    </Badge>
+                    <Badge key={role} variant={role} className="text-xl px-3 py-1 shadow-sm">{char}</Badge>
                   ) : (
-                    <Badge key={role} variant="outline" className="text-xl px-3 py-1 bg-gray-800 text-gray-300 border-gray-600">
-                      {char}
-                    </Badge>
+                    <Badge key={role} variant="outline" className="text-xl px-3 py-1 bg-gray-800 text-gray-300 border-gray-600">{char}</Badge>
                   )
                 )}
               </div>
@@ -160,79 +146,48 @@ export function Results() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 -mt-4 sm:-mt-8">
         <div className="grid gap-6 sm:gap-8 lg:grid-cols-2">
 
-          {/* Radar Chart */}
+          {/* Energy Alignment Matrix */}
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.1 }}>
             <Card className="h-full shadow-md border-t-4 border-t-primary">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  Style Comparison
-                  <InfoTooltip text="Three lines for three questions the assessment asks: 'Is' = how you currently behave at work. 'Should' = what your role demands of you. 'Want' = how you naturally prefer to act. Gaps between the lines reveal tension between your role and your instincts." />
+                  Energy Alignment Matrix
+                  <InfoTooltip text="Three lenses for three assessment questions: Current State = how you operate now. Role Expectations = what your role demands. Intrinsic Preference = how you naturally prefer to act (shown lighter). Bars show the percentage of total energy per role, per lens." />
                 </CardTitle>
                 <CardDescription>
-                  Visual representation of your Is, Should, and Want profiles.
+                  How your energy distributes across P, A, E, I — by lens.
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="h-[280px] sm:h-[400px] w-full">
-                  <ResponsiveContainer width="99%" height="100%" debounce={50}>
-                    <RadarChart cx="50%" cy="50%" outerRadius="70%" data={radarData}>
-                      <PolarGrid stroke="#e5e7eb" />
-                      <PolarAngleAxis dataKey="subject" tick={{ fill: "#4b5563", fontSize: 12, fontWeight: 500 }} />
-                      <PolarRadiusAxis angle={30} domain={[12, 48]} tick={{ fill: "#9ca3af" }} />
-                      <Radar name="Is" dataKey="is" stroke="#C8102E" fill="#C8102E" fillOpacity={0.4} />
-                      <Radar name="Should" dataKey="should" stroke="#1D3557" fill="#1D3557" fillOpacity={0.4} />
-                      <Radar name="Want" dataKey="want" stroke="#E87722" fill="#E87722" fillOpacity={0.4} />
-                      <Legend wrapperStyle={{ paddingTop: "20px" }} />
-                      <Tooltip contentStyle={{ borderRadius: "8px", border: "none", boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)" }} />
-                    </RadarChart>
-                  </ResponsiveContainer>
-                </div>
-                <ScoresTable scaled_scores={scaled_scores} />
+                <EnergyMatrix display_scores={scaled_scores} />
               </CardContent>
             </Card>
           </motion.div>
 
-          {/* Gap Analysis */}
+          {/* Top Gap Cards */}
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.2 }}>
             <Card className="h-full shadow-md">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  Gap Analysis
-                  <InfoTooltip text="External Gap = difference between 'Is' (how you behave) and 'Should' (what your role demands). Internal Gap = difference between 'Should' and 'Want' (what you prefer). Large gaps signal potential stress or misalignment. Green = aligned (< 7pts), Yellow = watch (7–14pts), Red = tension (15+pts)." />
+                  Top Energy Misalignments
+                  <InfoTooltip text="The 3 largest gaps across your 12 gap values (4 roles × 3 types). Execution Gap = Role Expectations − Current State. Engagement Gap = Role Expectations − Intrinsic Preference. Authenticity Gap = Current State − Intrinsic Preference. Thresholds on the 132-point scale: < 6 aligned, 6–15 moderate, > 15 high." />
                 </CardTitle>
                 <CardDescription>
-                  Differences between your current behavior (Is) and job demands (Should).
+                  Where your energy perceptions diverge most.
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="h-[200px] sm:h-[280px] w-full mb-4 sm:mb-6 overflow-x-auto">
-                  <ResponsiveContainer width="99%" height="100%" debounce={50}>
-                    <BarChart data={gapChartData} layout="vertical" margin={{ top: 5, right: 30, left: 40, bottom: 5 }}>
-                      <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f3f4f6" />
-                      <XAxis type="number" domain={[12, 48]} tick={{ fill: "#9ca3af" }} />
-                      <YAxis dataKey="name" type="category" tick={{ fill: "#4b5563", fontSize: 12, fontWeight: 500 }} width={100} />
-                      <Tooltip cursor={{ fill: "#f9fafb" }} contentStyle={{ borderRadius: "8px", border: "none", boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)" }} />
-                      <Legend />
-                      <Bar dataKey="is" name="Is" fill="#C8102E" radius={[0, 4, 4, 0]} barSize={16} />
-                      <Bar dataKey="should" name="Should" fill="#1D3557" radius={[0, 4, 4, 0]} barSize={16} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-                <div className="space-y-3">
-                  <h4 className="font-medium text-gray-900 text-sm uppercase tracking-wider mb-4 flex items-center gap-1.5">
-                  Gap Severity
-                  <InfoTooltip text="Ext (External): gap between how you behave (Is) and what your role demands (Should). Int (Internal): gap between role demands (Should) and your natural preference (Want). Numbers show point difference on the 12–48 scale." />
-                </h4>
-                  {gaps.map((g) => (
-                    <div key={g.role} className="flex items-center justify-between p-3 rounded-lg bg-gray-50 border border-gray-100">
-                      <span className="font-medium text-gray-700">{g.role_name}</span>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-gray-500">Ext: <GapBadge gap={g.external_gap} /></span>
-                        <span className="text-xs text-gray-500">Int: <GapBadge gap={g.internal_gap} /></span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                {topGaps.filter(g => g.severity !== "low").length === 0 ? (
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-sm text-green-800">
+                    Your energy profile is well-aligned — no significant misalignments detected.
+                  </div>
+                ) : (
+                  topGaps
+                    .filter(g => g.severity !== "low")
+                    .map((g, i) => (
+                      <GapCard key={`${g.role}-${g.gap_type}-${i}`} gap={g} display_scores={scaled_scores} />
+                    ))
+                )}
               </CardContent>
             </Card>
           </motion.div>
@@ -249,7 +204,7 @@ export function Results() {
                 </div>
                 <CardTitle className="text-2xl font-display flex items-center gap-2">
                   Style Interpretation
-                  <InfoTooltip text="Based on your dominant 'Want' role. Describes how you naturally lead and collaborate. Use this as a mirror — not a box. Strengths are your assets; Blind Spots are where growth lies; Working with Others shows how to bridge style differences with colleagues." />
+                  <InfoTooltip text="Based on your dominant Intrinsic Preference roles. Describes how you naturally lead and collaborate. Strengths are your assets; Watchouts are where growth lies; Working with Others shows how to bridge style differences." />
                 </CardTitle>
                 {interpretation.combined_description && (
                   <CardDescription className="text-base">{interpretation.combined_description}</CardDescription>
@@ -263,7 +218,7 @@ export function Results() {
                         <CheckCircle2 className="h-5 w-5" />
                       </div>
                       Strengths
-                      <InfoTooltip text="The natural advantages of your dominant PAEI style — behaviours and qualities that come easily to you and add value to your team." />
+                      <InfoTooltip text="Natural advantages of your dominant PAEI style — behaviours and qualities that come easily to you." />
                     </div>
                     <p className="text-gray-600 text-sm leading-relaxed">{interpretation.strengths}</p>
                   </div>
@@ -272,10 +227,10 @@ export function Results() {
                       <div className="h-8 w-8 rounded-full bg-amber-100 flex items-center justify-center">
                         <Info className="h-5 w-5" />
                       </div>
-                      Blind Spots
-                      <InfoTooltip text="The typical pitfalls of your style — patterns that can undermine effectiveness if left unchecked. Awareness is the first step to growth." />
+                      Watchouts
+                      <InfoTooltip text="Typical pitfalls of your style — patterns that can undermine effectiveness if left unchecked." />
                     </div>
-                    <p className="text-gray-600 text-sm leading-relaxed">{interpretation.blind_spots}</p>
+                    <p className="text-gray-600 text-sm leading-relaxed">{interpretation.watchouts}</p>
                   </div>
                   <div className="space-y-4">
                     <div className="flex items-center gap-2 text-blue-700 font-medium">
@@ -283,7 +238,7 @@ export function Results() {
                         <Users className="h-5 w-5" />
                       </div>
                       Working with Others
-                      <InfoTooltip text="Practical tips for collaborating with the other three PAEI styles. Each style sees the world differently — these suggestions help you bridge those differences." />
+                      <InfoTooltip text="Practical tips for collaborating with the other three PAEI styles." />
                     </div>
                     <p className="text-gray-600 text-sm leading-relaxed">{interpretation.working_with_others}</p>
                   </div>
@@ -292,8 +247,8 @@ export function Results() {
                 {interpretation.mismanagement_risks.length > 0 && (
                   <div className="mt-8 pt-6 border-t border-gray-100">
                     <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-1.5">
-                      Mismanagement Risk Under Stress
-                      <InfoTooltip text="The dysfunctional extreme your dominant style can slide into under prolonged stress. Awareness is the first step to avoiding it." />
+                      Under Stress
+                      <InfoTooltip text="The dysfunctional extreme your dominant style can slide into under prolonged stress." />
                     </h4>
                     <div className="space-y-2">
                       {interpretation.mismanagement_risks.map((risk, i) => (
@@ -322,34 +277,20 @@ export function Results() {
           </div>
           <div className="flex flex-col items-end gap-1">
             {pdfUrl ? (
-              <Button
-                size="lg"
-                onClick={() => window.open(pdfUrl, "_blank")}
-                className="w-full sm:w-auto shadow-md hover:shadow-lg transition-all"
-              >
+              <Button size="lg" onClick={() => window.open(pdfUrl, "_blank")} className="w-full sm:w-auto shadow-md hover:shadow-lg transition-all">
                 <Download className="mr-2 h-5 w-5" /> Download Full Report (PDF)
               </Button>
             ) : (
-              <Button
-                size="lg"
-                disabled
-                className="w-full sm:w-auto opacity-60 cursor-not-allowed"
-              >
+              <Button size="lg" disabled className="w-full sm:w-auto opacity-60 cursor-not-allowed">
                 <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Generating report…
               </Button>
             )}
             {!pdfUrl && (
-              <button
-                onClick={handleCheckAgain}
-                disabled={checkingPdf}
-                className="text-xs text-primary hover:underline disabled:opacity-50"
-              >
+              <button onClick={handleCheckAgain} disabled={checkingPdf} className="text-xs text-primary hover:underline disabled:opacity-50">
                 {checkingPdf ? "Checking…" : "Check again"}
               </button>
             )}
-            {pdfCheckMessage && (
-              <p className="text-xs text-gray-500">{pdfCheckMessage}</p>
-            )}
+            {pdfCheckMessage && <p className="text-xs text-gray-500">{pdfCheckMessage}</p>}
           </div>
         </div>
       </div>
