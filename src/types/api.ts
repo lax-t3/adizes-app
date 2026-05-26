@@ -136,6 +136,7 @@ export interface RespondentSummary {
   name: string;
   email: string;
   status: "pending" | "in_progress" | "completed" | "expired";
+  activated: boolean;
   dominant_style: string | null;
   completed_at: string | null;
 }

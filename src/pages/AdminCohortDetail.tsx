@@ -668,6 +668,7 @@ export function AdminCohortDetail() {
                     <tr>
                       <th className="px-6 py-3 font-medium">Name</th>
                       <th className="px-6 py-3 font-medium">Email</th>
+                      <th className="px-6 py-3 font-medium">Account</th>
                       <th className="px-6 py-3 font-medium">Status</th>
                       <th className="px-6 py-3 font-medium">Dominant Style</th>
                       <th className="px-6 py-3 font-medium">Completed</th>
@@ -679,6 +680,19 @@ export function AdminCohortDetail() {
                       <tr key={r.user_id} className="bg-white border-b border-gray-100 hover:bg-gray-50 transition-colors">
                         <td className="px-6 py-4 font-medium text-gray-900">{r.name || "—"}</td>
                         <td className="px-6 py-4">{r.email}</td>
+                        <td className="px-6 py-4">
+                          {r.activated ? (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-green-50 px-2 py-0.5 text-xs font-medium text-green-700 border border-green-200">
+                              <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
+                              Active
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700 border border-amber-200">
+                              <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
+                              Invite Pending
+                            </span>
+                          )}
+                        </td>
                         <td className="px-6 py-4">
                           {r.status === "completed" ? (
                             <Badge variant="secondary" className="bg-green-100 text-green-800">Completed</Badge>
@@ -701,7 +715,7 @@ export function AdminCohortDetail() {
                                 View Results
                               </Link>
                             )}
-                            {r.status === "pending" && (
+                            {!r.activated && (
                               <div className="relative flex items-center">
                                 <button
                                   onClick={() => handleResendInvite(r.user_id)}

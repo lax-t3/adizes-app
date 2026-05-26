@@ -1,0 +1,161 @@
+<h2>Employee Table — Column Display</h2>
+<p class="subtitle">13 fields can't all fit comfortably. How should the table be arranged?</p>
+
+<div class="cards">
+
+  <!-- Option A: Key columns only, Excel exports all -->
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#f8f9fa;padding:14px;">
+      <div style="background:#fff;border-radius:8px;padding:12px;font-size:10px;box-shadow:0 1px 4px rgba(0,0,0,.1)">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+          <span style="font-weight:600;font-size:11px;">Employees</span>
+          <span style="background:#1D3557;color:#fff;font-size:9px;padding:3px 7px;border-radius:4px;">⬇ Export Excel</span>
+        </div>
+        <table style="width:100%;border-collapse:collapse;font-size:9px;">
+          <thead>
+            <tr style="border-bottom:2px solid #e5e7eb;color:#6b7280;text-transform:uppercase;font-size:8px;">
+              <th style="text-align:left;padding:4px 6px 4px 0;">Name</th>
+              <th style="text-align:left;padding:4px 6px;">Email</th>
+              <th style="text-align:left;padding:4px 6px;">Title</th>
+              <th style="text-align:left;padding:4px 6px;">Emp Status</th>
+              <th style="text-align:left;padding:4px 6px;">Activation</th>
+              <th style="padding:4px 0;"></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="border-bottom:1px solid #f3f4f6;">
+              <td style="padding:5px 6px 5px 0;font-weight:500;">Priya Sharma</td>
+              <td style="padding:5px 6px;color:#6b7280;">priya@tata.com</td>
+              <td style="padding:5px 6px;color:#6b7280;">Sr. Manager</td>
+              <td style="padding:5px 6px;"><span style="background:#dcfce7;color:#166534;font-size:8px;padding:2px 5px;border-radius:10px;">Active</span></td>
+              <td style="padding:5px 6px;"><span style="background:#f0fdf4;color:#166534;font-size:8px;padding:2px 5px;border-radius:10px;">✓ Active</span></td>
+              <td style="padding:5px 0;color:#d1d5db;">🗑</td>
+            </tr>
+            <tr style="border-bottom:1px solid #f3f4f6;">
+              <td style="padding:5px 6px 5px 0;font-weight:500;">Rahul Mehta</td>
+              <td style="padding:5px 6px;color:#6b7280;">rahul@tata.com</td>
+              <td style="padding:5px 6px;color:#6b7280;">Team Lead</td>
+              <td style="padding:5px 6px;"><span style="background:#fef9c3;color:#854d0e;font-size:8px;padding:2px 5px;border-radius:10px;">On Leave</span></td>
+              <td style="padding:5px 6px;"><span style="background:#fffbeb;color:#b45309;font-size:8px;padding:2px 5px;border-radius:10px;">Pending</span></td>
+              <td style="padding:5px 0;color:#d1d5db;">🗑</td>
+            </tr>
+          </tbody>
+        </table>
+        <div style="margin-top:6px;font-size:8px;color:#9ca3af;">Full details (DOB, gender, manager, etc.) available via Export Excel</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A — 5 key columns + Export Excel</h3>
+      <p>Table shows: Name, Email, Title, Emp Status, Activation status. All 13 fields available via the "Export Excel" button. Clean, fast table — no horizontal scroll.</p>
+    </div>
+  </div>
+
+  <!-- Option B: Horizontally scrollable wide table -->
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#f8f9fa;padding:14px;overflow:hidden;">
+      <div style="background:#fff;border-radius:8px;padding:12px;font-size:10px;box-shadow:0 1px 4px rgba(0,0,0,.1)">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+          <span style="font-weight:600;font-size:11px;">Employees</span>
+          <span style="background:#1D3557;color:#fff;font-size:9px;padding:3px 7px;border-radius:4px;">⬇ Export Excel</span>
+        </div>
+        <div style="overflow-x:auto;">
+          <table style="width:max-content;border-collapse:collapse;font-size:9px;">
+            <thead>
+              <tr style="border-bottom:2px solid #e5e7eb;color:#6b7280;text-transform:uppercase;font-size:8px;">
+                <th style="text-align:left;padding:4px 8px 4px 0;white-space:nowrap;">Name</th>
+                <th style="text-align:left;padding:4px 8px;white-space:nowrap;">Email</th>
+                <th style="text-align:left;padding:4px 8px;white-space:nowrap;">Title</th>
+                <th style="text-align:left;padding:4px 8px;white-space:nowrap;">Emp Status</th>
+                <th style="text-align:left;padding:4px 8px;white-space:nowrap;">Gender</th>
+                <th style="text-align:left;padding:4px 8px;white-space:nowrap;">DOB</th>
+                <th style="text-align:left;padding:4px 8px;white-space:nowrap;">Emp Date</th>
+                <th style="text-align:left;padding:4px 8px;white-space:nowrap;">Head of Dept</th>
+                <th style="text-align:left;padding:4px 8px;white-space:nowrap;">Manager Email</th>
+                <th style="padding:4px 0;"></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr style="border-bottom:1px solid #f3f4f6;">
+                <td style="padding:5px 8px 5px 0;font-weight:500;white-space:nowrap;">Priya Sharma</td>
+                <td style="padding:5px 8px;color:#6b7280;white-space:nowrap;">priya@tata.com</td>
+                <td style="padding:5px 8px;color:#6b7280;white-space:nowrap;">Sr. Manager</td>
+                <td style="padding:5px 8px;"><span style="background:#dcfce7;color:#166534;font-size:8px;padding:2px 5px;border-radius:10px;">Active</span></td>
+                <td style="padding:5px 8px;color:#6b7280;">Female</td>
+                <td style="padding:5px 8px;color:#6b7280;white-space:nowrap;">12/03/1988</td>
+                <td style="padding:5px 8px;color:#6b7280;white-space:nowrap;">01/06/2019</td>
+                <td style="padding:5px 8px;color:#6b7280;">No</td>
+                <td style="padding:5px 8px;color:#6b7280;white-space:nowrap;">mgr@tata.com</td>
+                <td style="padding:5px 0;color:#d1d5db;">🗑</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div style="margin-top:4px;font-size:8px;color:#9ca3af;">← scroll right for more columns →</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B — Wide scrollable table</h3>
+      <p>Shows all major columns; table scrolls horizontally. Export Excel also available. Good when admins frequently need to scan across fields without opening anything.</p>
+    </div>
+  </div>
+
+  <!-- Option C: Condensed rows + click to expand -->
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#f8f9fa;padding:14px;">
+      <div style="background:#fff;border-radius:8px;padding:12px;font-size:10px;box-shadow:0 1px 4px rgba(0,0,0,.1)">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+          <span style="font-weight:600;font-size:11px;">Employees</span>
+          <span style="background:#1D3557;color:#fff;font-size:9px;padding:3px 7px;border-radius:4px;">⬇ Export Excel</span>
+        </div>
+        <table style="width:100%;border-collapse:collapse;font-size:9px;">
+          <thead>
+            <tr style="border-bottom:2px solid #e5e7eb;color:#6b7280;text-transform:uppercase;font-size:8px;">
+              <th style="text-align:left;padding:4px 6px 4px 0;">Name</th>
+              <th style="text-align:left;padding:4px 6px;">Email</th>
+              <th style="text-align:left;padding:4px 6px;">Emp Status</th>
+              <th style="text-align:left;padding:4px 6px;">Activation</th>
+              <th style="padding:4px 0;"></th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Expanded row -->
+            <tr style="border-bottom:none;background:#fef2f2;">
+              <td style="padding:5px 6px 5px 0;font-weight:500;">Priya Sharma</td>
+              <td style="padding:5px 6px;color:#6b7280;">priya@tata.com</td>
+              <td style="padding:5px 6px;"><span style="background:#dcfce7;color:#166534;font-size:8px;padding:2px 5px;border-radius:10px;">Active</span></td>
+              <td style="padding:5px 6px;"><span style="background:#f0fdf4;color:#166534;font-size:8px;padding:2px 5px;border-radius:10px;">✓</span></td>
+              <td style="padding:5px 0;font-size:9px;color:#C8102E;">▲</td>
+            </tr>
+            <!-- Expanded detail panel -->
+            <tr style="background:#fef9f9;">
+              <td colspan="5" style="padding:8px 8px 8px 12px;border-bottom:1px solid #fde8e8;">
+                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;font-size:8.5px;color:#6b7280;">
+                  <div><span style="color:#9ca3af;">Last Name</span><br/><b>Sharma</b></div>
+                  <div><span style="color:#9ca3af;">Gender</span><br/><b>Female</b></div>
+                  <div><span style="color:#9ca3af;">DOB</span><br/><b>12/03/1988</b></div>
+                  <div><span style="color:#9ca3af;">Emp Date</span><br/><b>01/06/2019</b></div>
+                  <div><span style="color:#9ca3af;">Head of Dept</span><br/><b>No</b></div>
+                  <div><span style="color:#9ca3af;">Manager</span><br/><b>mgr@tata.com</b></div>
+                </div>
+              </td>
+            </tr>
+            <!-- Collapsed row -->
+            <tr style="border-bottom:1px solid #f3f4f6;">
+              <td style="padding:5px 6px 5px 0;font-weight:500;">Rahul Mehta</td>
+              <td style="padding:5px 6px;color:#6b7280;">rahul@tata.com</td>
+              <td style="padding:5px 6px;"><span style="background:#fef9c3;color:#854d0e;font-size:8px;padding:2px 5px;border-radius:10px;">On Leave</span></td>
+              <td style="padding:5px 6px;"><span style="background:#fffbeb;color:#b45309;font-size:8px;padding:2px 5px;border-radius:10px;">Pending</span></td>
+              <td style="padding:5px 0;font-size:9px;color:#9ca3af;">▼</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>C — Expandable rows</h3>
+      <p>Table shows 4 key columns. Click a row to expand it inline, revealing all other fields in a detail grid. Export Excel exports everything. Best of both worlds — compact by default, detail on demand.</p>
+    </div>
+  </div>
+
+</div>
+<p class="subtitle" style="margin-top:16px;">Click your preferred table layout.</p>
