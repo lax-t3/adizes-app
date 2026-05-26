@@ -1,10 +1,10 @@
-"""Tests for the PAEI ranking-based scoring engine (v2: 12–48 scale)."""
+"""Tests for the PAEI ranking-based scoring engine (v3: 132-point scale)."""
 
 import pytest
-from app.services.scoring import score_answers, _build_profile_string, SCORING_KEY
+from app.services.scoring import score_answers, _build_profile_string, SCORING_KEY, RANK_POINTS, DOMINANT_THRESHOLD
 
 
-def _all_rank_answers(rank_per_option: dict[str, int]) -> list[dict]:
+def _all_rank_answers(rank_per_option: dict) -> list:
     """Build 36 answers each with the same rank assignment for all options."""
     return [
         {"question_index": q, "ranks": dict(rank_per_option)}
@@ -12,90 +12,103 @@ def _all_rank_answers(rank_per_option: dict[str, int]) -> list[dict]:
     ]
 
 
-def _make_ranked_answers(
-    overrides: dict[int, dict[str, int]],
-    default_ranks: dict[str, int] | None = None,
-) -> list[dict]:
-    """Build 36 answers. overrides: {q_idx: {a:r, b:r, c:r, d:r}}. Others use default."""
-    default = default_ranks or {"a": 1, "b": 2, "c": 3, "d": 4}
-    return [
-        {"question_index": q, "ranks": overrides.get(q, dict(default))}
-        for q in range(36)
-    ]
+class TestConstants:
+    def test_rank_points_mapping(self):
+        assert RANK_POINTS == {1: 5, 2: 3, 3: 2, 4: 1}
+
+    def test_dominant_threshold_is_33(self):
+        assert DOMINANT_THRESHOLD == 33
+
+    def test_scoring_key_covers_all_36_questions(self):
+        assert len(SCORING_KEY) == 36
+
+    def test_each_question_has_all_4_roles(self):
+        for q_idx, mapping in SCORING_KEY.items():
+            roles = set(mapping.values())
+            assert roles == {"P", "A", "E", "I"}, f"Q{q_idx}: {mapping}"
 
 
 class TestBuildProfileString:
     def test_all_dominant(self):
-        scores = {"P": 35, "A": 40, "E": 38, "I": 42}
+        scores = {"P": 40, "A": 40, "E": 35, "I": 34}
         assert _build_profile_string(scores) == "PAEI"
 
     def test_none_dominant(self):
-        # All below 30; use values in the valid 12–48 range
-        scores = {"P": 14, "A": 16, "E": 20, "I": 25}
+        scores = {"P": 20, "A": 25, "E": 30, "I": 33}
+        # 33 is NOT dominant (must be > 33)
         assert _build_profile_string(scores) == "paei"
 
-    def test_mixed(self):
-        scores = {"P": 14, "A": 35, "E": 20, "I": 40}
+    def test_boundary_at_33(self):
+        scores = {"P": 33, "A": 34, "E": 33, "I": 34}
         assert _build_profile_string(scores) == "pAeI"
 
-    def test_boundary_at_30(self):
-        # 30 is NOT dominant (must be > 30)
-        scores = {"P": 30, "A": 31, "E": 30, "I": 31}
+    def test_mixed(self):
+        scores = {"P": 20, "A": 40, "E": 25, "I": 50}
         assert _build_profile_string(scores) == "pAeI"
 
 
 class TestScoreAnswers:
-    def test_max_score_is_48(self):
-        """Ranking P option first (rank 1) for all 12 Is-section questions → P(is) = 48."""
-        # From SCORING_KEY, P option per question in Is section (q 0-11):
-        p_options = {
-            0: "b", 1: "a", 2: "b", 3: "c",
-            4: "a", 5: "c", 6: "d", 7: "c",
-            8: "b", 9: "a", 10: "d", 11: "c",
-        }
-        # Build answers: for each Is question, P option = rank 1, others = 2,3,4
-        answers = []
-        for q in range(36):
-            if q < 12 and q in p_options:
-                p_opt = p_options[q]
-                non_p = [o for o in ["a", "b", "c", "d"] if o != p_opt]
-                ranks = {p_opt: 1, non_p[0]: 2, non_p[1]: 3, non_p[2]: 4}
-            else:
-                ranks = {"a": 1, "b": 2, "c": 3, "d": 4}
-            answers.append({"question_index": q, "ranks": ranks})
-
+    def test_returns_raw_display_profile_keys(self):
+        answers = _all_rank_answers({"a": 1, "b": 2, "c": 3, "d": 4})
         result = score_answers(answers)
-        assert result["scaled"]["is"]["P"] == 48
+        assert set(result.keys()) == {"raw", "display", "profile"}
 
-    def test_min_score_is_12(self):
-        """Ranking P option last (rank 4) for all 12 Is questions → P(is) = 12."""
-        p_options = {
-            0: "b", 1: "a", 2: "b", 3: "c",
-            4: "a", 5: "c", 6: "d", 7: "c",
-            8: "b", 9: "a", 10: "d", 11: "c",
-        }
-        answers = []
-        for q in range(36):
-            if q < 12 and q in p_options:
-                p_opt = p_options[q]
-                non_p = [o for o in ["a", "b", "c", "d"] if o != p_opt]
-                ranks = {non_p[0]: 1, non_p[1]: 2, non_p[2]: 3, p_opt: 4}
-            else:
-                ranks = {"a": 1, "b": 2, "c": 3, "d": 4}
-            answers.append({"question_index": q, "ranks": ranks})
-
-        result = score_answers(answers)
-        assert result["scaled"]["is"]["P"] == 12
-
-    def test_scores_sum_to_120_per_section(self):
-        """Across all 4 roles, each section must sum to exactly 120 (10 pts × 12 questions)."""
+    def test_raw_sums_to_132_per_section(self):
+        """P+A+E+I must equal 132 per section (11 pts × 12 questions)."""
         answers = _all_rank_answers({"a": 1, "b": 2, "c": 3, "d": 4})
         result = score_answers(answers)
         for section in ["is", "should", "want"]:
-            total = sum(result["scaled"][section].values())
-            assert total == 120, f"{section} total was {total}, expected 120"
+            total = sum(result["raw"][section].values())
+            assert total == 132, f"{section} total was {total}"
 
-    def test_profile_strings_present(self):
+    def test_display_sums_to_100_per_section(self):
+        """Display% values (rounded) must sum to approximately 100 per section."""
+        answers = _all_rank_answers({"a": 1, "b": 2, "c": 3, "d": 4})
+        result = score_answers(answers)
+        for section in ["is", "should", "want"]:
+            total = sum(result["display"][section].values())
+            # Rounding may cause off-by-1
+            assert 98 <= total <= 102, f"{section} display total was {total}"
+
+    def test_max_raw_score_when_role_always_rank1(self):
+        """Ranking P option rank 1 in all 12 Is questions → raw P(is) >= 60 (before possible boost)."""
+        # P option per Is question (from SCORING_KEY):
+        p_opts = {0:"b",1:"a",2:"b",3:"c",4:"a",5:"c",6:"d",7:"c",8:"b",9:"a",10:"d",11:"c"}
+        answers = []
+        for q in range(36):
+            if q < 12:
+                p_opt = p_opts[q]
+                non_p = [o for o in "abcd" if o != p_opt]
+                answers.append({"question_index": q, "ranks": {p_opt:1, non_p[0]:2, non_p[1]:3, non_p[2]:4}})
+            else:
+                answers.append({"question_index": q, "ranks": {"a":1,"b":2,"c":3,"d":4}})
+        result = score_answers(answers)
+        assert result["raw"]["is"]["P"] >= 60
+
+    def test_min_raw_score_when_role_always_rank4(self):
+        """Ranking P option rank 4 in all 12 Is questions → P(is) = 12."""
+        p_opts = {0:"b",1:"a",2:"b",3:"c",4:"a",5:"c",6:"d",7:"c",8:"b",9:"a",10:"d",11:"c"}
+        answers = []
+        for q in range(36):
+            if q < 12:
+                p_opt = p_opts[q]
+                non_p = [o for o in "abcd" if o != p_opt]
+                answers.append({"question_index": q, "ranks": {non_p[0]:1, non_p[1]:2, non_p[2]:3, p_opt:4}})
+            else:
+                answers.append({"question_index": q, "ranks": {"a":1,"b":2,"c":3,"d":4}})
+        result = score_answers(answers)
+        assert result["raw"]["is"]["P"] == 12
+
+    def test_display_is_percentage_of_raw(self):
+        """display[section][role] ≈ round(raw[section][role] / 132 * 100)."""
+        answers = _all_rank_answers({"a": 1, "b": 2, "c": 3, "d": 4})
+        result = score_answers(answers)
+        for section in ["is", "should", "want"]:
+            for role in ["P", "A", "E", "I"]:
+                expected = round(result["raw"][section][role] / 132 * 100)
+                assert result["display"][section][role] == expected
+
+    def test_profile_strings_present_for_all_sections(self):
         answers = _all_rank_answers({"a": 1, "b": 2, "c": 3, "d": 4})
         result = score_answers(answers)
         assert set(result["profile"].keys()) == {"is", "should", "want"}
@@ -111,30 +124,4 @@ class TestScoreAnswers:
         result = score_answers(answers)
         for dim in ["is", "should", "want"]:
             for role in ["P", "A", "E", "I"]:
-                assert result["scaled"][dim][role] == 0
-
-    def test_scoring_key_covers_all_36_questions(self):
-        assert len(SCORING_KEY) == 36
-
-    def test_each_question_has_all_4_roles(self):
-        for q_idx, mapping in SCORING_KEY.items():
-            roles = set(mapping.values())
-            assert roles == {"P", "A", "E", "I"}, (
-                f"Q{q_idx} does not cover all 4 roles: {mapping}"
-            )
-
-    def test_score_in_12_to_48_range(self):
-        """All scores from a fully-answered assessment must fall in [12, 48]."""
-        answers = _all_rank_answers({"a": 1, "b": 2, "c": 3, "d": 4})
-        result = score_answers(answers)
-        for section in ["is", "should", "want"]:
-            for role in ["P", "A", "E", "I"]:
-                score = result["scaled"][section][role]
-                assert 12 <= score <= 48, f"{section}.{role} = {score} out of range"
-
-    def test_dominant_threshold_at_30(self):
-        """A role scoring exactly 30 is NOT dominant; 31 is dominant."""
-        scores_30 = {"P": 30, "A": 31, "E": 14, "I": 45}
-        profile = _build_profile_string(scores_30)
-        assert profile[0] == "p"   # P=30, not dominant
-        assert profile[1] == "A"   # A=31, dominant
+                assert result["raw"][dim][role] == 0
