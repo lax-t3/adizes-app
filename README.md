@@ -82,6 +82,7 @@ adizes-frontend/
       assessment.ts    # getQuestions; submitAssessment(cohort_id, answers) — cohort_id required
       results.ts       # getResult, getMyAssessments → CohortAssessmentHistory[] (downloadPdf removed — PDFs served from S3 via pdf_url)
       admin.ts         # cohort CRUD, member management, user management; getRespondent(userId, cohortId);
+                       #   updateCohortStatus(cohortId, status) — PATCH /admin/cohorts/{id}/status;
                        #   organisation CRUD, org node management, org employee management (addEmployee with 9 HR fields,
                        #   updateEmployee PATCH), cohort↔org linking; exportToExcel (SheetJS)
       settings.ts      # SMTP + email template CRUD
@@ -102,14 +103,21 @@ adizes-frontend/
       ForgotPassword.tsx      # Forgot-password flow: email input → sent/not_activated/error states
       ResetPassword.tsx       # Reset-password flow: reads recovery token from URL hash → set new password
       Dashboard.tsx           # PAEI results tabs + My Assessments list; all "Begin Assessment" CTAs pass ?cohort_id=
+                              #   Welcome greeting uses `user?.name || user?.email?.split('@')[0]` — email prefix fallback when name not set.
       Assessment.tsx          # 36-question flow; reads cohort_id from query param; redirects to /dashboard if missing.
                               #   Pre-assessment YouTube video intro screen shown once before Section 1 gate.
                               #   Section intro cards show a highlighted callout with ranking instructions (1st→4th) and deselect hint.
       Results.tsx             # Full PAEI results + PDF download (S3 url state machine: null→"Generating…"+check-again, set→window.open)
       AdminDashboard.tsx
-      AdminCohorts.tsx        # Cohort list + create cohort. Trash icon on empty cohorts (member_count === 0) → DELETE /admin/cohorts/{id}
+      AdminCohorts.tsx        # Cohort list + create cohort. Trash icon on empty cohorts (member_count === 0) → DELETE /admin/cohorts/{id}.
+                              #   Stats bar (active/total members/done/archived). Status filter tabs (Active/Completed/Archived).
+                              #   ⋮ action menu per cohort: Mark Completed, Archive, Restore to Active.
+                              #   Live search by name/description with yellow highlight. Sort: latest/oldest/members/completion%.
+                              #   Timeline grouping (This Month / Last 3 Months / Older) — collapses when searching.
       AdminCohortDetail.tsx   # Cohort members + resend invite; linked organisations panel; enrol from org modal.
                               #   Respondent list auto-refreshes after successful org enrolment.
+                              #   Read-only banner shown when cohort_status !== 'active' (amber for completed, gray for archived).
+                              #   Enroll User, Bulk Enroll, and Enrol from Org sections hidden for non-active cohorts.
       AdminOrganizations.tsx  # Organisation list + create org
       AdminOrgDetail.tsx      # Org tree (nodes), employee management per node, link to cohorts.
                               #   Two-tab Add/Edit modal (Identity + Employment), expandable table rows
@@ -130,7 +138,8 @@ adizes-frontend/
       orgStore.ts        # Org tree state; exports flattenTree() helper for building node-id→name map (used for Excel export)
     types/
       api.ts             # Shared API types (AuthResponse, CohortAssessmentHistory, Organisation, OrgNode,
-                         #   OrgEmployeeSummary with 9 extended HR fields, UpdateEmployeeRequest, etc.)
+                         #   OrgEmployeeSummary with 9 extended HR fields, UpdateEmployeeRequest,
+                         #   CohortSummary + CohortDetailResponse both include cohort_status field, etc.)
 ```
 
 ## Pages & Routes
