@@ -107,6 +107,9 @@ adizes-frontend/
       Assessment.tsx          # 36-question flow; reads cohort_id from query param; redirects to /dashboard if missing.
                               #   Pre-assessment YouTube video intro screen shown once before Section 1 gate.
                               #   Section intro cards show a highlighted callout with ranking instructions (1st→4th) and deselect hint.
+                              #   Submit failure shows amber panel listing incomplete questions as clickable "Jump to: Question N" buttons.
+                              #   Auto-assigned rank-4 option is locked — clicking it when all 4 are ranked is a no-op (prevents accidental deselect).
+                              #   "↑ Back to where I was" button appears when user navigated backward; jumps to their farthest reached question.
       Results.tsx             # Full PAEI results + PDF download (S3 url state machine: null→"Generating…"+check-again, set→window.open)
       AdminDashboard.tsx
       AdminCohorts.tsx        # Cohort list + create cohort. Trash icon on empty cohorts (member_count === 0) → DELETE /admin/cohorts/{id}.
@@ -118,6 +121,8 @@ adizes-frontend/
                               #   Respondent list auto-refreshes after successful org enrolment.
                               #   Read-only banner shown when cohort_status !== 'active' (amber for completed, gray for archived).
                               #   Enroll User, Bulk Enroll, and Enrol from Org sections hidden for non-active cohorts.
+                              #   "Account" column shows green Active / amber "Invite Pending" badge per respondent.
+                              #   "Resend Invite" button visible for all unactivated members (!activated), not just pending.
       AdminOrganizations.tsx  # Organisation list + create org
       AdminOrgDetail.tsx      # Org tree (nodes), employee management per node, link to cohorts.
                               #   Two-tab Add/Edit modal (Identity + Employment), expandable table rows
@@ -134,12 +139,14 @@ adizes-frontend/
       PolicyPage.tsx
     store/
       authStore.ts       # Zustand auth state (JWT, user, role)
-      assessmentStore.ts # Assessment session state including cohortId (set from ?cohort_id= query param)
+      assessmentStore.ts # Assessment session state including cohortId (set from ?cohort_id= query param).
+                         #   Tracks farthestSection + farthestQuestion (high-water mark) for "Back to where I was" feature.
       orgStore.ts        # Org tree state; exports flattenTree() helper for building node-id→name map (used for Excel export)
     types/
       api.ts             # Shared API types (AuthResponse, CohortAssessmentHistory, Organisation, OrgNode,
                          #   OrgEmployeeSummary with 9 extended HR fields, UpdateEmployeeRequest,
-                         #   CohortSummary + CohortDetailResponse both include cohort_status field, etc.)
+                         #   CohortSummary + CohortDetailResponse both include cohort_status field,
+                         #   RespondentSummary includes activated: boolean, etc.)
 ```
 
 ## Pages & Routes
