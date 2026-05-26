@@ -52,23 +52,46 @@ export interface GapDetail {
   is_score: number;
   should_score: number;
   want_score: number;
-  external_gap: number;
-  internal_gap: number;
-  external_severity: "aligned" | "watch" | "tension";
-  internal_severity: "aligned" | "watch" | "tension";
-  external_message: string;
-  internal_message: string;
+  execution_gap: number;
+  execution_gap_signed: number;
+  execution_severity: "low" | "medium" | "high";
+  execution_narrative: string;
+  engagement_gap: number;
+  engagement_gap_signed: number;
+  engagement_severity: "low" | "medium" | "high";
+  engagement_narrative: string;
+  authenticity_gap: number;
+  authenticity_gap_signed: number;
+  authenticity_severity: "low" | "medium" | "high";
+  authenticity_narrative: string;
+}
+
+export interface TopGap {
+  role: string;
+  role_name: string;
+  gap_type: "execution" | "engagement" | "authenticity";
+  gap_abs: number;
+  gap_signed: number;
+  severity: "low" | "medium" | "high";
+  narrative: string;
+  is_score: number;
+  should_score: number;
+  want_score: number;
 }
 
 export interface Interpretation {
   dominant_roles: string[];
+  identity_line: string;
   style_label: string;
   style_tagline: string;
   strengths: string;
-  blind_spots: string;
+  watchouts: string;
   working_with_others: string;
   combined_description: string | null;
   mismanagement_risks: string[];
+  at_your_best: string;
+  friction_shows_up: string;
+  early_warnings: string[];
 }
 
 export interface ResultResponse {
