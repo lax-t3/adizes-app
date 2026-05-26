@@ -85,18 +85,33 @@ const assessmentGuide: FAQItem[] = [
     a: [
       "Each question presents 4 options. You rank them in order of preference — 1st for the option most like you, through to 4th for the least.",
       "Click the option you want to rank 1st. It will be highlighted with a '1' badge.",
-      "Then click your 2nd choice, 3rd choice — the 4th option is assigned automatically.",
+      "Then click your 2nd choice, 3rd choice — the 4th option is assigned automatically once the first 3 are chosen.",
+      "The 4th option is locked once it is auto-assigned — clicking it does nothing. To change the order, click one of the first three options instead.",
       "The question advances automatically once all 4 options are ranked.",
       "On the last question, all 4 options are ranked and a Complete Assessment button appears — click it when you are ready to submit.",
     ],
   },
   {
     q: "Can I go back and change a ranking within a question?",
-    a: "Yes. Click any already-ranked option to clear it and all rankings below it, then re-rank from that point. For example, clicking your 2nd choice will clear ranks 2, 3, and 4 so you can re-order them.",
+    a: "Yes. Click any already-ranked option to clear it and all rankings below it, then re-rank from that point. For example, clicking your 2nd choice will clear ranks 2, 3, and 4 so you can re-order them. Note: clicking the auto-assigned 4th option does nothing — click a higher-ranked option to start re-ordering.",
   },
   {
     q: "Can I go back to a previous question?",
-    a: "Yes — use the Back button at the bottom of the question. If you leave a question without completing all 4 rankings, that question's partial answer is cleared so it starts fresh when you return.",
+    a: [
+      "Yes — use the Back button at the bottom of each question.",
+      "If you leave a question without completing all 4 rankings, that question's partial answer is cleared so it starts fresh when you return.",
+      "If you have navigated backward from a later question, a '↑ Back to where I was' button appears alongside the Next button. Clicking it takes you straight back to the furthest question you had already reached — no need to step through every question again.",
+    ],
+  },
+  {
+    q: "What if I try to submit and some questions are incomplete?",
+    a: [
+      "If you click Complete Assessment and any questions have not been fully ranked, an amber panel appears listing the incomplete question numbers.",
+      "Each question number is a clickable button — click it to jump directly to that question.",
+      "Answer the question, then use the '↑ Back to where I was' button to return to the submit screen instantly.",
+      "The panel updates automatically as you answer — questions disappear from the list once completed.",
+      "Once all questions are answered, the panel disappears and you can submit successfully.",
+    ],
   },
   {
     q: "How many questions are there and how long does it take?",

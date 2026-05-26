@@ -82,28 +82,40 @@ const adminFAQs: FAQItem[] = [
   {
     q: "How do I enrol users into a cohort?",
     a: [
+      "Open the cohort from the Cohorts page (only Active cohorts accept new enrolments).",
+      "Click Enrol User and enter the user's email address.",
+      "If the user already has an account and has activated it, they are added immediately and receive a dashboard link by email.",
+      "If the user has not activated their account yet (or has no account), they receive an invitation email to set their password.",
+      "You can also upload a CSV/Excel file using the Bulk Enrol option to add multiple users at once.",
+      "After enrolment, each member's Account column shows whether they are Active (password set) or Invite Pending (not yet activated).",
+    ],
+  },
+  {
+    q: "How can I tell if a user has activated their account (set their password)?",
+    a: [
       "Open the cohort from the Cohorts page.",
-      "Click Enrol Member and enter the user's email address.",
-      "If the user already has an account, they are added immediately.",
-      "If the user does not have an account yet, they will automatically receive an invitation email to set up their account and join the cohort.",
-      "You can also upload a CSV/bulk list using the Bulk Enrol option to add multiple users at once.",
+      "The respondent table has an Account column. Each member shows a coloured badge:",
+      "Green 'Active' — the user clicked their invite link and set their password. They can log in.",
+      "Amber 'Invite Pending' — the user has not activated their account yet. They cannot log in or start the assessment.",
+      "This badge is independent of assessment status. An 'Active' user may still show 'Pending' for assessment if they have not started yet.",
     ],
   },
   {
     q: "A user says they never received their invitation email. What do I do?",
     a: [
-      "Open the cohort and find the user in the member list.",
-      "If their status shows Pending, click the Resend Invite button next to their name.",
-      "Ask the user to check their spam/junk folder as well.",
+      "Open the cohort and check the user's Account badge in the member list.",
+      "If it shows amber 'Invite Pending', they have not activated yet — click the Resend Invite button next to their name.",
+      "Ask the user to check their spam/junk folder.",
       "The invite link is valid for 1 hour from the time it is sent. If the user does not act within that time, resend it again.",
+      "If the badge already shows green 'Active', the user has successfully set their password and the issue is likely a login problem rather than an invite problem.",
     ],
   },
   {
     q: "How do I view the assessment results for users in a cohort?",
     a: [
       "Go to Cohorts and open the relevant cohort.",
-      "You will see a list of all members with their assessment status (Pending or Completed).",
-      "Click on any completed member's name to view their full PAEI results, scores, gap analysis, and interpretation.",
+      "The member list shows each person's Account status (Active / Invite Pending), assessment status (Pending / In Progress / Completed), dominant style, and completion date.",
+      "Click View Results next to any completed member to see their full PAEI results, scores, gap analysis, and interpretation.",
     ],
   },
   {
@@ -124,6 +136,16 @@ const adminFAQs: FAQItem[] = [
     a: "A cohort is a group of people who take the PAEI assessment together — for example, a leadership team, a department, or a training batch. Grouping users into cohorts lets you track completion progress, compare team PAEI profiles, and export results as a group. Each user can belong to one or more cohorts.",
   },
   {
+    q: "What do the cohort statuses Active, Completed, and Archived mean?",
+    a: [
+      "Active — the cohort is open for enrolments and assessments. This is the default state.",
+      "Completed — the cohort's assessment cycle is finished. No new enrolments are accepted. Existing data is fully readable and exportable.",
+      "Archived — the cohort is closed and no longer in active use. Same rules as Completed — read-only, no new enrolments.",
+      "To change a cohort's status, go to the Cohorts list, click the ⋮ menu on the cohort row, and choose Mark Completed, Archive, or Restore to Active.",
+      "A cohort can be restored to Active at any time from the Cohorts list if you need to re-open enrolments.",
+    ],
+  },
+  {
     q: "Can a user take the assessment more than once?",
     a: "Each user can take the assessment once per session. If they need to retake it (for example, after a significant role change), contact technical support at team@turiyaskills.co to reset their assessment.",
   },
@@ -135,7 +157,8 @@ const dosDonts: FAQItem[] = [
     a: [
       "Always double-check the email address before sending an invite — typos cannot be corrected after the invite is sent.",
       "Tell the user to complete the registration in one go without closing the browser tab — the invite link works only once.",
-      "Use Resend Invite if a user reports not receiving the email or if the link expired.",
+      "Use the Account column (Active / Invite Pending) to check whether a user has activated before assuming they have a login problem.",
+      "Use Resend Invite if a user reports not receiving the email, if the link expired, or if their Account badge still shows Invite Pending — the button is visible for any unactivated member.",
       "Create a separate cohort for each distinct group or programme to keep results organised.",
     ],
   },
