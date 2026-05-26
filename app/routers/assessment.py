@@ -25,7 +25,7 @@ def _build_pdf_payload(result_id: str, user_name: str, now: str,
         "user_name": user_name,
         "completed_at": now,
         "profile": scores["profile"],
-        "scaled_scores": scores["scaled"],
+        "scaled_scores": scores["display"],   # display% 0-100 for bar widths
         "gaps": gaps,
         "interpretation": interp,
     }
@@ -171,8 +171,8 @@ def submit_assessment(body: SubmitRequest, background_tasks: BackgroundTasks, us
 
     # Score
     scores = score_answers(answers_dicts)
-    gaps = compute_gaps(scores["scaled"])
-    interp = interpret(scores["scaled"], scores["profile"])
+    gaps = compute_gaps(scores["raw"])
+    interp = interpret(scores["raw"], scores["profile"], gaps=gaps)
 
     result_id = str(uuid.uuid4())
     now = datetime.now(timezone.utc).isoformat()
@@ -185,7 +185,7 @@ def submit_assessment(body: SubmitRequest, background_tasks: BackgroundTasks, us
         "cohort_id": cohort_id,
         "completed_at": now,
         "raw_scores": scores["raw"],
-        "scaled_scores": scores["scaled"],
+        "scaled_scores": scores["display"],
         "profile": scores["profile"],
         "gaps": [g for g in gaps],
         "interpretation": interp,
