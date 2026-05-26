@@ -128,6 +128,7 @@ export interface CohortSummary {
   completed_count: number;
   completion_pct: number;
   created_at: string;
+  cohort_status: string;   // 'active' | 'completed' | 'archived'
 }
 
 export interface RespondentSummary {
@@ -148,6 +149,7 @@ export interface CohortDetailResponse {
   id: string;
   name: string;
   description: string | null;
+  cohort_status: string;   // 'active' | 'completed' | 'archived'
   respondents: RespondentSummary[];
   team_scores: TeamScores | null;
 }

@@ -1,13 +1,14 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent } from "@/components/ui/Card";
 import {
   Plus, Users, ArrowRight, X, Loader2, Trash2, Search,
-  CalendarDays, CheckCircle2, Clock, SortAsc,
+  CalendarDays, CheckCircle2, Clock, SortAsc, MoreVertical,
+  Archive, RotateCcw, CheckSquare,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
-import { listCohorts, createCohort, deleteCohort } from "@/api/admin";
+import { listCohorts, createCohort, deleteCohort, updateCohortStatus } from "@/api/admin";
 import type { CohortSummary } from "@/types/api";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -31,16 +32,14 @@ function timelineBucket(iso: string): "this-month" | "last-3-months" | "older" {
   return "older";
 }
 
-function completionStatus(pct: number, memberCount: number): {
-  label: string; color: string; bg: string; dot: string;
-} {
-  if (memberCount === 0) return { label: "Empty",    color: "text-gray-500",  bg: "bg-gray-50 border-gray-200",   dot: "bg-gray-400" };
-  if (pct === 100)       return { label: "Complete",  color: "text-green-700", bg: "bg-green-50 border-green-200", dot: "bg-green-500" };
-  if (pct >= 50)         return { label: "Active",    color: "text-blue-700",  bg: "bg-blue-50 border-blue-200",   dot: "bg-blue-500" };
+function completionStatus(pct: number, memberCount: number) {
+  if (memberCount === 0) return { label: "Empty",       color: "text-gray-500",  bg: "bg-gray-50 border-gray-200",   dot: "bg-gray-400" };
+  if (pct === 100)       return { label: "Complete",    color: "text-green-700", bg: "bg-green-50 border-green-200", dot: "bg-green-500" };
+  if (pct >= 50)         return { label: "Active",      color: "text-blue-700",  bg: "bg-blue-50 border-blue-200",   dot: "bg-blue-500" };
   return                        { label: "In Progress", color: "text-amber-700", bg: "bg-amber-50 border-amber-200", dot: "bg-amber-400" };
 }
 
-// ─── Sort options ─────────────────────────────────────────────────────────────
+// ─── Sort ─────────────────────────────────────────────────────────────────────
 
 type SortKey = "latest" | "oldest" | "members" | "completion";
 
@@ -59,6 +58,90 @@ function sortCohorts(cohorts: CohortSummary[], key: SortKey): CohortSummary[] {
     if (key === "completion") return b.completion_pct - a.completion_pct;
     return 0;
   });
+}
+
+// ─── Status filter tabs ───────────────────────────────────────────────────────
+
+type StatusFilter = "active" | "completed" | "archived";
+
+const STATUS_TABS: { value: StatusFilter; label: string }[] = [
+  { value: "active",    label: "Active" },
+  { value: "completed", label: "Completed" },
+  { value: "archived",  label: "Archived" },
+];
+
+// ─── Cohort action menu ───────────────────────────────────────────────────────
+
+function CohortActionMenu({
+  cohort,
+  onStatusChange,
+}: {
+  cohort: CohortSummary;
+  onStatusChange: (id: string, status: "active" | "completed" | "archived") => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  const cs = cohort.cohort_status as StatusFilter;
+
+  const actions: { label: string; icon: React.ReactNode; next: "active" | "completed" | "archived"; danger?: boolean }[] = [];
+
+  if (cs === "active") {
+    actions.push({ label: "Mark as Completed", icon: <CheckSquare className="h-3.5 w-3.5" />, next: "completed" });
+    actions.push({ label: "Archive",            icon: <Archive className="h-3.5 w-3.5" />,    next: "archived",  danger: true });
+  }
+  if (cs === "completed") {
+    actions.push({ label: "Restore to Active",  icon: <RotateCcw className="h-3.5 w-3.5" />,  next: "active" });
+    actions.push({ label: "Archive",            icon: <Archive className="h-3.5 w-3.5" />,    next: "archived",  danger: true });
+  }
+  if (cs === "archived") {
+    actions.push({ label: "Restore to Active",  icon: <RotateCcw className="h-3.5 w-3.5" />,  next: "active" });
+  }
+
+  if (actions.length === 0) return null;
+
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        onClick={() => setOpen(v => !v)}
+        className="flex h-8 w-8 items-center justify-center rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+        title="Actions"
+      >
+        <MoreVertical className="h-4 w-4" />
+      </button>
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: -4 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: -4 }}
+            transition={{ duration: 0.1 }}
+            className="absolute right-0 top-9 z-20 min-w-[180px] rounded-xl border border-gray-100 bg-white shadow-lg py-1.5"
+          >
+            {actions.map((a) => (
+              <button
+                key={a.next}
+                onClick={() => { onStatusChange(cohort.id, a.next); setOpen(false); }}
+                className={`flex w-full items-center gap-2.5 px-3.5 py-2 text-sm transition-colors hover:bg-gray-50
+                  ${a.danger ? "text-red-600" : "text-gray-700"}`}
+              >
+                {a.icon}
+                {a.label}
+              </button>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
 }
 
 // ─── Create modal ─────────────────────────────────────────────────────────────
@@ -141,13 +224,16 @@ function CreateCohortModal({
 function CohortCard({
   cohort,
   onDelete,
+  onStatusChange,
   query,
 }: {
   cohort: CohortSummary;
   onDelete: (c: CohortSummary) => void;
+  onStatusChange: (id: string, status: "active" | "completed" | "archived") => void;
   query: string;
 }) {
-  const status = completionStatus(cohort.completion_pct, cohort.member_count);
+  const progressStatus = completionStatus(cohort.completion_pct, cohort.member_count);
+  const isInactive = cohort.cohort_status !== "active";
 
   function highlight(text: string) {
     if (!query) return <>{text}</>;
@@ -170,22 +256,33 @@ function CohortCard({
       exit={{ opacity: 0, y: -4 }}
       transition={{ duration: 0.18 }}
     >
-      <Card className="hover:border-primary/40 hover:shadow-md transition-all duration-150 shadow-sm">
+      <Card className={`transition-all duration-150 shadow-sm ${
+        isInactive
+          ? "opacity-70 bg-gray-50 hover:opacity-90"
+          : "hover:border-primary/40 hover:shadow-md"
+      }`}>
         <CardContent className="p-5">
           <div className="flex items-start justify-between gap-4">
-            {/* Left — icon + text */}
+            {/* Left */}
             <div className="flex items-start gap-3 min-w-0">
-              <div className="mt-0.5 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-gray-100 text-gray-500">
-                <Users className="h-5 w-5" />
+              <div className={`mt-0.5 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg ${
+                isInactive ? "bg-gray-200 text-gray-400" : "bg-gray-100 text-gray-500"
+              }`}>
+                {cohort.cohort_status === "archived"
+                  ? <Archive className="h-5 w-5" />
+                  : cohort.cohort_status === "completed"
+                    ? <CheckSquare className="h-5 w-5" />
+                    : <Users className="h-5 w-5" />
+                }
               </div>
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2 mb-0.5">
                   <h3 className="text-base font-semibold text-gray-900 truncate">
                     {highlight(cohort.name)}
                   </h3>
-                  <span className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full border ${status.bg} ${status.color}`}>
-                    <span className={`h-1.5 w-1.5 rounded-full ${status.dot}`} />
-                    {status.label}
+                  <span className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full border ${progressStatus.bg} ${progressStatus.color}`}>
+                    <span className={`h-1.5 w-1.5 rounded-full ${progressStatus.dot}`} />
+                    {progressStatus.label}
                   </span>
                 </div>
                 {cohort.description && (
@@ -212,7 +309,7 @@ function CohortCard({
               </div>
             </div>
 
-            {/* Right — progress + actions */}
+            {/* Right */}
             <div className="flex flex-shrink-0 flex-col items-end gap-3">
               {cohort.member_count > 0 && (
                 <div className="flex items-center gap-2">
@@ -228,7 +325,7 @@ function CohortCard({
                 </div>
               )}
               <div className="flex items-center gap-2">
-                {cohort.member_count === 0 && (
+                {cohort.member_count === 0 && cohort.cohort_status === "active" && (
                   <Button
                     variant="outline"
                     size="sm"
@@ -238,6 +335,7 @@ function CohortCard({
                     <Trash2 className="h-3.5 w-3.5" />
                   </Button>
                 )}
+                <CohortActionMenu cohort={cohort} onStatusChange={onStatusChange} />
                 <Link to={`/admin/cohorts/${cohort.id}`}>
                   <Button variant="outline" size="sm">
                     View <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
@@ -273,18 +371,16 @@ function GroupHeader({ label, count }: { label: string; count: number }) {
 // ─── Stats bar ────────────────────────────────────────────────────────────────
 
 function StatsBar({ cohorts }: { cohorts: CohortSummary[] }) {
-  const total   = cohorts.length;
-  const members = cohorts.reduce((s, c) => s + c.member_count, 0);
-  const done    = cohorts.reduce((s, c) => s + c.completed_count, 0);
-  const avgPct  = total > 0
-    ? Math.round(cohorts.reduce((s, c) => s + c.completion_pct, 0) / total)
-    : 0;
+  const active   = cohorts.filter(c => c.cohort_status === "active").length;
+  const members  = cohorts.reduce((s, c) => s + c.member_count, 0);
+  const done     = cohorts.reduce((s, c) => s + c.completed_count, 0);
+  const archived = cohorts.filter(c => c.cohort_status === "archived").length;
 
   const stats = [
-    { icon: <Users className="h-4 w-4" />,        value: total,   label: "Cohorts" },
-    { icon: <Users className="h-4 w-4" />,        value: members, label: "Total Members" },
-    { icon: <CheckCircle2 className="h-4 w-4" />, value: done,    label: "Completed" },
-    { icon: <Clock className="h-4 w-4" />,        value: `${avgPct}%`, label: "Avg Completion" },
+    { icon: <Users className="h-4 w-4" />,        value: active,   label: "Active Cohorts" },
+    { icon: <Users className="h-4 w-4" />,        value: members,  label: "Total Members" },
+    { icon: <CheckCircle2 className="h-4 w-4" />, value: done,     label: "Assessments Done" },
+    { icon: <Archive className="h-4 w-4" />,      value: archived, label: "Archived" },
   ];
 
   return (
@@ -305,12 +401,13 @@ function StatsBar({ cohorts }: { cohorts: CohortSummary[] }) {
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 export function AdminCohorts() {
-  const [cohorts, setCohorts]     = useState<CohortSummary[]>([]);
-  const [loading, setLoading]     = useState(true);
-  const [error, setError]         = useState("");
+  const [cohorts, setCohorts]       = useState<CohortSummary[]>([]);
+  const [loading, setLoading]       = useState(true);
+  const [error, setError]           = useState("");
   const [showCreate, setShowCreate] = useState(false);
-  const [query, setQuery]         = useState("");
-  const [sort, setSort]           = useState<SortKey>("latest");
+  const [query, setQuery]           = useState("");
+  const [sort, setSort]             = useState<SortKey>("latest");
+  const [statusTab, setStatusTab]   = useState<StatusFilter>("active");
 
   useEffect(() => {
     listCohorts()
@@ -333,21 +430,40 @@ export function AdminCohorts() {
     }
   };
 
-  // Filter + sort
+  const handleStatusChange = async (id: string, next: "active" | "completed" | "archived") => {
+    try {
+      const updated = await updateCohortStatus(id, next);
+      setCohorts(prev => prev.map(c => c.id === id ? { ...c, cohort_status: updated.cohort_status } : c));
+    } catch (err: any) {
+      alert(err?.response?.data?.detail ?? "Failed to update cohort status.");
+    }
+  };
+
+  // Filter by status tab + search + sort
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    const list = q
-      ? cohorts.filter(c =>
-          c.name.toLowerCase().includes(q) ||
-          (c.description ?? "").toLowerCase().includes(q)
-        )
-      : cohorts;
+    let list = cohorts.filter(c => c.cohort_status === statusTab);
+    if (q) {
+      list = list.filter(c =>
+        c.name.toLowerCase().includes(q) ||
+        (c.description ?? "").toLowerCase().includes(q)
+      );
+    }
     return sortCohorts(list, sort);
-  }, [cohorts, query, sort]);
+  }, [cohorts, query, sort, statusTab]);
 
-  // Group into timeline buckets (only when not searching)
+  // Tab counts (unfiltered by search)
+  const tabCounts = useMemo(() => {
+    const counts: Record<StatusFilter, number> = { active: 0, completed: 0, archived: 0 };
+    for (const c of cohorts) {
+      if (c.cohort_status in counts) counts[c.cohort_status as StatusFilter]++;
+    }
+    return counts;
+  }, [cohorts]);
+
+  // Timeline groups (only when not searching)
   const groups = useMemo(() => {
-    if (query.trim()) return null; // flat list when searching
+    if (query.trim()) return null;
     const buckets: Record<string, CohortSummary[]> = {
       "this-month": [], "last-3-months": [], "older": [],
     };
@@ -394,24 +510,44 @@ export function AdminCohorts() {
 
         {!loading && !error && cohorts.length > 0 && (
           <>
-            {/* Stats */}
             <StatsBar cohorts={cohorts} />
 
-            {/* Search + sort toolbar */}
+            {/* Status tabs */}
+            <div className="flex gap-1 bg-gray-100 p-1 rounded-xl w-fit mb-5">
+              {STATUS_TABS.map(t => (
+                <button
+                  key={t.value}
+                  onClick={() => { setStatusTab(t.value); setQuery(""); }}
+                  className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                    statusTab === t.value
+                      ? "bg-white shadow-sm text-gray-900"
+                      : "text-gray-500 hover:text-gray-700"
+                  }`}
+                >
+                  {t.label}
+                  {tabCounts[t.value] > 0 && (
+                    <span className={`text-xs rounded-full px-1.5 py-0.5 font-semibold ${
+                      statusTab === t.value ? "bg-primary text-white" : "bg-gray-200 text-gray-500"
+                    }`}>
+                      {tabCounts[t.value]}
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
+
+            {/* Search + sort */}
             <div className="flex flex-wrap items-center gap-3 mb-4">
               <div className="relative flex-1 min-w-[200px]">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
                 <input
                   value={query}
                   onChange={e => setQuery(e.target.value)}
-                  placeholder="Search cohorts by name or description…"
+                  placeholder="Search by name or description…"
                   className="w-full h-9 pl-9 pr-9 rounded-lg border border-gray-200 text-sm bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
                 />
                 {query && (
-                  <button
-                    onClick={() => setQuery("")}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                  >
+                  <button onClick={() => setQuery("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
                     <X className="h-3.5 w-3.5" />
                   </button>
                 )}
@@ -430,51 +566,49 @@ export function AdminCohorts() {
               </div>
             </div>
 
-            {/* Result count when searching */}
             {query.trim() && (
               <p className="text-sm text-gray-500 mb-3">
                 {filtered.length === 0
-                  ? `No cohorts match "${query}"`
+                  ? `No ${statusTab} cohorts match "${query}"`
                   : `${filtered.length} cohort${filtered.length !== 1 ? "s" : ""} match "${query}"`}
               </p>
             )}
 
-            {/* Cohort list */}
+            {/* Empty state for tab */}
+            {filtered.length === 0 && !query.trim() && (
+              <div className="text-center py-14 text-gray-400">
+                {statusTab === "active"    && <Users className="h-10 w-10 mx-auto mb-3 opacity-30" />}
+                {statusTab === "completed" && <CheckSquare className="h-10 w-10 mx-auto mb-3 opacity-30" />}
+                {statusTab === "archived"  && <Archive className="h-10 w-10 mx-auto mb-3 opacity-30" />}
+                <p className="text-base font-medium">No {statusTab} cohorts</p>
+                {statusTab === "active" && <p className="text-sm mt-1">Create a cohort to get started.</p>}
+                {statusTab === "completed" && <p className="text-sm mt-1">Mark active cohorts as complete from the actions menu.</p>}
+                {statusTab === "archived" && <p className="text-sm mt-1">Archive cohorts from the actions menu to keep them for records.</p>}
+              </div>
+            )}
+
             <AnimatePresence mode="popLayout">
-              {query.trim() ? (
-                // Flat list when searching
-                filtered.length > 0 ? (
+              {filtered.length > 0 && (
+                query.trim() ? (
                   <div className="flex flex-col gap-3">
                     {filtered.map(c => (
-                      <CohortCard key={c.id} cohort={c} onDelete={handleDelete} query={query} />
+                      <CohortCard key={c.id} cohort={c} onDelete={handleDelete} onStatusChange={handleStatusChange} query={query} />
                     ))}
                   </div>
                 ) : (
-                  <motion.div
-                    key="empty"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="text-center py-16 text-gray-400"
-                  >
-                    <Search className="h-10 w-10 mx-auto mb-3 opacity-30" />
-                    <p className="text-base font-medium">No results</p>
-                    <p className="text-sm mt-1">Try a different name or description.</p>
-                  </motion.div>
-                )
-              ) : (
-                // Grouped timeline view
-                <div>
-                  {groups?.map(group => (
-                    <div key={group.key}>
-                      <GroupHeader label={group.label} count={group.items.length} />
-                      <div className="flex flex-col gap-3">
-                        {group.items.map(c => (
-                          <CohortCard key={c.id} cohort={c} onDelete={handleDelete} query="" />
-                        ))}
+                  <div>
+                    {groups?.map(group => (
+                      <div key={group.key}>
+                        <GroupHeader label={group.label} count={group.items.length} />
+                        <div className="flex flex-col gap-3">
+                          {group.items.map(c => (
+                            <CohortCard key={c.id} cohort={c} onDelete={handleDelete} onStatusChange={handleStatusChange} query="" />
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )
               )}
             </AnimatePresence>
           </>

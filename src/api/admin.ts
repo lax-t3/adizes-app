@@ -26,6 +26,17 @@ export async function deleteCohort(cohortId: string): Promise<void> {
   await apiClient.delete(`/admin/cohorts/${cohortId}`);
 }
 
+export async function updateCohortStatus(
+  cohortId: string,
+  cohort_status: "active" | "completed" | "archived",
+): Promise<CohortSummary> {
+  const { data } = await apiClient.patch<CohortSummary>(
+    `/admin/cohorts/${cohortId}/status`,
+    { cohort_status },
+  );
+  return data;
+}
+
 export async function getCohort(cohortId: string): Promise<CohortDetailResponse> {
   const { data } = await apiClient.get<CohortDetailResponse>(`/admin/cohorts/${cohortId}`);
   return data;

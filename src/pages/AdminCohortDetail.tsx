@@ -3,7 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
-import { Download, ArrowLeft, Users, FileText, UserPlus, X, Loader2, Trash2, Upload, CheckCircle2, AlertCircle, MinusCircle, MailCheck, Plus } from "lucide-react";
+import { Download, ArrowLeft, Users, FileText, UserPlus, X, Loader2, Trash2, Upload, CheckCircle2, AlertCircle, MinusCircle, MailCheck, Plus, Archive, CheckSquare, Lock } from "lucide-react";
 import { motion } from "motion/react";
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -552,6 +552,26 @@ export function AdminCohortDetail() {
           <Link to="/admin/cohorts" className="inline-flex items-center text-sm font-medium text-gray-500 hover:text-gray-900 mb-4 transition-colors">
             <ArrowLeft className="mr-2 h-4 w-4" /> Back to Cohorts
           </Link>
+
+          {/* Read-only banner for completed / archived cohorts */}
+          {cohort.cohort_status !== "active" && (
+            <div className={`flex items-center gap-3 rounded-xl border px-4 py-3 mb-5 text-sm font-medium ${
+              cohort.cohort_status === "archived"
+                ? "bg-gray-50 border-gray-200 text-gray-600"
+                : "bg-amber-50 border-amber-200 text-amber-800"
+            }`}>
+              {cohort.cohort_status === "archived"
+                ? <Archive className="h-4 w-4 flex-shrink-0" />
+                : <CheckSquare className="h-4 w-4 flex-shrink-0" />}
+              <span>
+                This cohort is <strong>{cohort.cohort_status}</strong>.
+                It is read-only — no new enrolments can be added.
+                You can restore it to Active from the Cohorts list.
+              </span>
+              <Lock className="h-4 w-4 flex-shrink-0 ml-auto opacity-50" />
+            </div>
+          )}
+
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <h1 className="text-3xl font-display font-bold text-gray-900">{cohort.name}</h1>
@@ -561,12 +581,16 @@ export function AdminCohortDetail() {
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
-              <Button variant="outline" onClick={() => setShowEnroll(true)}>
-                <UserPlus className="mr-2 h-4 w-4" /> Enroll User
-              </Button>
-              <Button variant="outline" onClick={() => setShowBulkEnroll(true)}>
-                <Upload className="mr-2 h-4 w-4" /> Bulk Enroll
-              </Button>
+              {cohort.cohort_status === "active" && (
+                <>
+                  <Button variant="outline" onClick={() => setShowEnroll(true)}>
+                    <UserPlus className="mr-2 h-4 w-4" /> Enroll User
+                  </Button>
+                  <Button variant="outline" onClick={() => setShowBulkEnroll(true)}>
+                    <Upload className="mr-2 h-4 w-4" /> Bulk Enroll
+                  </Button>
+                </>
+              )}
               <Button variant="outline" onClick={handleExport} disabled={exporting}>
                 {exporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
                 Export CSV
@@ -763,7 +787,7 @@ export function AdminCohortDetail() {
             </div>
           )}
 
-          {linkedOrgs.length > 0 && (
+          {linkedOrgs.length > 0 && cohort.cohort_status === "active" && (
             linkedOrgs.length === 1 ? (
               <button
                 onClick={async () => {
