@@ -1,6 +1,6 @@
 # adizes-backend
 
-FastAPI backend for the **Adizes PAEI Management Style Assessment** platform.
+FastAPI backend for the **Adizes PAEI Management Style Assessment** platform (**Adizes90** individual assessment tool; Adizes360 multi-rater is Phase 2 — pending).
 
 ## Tech Stack
 
@@ -12,9 +12,22 @@ FastAPI backend for the **Adizes PAEI Management Style Assessment** platform.
 | Auth | Supabase Auth (JWT — ES256 local / HS256 cloud) |
 | PDF (v2, active) | AWS Lambda Docker + Puppeteer + EJS + HTML div bars → S3 (`adizes-pdf-generator-v2`) |
 | PDF (v1, preserved) | AWS Lambda Docker + Puppeteer 22 + EJS + Chart.js → S3 (`adizes-pdf-generator`) |
-| PDF (fallback) | WeasyPrint + Jinja2 (server-side, used for email attachments) |
+| PDF (fallback) | WeasyPrint + Jinja2 (server-side, kept for reference) |
 | Email | Python smtplib (AWS SES / Gmail / Resend / Custom SMTP) |
 | Container | Docker |
+
+## Scoring Model (Adizes90 — 132-scale ranking)
+
+| Concept | Value |
+|---------|-------|
+| Sections | 3 (Is / Should / Want) |
+| Questions per section | 12 |
+| Options per question | 4 (P, A, E, I — ranked 1st → 4th) |
+| Rank points | 1st = 5 · 2nd = 3 · 3rd = 2 · 4th = 1 |
+| Total per section | 12 × 11 = **132 points** |
+| Dominant threshold | **33** (= 132 ÷ 4); score > 33 → capital letter |
+| Gap types | Execution `\|should−is\|` · Engagement `\|should−want\|` · Authenticity `\|is−want\|` |
+| Severity thresholds | < 6 low · 6–15 medium · > 15 high |
 
 ## Local Development
 
@@ -264,6 +277,7 @@ adizes-backend/
     007_organizations.sql               # organisations, org_nodes, org_employees, cohort_organizations tables
     008_employee_extended_fields.sql    # 9 new HR columns on org_employees (emp_status, last/middle name, gender, language, manager_email, DOB, emp_date, head_of_dept)
     009_employee_name_column.sql        # adds name (first name) column to org_employees (was missing from original schema)
+    010_clean_slate.sql                 # DELETE FROM assessments — pilot data wipe (applied 2026-05-26)
   # Note: org_employees has NO email column — email is in auth.users, resolved via user_id → _get_auth_users_map()
   supabase/migrations/
     20260319000007_organizations.sql    # Supabase CLI-tracked copy of 007 (applied to cloud via supabase db push)
@@ -422,17 +436,22 @@ Two versions are deployed; v2 is active (controlled by `PDF_LAMBDA_FUNCTION_NAME
 
 ```
 POST /assessment/submit
-  └── BackgroundTask: boto3.invoke(Lambda, InvocationType="Event")
+  └── BackgroundTask: boto3.invoke(Lambda, InvocationType="RequestResponse")  ← synchronous
+  └── Lambda returns { statusCode, pdf_url }
+  └── Backend patches assessments.pdf_url (redundant safety net)
 
 Lambda v2 (lambda/pdf-generator-v2/):   ← ACTIVE
   EJS render → inline assets → Puppeteer → HTML div bars (no Chart.js)
-  → page.pdf() → S3 PutObject (public-read)
-  → Supabase PATCH assessments.pdf_url
+  → page.pdf() → S3 PutObject
+  → Supabase PATCH assessments.pdf_url  ← Lambda patches DB directly (primary)
 
 Lambda v1 (lambda/pdf-generator/):      ← PRESERVED, not active
   EJS render → inline assets → Puppeteer → Chart.js charts
   → page.pdf() → S3 PutObject → Supabase PATCH
 ```
+
+**Two-layer Supabase patching**: Lambda patches Supabase itself (primary). Backend also patches
+from the returned `pdf_url` (redundant fallback). Both must use the **production** service role key.
 
 ### Report: v2 vs v1
 
@@ -465,25 +484,51 @@ No code changes or redeployment needed — App Runner env var change takes effec
 
 ### Re-trigger PDF for a stuck assessment (pdf_url = null)
 
-If a user's `pdf_url` is null after submission (Lambda failed silently), invoke v2 directly:
+> **Do NOT use `aws lambda invoke --payload file://`** — AWS CLI v2 double-encodes the payload
+> and throws `Invalid base64`. Use Python boto3 instead.
 
-```bash
-AWS_PROFILE=lax-t3-assumed aws lambda invoke \
-  --function-name adizes-pdf-generator-v2 \
-  --region ap-south-1 \
-  --invocation-type RequestResponse \
-  --payload '{"assessment_id":"<uuid>","user_name":"...","completed_at":"...","profile":{...},"scaled_scores":{...},"gaps":[...],"interpretation":{...}}' \
-  --cli-binary-format raw-in-base64-out \
-  /tmp/response.json && cat /tmp/response.json
+```python
+# save assessment row from Supabase as payload.json first, then:
+import boto3, json
+session = boto3.Session(profile_name='lax-t3-assumed')
+client  = session.client('lambda', region_name='ap-south-1')
+with open('/tmp/lambda-payload.json') as f:
+    payload = json.load(f)
+resp = client.invoke(
+    FunctionName='adizes-pdf-generator-v2',
+    InvocationType='RequestResponse',
+    Payload=json.dumps(payload).encode('utf-8'),
+)
+print(json.loads(resp['Payload'].read()))
+# → {"statusCode": 200, "assessment_id": "...", "pdf_url": "https://..."}
 ```
 
-Fetch the full payload from Supabase first:
+The Lambda patches Supabase directly on success — no backend interaction needed.
+
+Payload fields required: `assessment_id`, `user_name`, `completed_at`, `profile`,
+`scaled_scores`, `gaps` (array with execution/engagement/authenticity fields), `interpretation`.
+
+### Lambda env var — SUPABASE_SERVICE_ROLE_KEY must be production key
+
+The Lambda's `SUPABASE_SERVICE_ROLE_KEY` env var must be the **production Supabase HS256 JWT**,
+not the local dev ES256 key. Using the wrong key causes silent 401 failures — the Lambda returns
+200 but never patches `assessments.pdf_url`. Verify with:
+
 ```bash
-SUPA_URL="https://swiznkamzxyfzgckebqi.supabase.co"
-SUPA_KEY="<service-role-key>"
-curl -s "${SUPA_URL}/rest/v1/assessments?id=eq.<uuid>&select=*" \
-  -H "apikey: ${SUPA_KEY}" -H "Authorization: Bearer ${SUPA_KEY}"
+AWS_PROFILE=lax-t3-assumed aws lambda get-function-configuration \
+  --function-name adizes-pdf-generator-v2 --region ap-south-1 \
+  --query 'Environment.Variables.SUPABASE_URL'
 ```
+
+The production URL should be `https://swiznkamzxyfzgckebqi.supabase.co`. If updating the key,
+use `aws lambda update-function-configuration --environment ...` with all three vars:
+`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `S3_BUCKET_NAME`.
+
+### Lambda IAM — direct invoke (no STS)
+
+`LAMBDA_INVOKE_ROLE_ARN` must be empty on App Runner. The Lambda has a resource-based policy
+granting `adizes-backend-lambda-invoker` direct `lambda:InvokeFunction` on `adizes-pdf-generator-v2`.
+The managed IAM policy only covers v1; resource policy was the fix that didn't require new IAM permissions.
 
 ### AWS Pre-requisites (one-time)
 
@@ -509,6 +554,22 @@ The deploying IAM role needs:
   ```json
   { "Effect": "Allow", "Action": "iam:PassRole", "Resource": "arn:aws:iam::*:role/adizes-pdf-lambda-role" }
   ```
+
+## Adizes360 — Phase 2 (pending)
+
+The current platform implements **Adizes90** — an individual self-assessment across three
+dimensions (Is / Should / Want). **Adizes360** is the planned Phase 2: a multi-rater 360°
+instrument where peers, direct reports, and a manager each rate the subject independently.
+
+Planned scope:
+- Rater role types and cohort assignment workflow
+- Multi-respondent data collection (subject + N raters per cohort membership)
+- Aggregated rater scores vs self-scores
+- Gap analysis: self perception vs others' perception
+- Admin workflow for composing rater groups and sending invitations
+- Results page showing self vs composite-rater comparison
+
+No implementation has started. Design spec TBD.
 
 ## Related
 

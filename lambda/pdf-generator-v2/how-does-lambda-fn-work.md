@@ -2,30 +2,33 @@
 
 ## Overview
 
-Lambda v2 generates the **PAEI Energy Alignment Profile** — a 5-page PDF replacing the
-9-page AMSI report. It runs asynchronously: FastAPI fires it as a `BackgroundTask` after
-saving the assessment, so the user gets their result page immediately.
+Lambda v2 generates the **PAEI Energy Alignment Profile** — a 5-page PDF for each completed
+Adizes90 assessment. FastAPI fires it as a `BackgroundTask` after saving the assessment, so the
+user gets their result page immediately while the PDF is generated in the background.
 
 Key differences from v1:
 - No Chart.js — all visuals are HTML `<div>` bars with inline width percentages
 - 5 pages instead of 9 (no PAEI theory sections)
-- New tension logic: Role Pressure / Energy Tension / Identity Drift
+- 3 gap types (132-scale): Execution, Engagement, Authenticity (not Role Pressure / Energy Tension / Identity Drift from the old naming)
 - Faster render (no `addScriptTag`, no `page.evaluate`, no `waitForFunction`)
 
 ---
 
-## Trigger
+## Trigger Flow
 
 ```
 POST /assessment/submit
-  └── score answers
-  └── save to DB (assessments table)
-  └── BackgroundTask: boto3.invoke(adizes-pdf-generator-v2, InvocationType="Event")
+  └── score answers → save to DB (assessments table)
+  └── BackgroundTask: _trigger_pdf_lambda(assessment_id, payload)
+        └── boto3.invoke(adizes-pdf-generator-v2, InvocationType="RequestResponse")  ← synchronous
+        └── Lambda returns { statusCode: 200, pdf_url: "https://..." }
+        └── Backend patches assessments.pdf_url (redundant safety net)
   └── return { result_id } to frontend immediately
 ```
 
-`InvocationType="Event"` is fire-and-forget. If the trigger fails, the error is logged
-and swallowed — the assessment is always saved.
+`InvocationType="RequestResponse"` (synchronous). Lambda generates PDF, uploads to S3, and patches
+Supabase itself. Backend also patches from the returned URL as a redundant fallback. If the trigger
+fails, the error is logged and swallowed — the assessment is always saved.
 
 **Payload sent to Lambda:**
 
@@ -33,66 +36,66 @@ and swallowed — the assessment is always saved.
 {
   "assessment_id": "<uuid>",
   "user_name": "Jane Smith",
-  "completed_at": "2026-04-19T14:25:46Z",
-  "profile": { "is": "PAei", "should": "PAei", "want": "pAeI" },
+  "completed_at": "2026-05-26T08:09:05Z",
+  "profile": { "is": "PAei", "should": "pAEi", "want": "PAei" },
   "scaled_scores": {
-    "is":     { "P": 32, "A": 32, "E": 29, "I": 27 },
-    "should": { "P": 32, "A": 37, "E": 24, "I": 27 },
-    "want":   { "P": 29, "A": 31, "E": 28, "I": 32 }
+    "is":     { "P": 26, "A": 33, "E": 18, "I": 23 },
+    "should": { "P": 25, "A": 26, "E": 26, "I": 23 },
+    "want":   { "P": 27, "A": 27, "E": 21, "I": 25 }
   },
   "gaps": [
     {
-      "role": "A", "is_score": 32, "should_score": 37, "want_score": 31,
-      "external_gap": 5, "internal_gap": 1,
-      "external_message": "...", "internal_message": "...",
-      "external_severity": "watch", "internal_severity": "aligned"
-    },
-    ...
+      "role": "A", "role_name": "Administrator",
+      "is_score": 44, "should_score": 34, "want_score": 36,
+      "execution_gap": 10, "execution_gap_signed": -10, "execution_severity": "medium",
+      "execution_narrative": "You are more process-focused than your role demands...",
+      "engagement_gap": 2, "engagement_gap_signed": -2, "engagement_severity": "low",
+      "engagement_narrative": "...",
+      "authenticity_gap": 8, "authenticity_gap_signed": 8, "authenticity_severity": "medium",
+      "authenticity_narrative": "..."
+    }
   ],
   "interpretation": {
-    "style_label": "Integrator",
-    "style_tagline": "The Cohesive Shepherd",
-    "combined_description": "The Steady Team Builder — ...",
-    "dominant_roles": ["A", "I"],
+    "style_label": "Administrator",
+    "style_tagline": "The Reliable Architect",
+    "combined_description": "...",
+    "dominant_roles": ["P", "A"],
     "strengths": "...",
-    "blind_spots": "...",
-    "mismanagement_risks": ["Bureaucrat — ...", "Super-Follower — ..."],
-    "working_with_others": "..."
+    "watchouts": "...",
+    "working_with_others": "...",
+    "mismanagement_risks": ["Bureaucrat — ..."]
   }
 }
 ```
 
-> **Field name note:** The backend sends `assessment_id` in the payload. The Lambda handler
-> also accepts `result_id` as a fallback (`event.result_id || event.assessment_id`) for
-> resilience against any future field rename.
+> **Field name note:** The Lambda handler accepts both `assessment_id` and `result_id`
+> (`event.result_id || event.assessment_id`) for resilience.
+>
+> **Gap field names (v2):** `execution_gap`, `engagement_gap`, `authenticity_gap` — NOT the old
+> v1 names `external_gap` / `internal_gap`. Using v1 names will cause wrong or missing report content.
+>
+> **Interpretation field names (v2):** `watchouts` — NOT the old v1 name `blind_spots`.
 
 ---
 
-## Tension Calculation (`lib/tensions.js`)
+## Gap Scoring Reference (132-scale)
 
-Three tension types are computed per PAEI role from `scaled_scores`:
-
-| Tension Type | Formula | Meaning |
+| Gap type | Formula | Meaning |
 |---|---|---|
-| Role Pressure | `abs(should − is)` | Gap between role demand and current behaviour |
-| Energy Tension | `abs(want − should)` | Gap between natural preference and role demand |
-| Identity Drift | `abs(want − is)` | Gap between natural preference and current behaviour |
+| Execution Gap | `\|should − is\|` | Role demand vs current behaviour |
+| Engagement Gap | `\|should − want\|` | Role demand vs natural preference |
+| Authenticity Gap | `\|is − want\|` | Current behaviour vs natural preference |
 
-**Level classification:**
+**Severity thresholds (132-point scale):**
 
-| Gap | Level |
+| Gap value | Severity |
 |---|---|
-| < 5 | ALIGNED |
-| 5–15 | MODERATE |
-| > 15 | HIGH |
+| < 6 | low |
+| 6–15 | medium |
+| > 15 | high |
 
-**Per-role primary tension:** highest of the three values for that role.
-**Top tensions (Page 1):** the two role+type combinations with the largest absolute gap across all 12.
-
-**Action Path (Page 5):**
-- **Stretch** → role with highest Role Pressure (`abs(should − is)`)
-- **Balance** → role with highest Identity Drift (`abs(want − is)`)
-- **Protect** → role with lowest peak tension (min of all three values)
+**Top gaps (Page 1 of report):** the 3 largest `gap_abs` values across all 12 gap values
+(4 roles × 3 types), filtered to severity ≥ medium.
 
 ---
 
@@ -101,27 +104,24 @@ Three tension types are computed per PAEI role from `scaled_scores`:
 ### Step 1 — Compute derived data
 
 ```js
-const tensions       = computeTensions(scaled_scores);   // 12 tension values
-const topTensions    = getTopTensions(tensions, 2);       // top 2 role+type combos
-const actionPath     = computeActionPath(tensions);       // stretch/balance/protect roles
-const actionPathMsgs = generateActionPathMessages(tensions, actionPath);
+const topGaps        = getTopGaps(gaps, 3);
+const actionPath     = computeActionPath(gaps);
+const actionPathMsgs = generateActionPathMessages(gaps, actionPath, scaled_scores);
+const gapsMap        = {};
+for (const g of gaps) gapsMap[g.role] = g;
 ```
 
 ### Step 2 — Render EJS template
 
 ```js
 renderedHtml = ejs.render(templateSrc, {
-  user_name, completed_at, profile, scaled_scores, gaps, interpretation,
-  tensions, topTensions, actionPath, actionPathMsgs,
-  ROLES, ROLE_NAMES, ROLE_COLORS, ROLE_TINTS, TYPE_LABELS,
+  user_name, completed_at, profile, scaled_scores, interpretation,
+  gaps, gapsMap, topGaps, actionPath,
+  ROLES, ROLE_NAMES, ROLE_COLORS, ROLE_TINTS, GAP_TYPE_META,
 });
 ```
 
 ### Step 3 — Inline all assets
-
-```js
-html = inlineAssets(renderedHtml);
-```
 
 `page.setContent()` has no base URL — relative paths silently fail. `inlineAssets()`:
 - Reads `template/styles.css` and replaces the `<link>` tag with an inline `<style>` block
@@ -137,7 +137,7 @@ const browser = await puppeteer.launch({
 });
 ```
 
-`@sparticuz/chromium` is used — Lambda-optimized binary, works in the restricted sandbox.
+`@sparticuz/chromium` is used — Lambda-optimized binary.
 
 ### Step 5 — Load HTML and generate PDF
 
@@ -150,9 +150,6 @@ pdfBytes = await page.pdf({
 });
 ```
 
-No `addScriptTag`, no `page.evaluate`, no `waitForFunction` — those were only needed for
-Chart.js. Pure HTML renders immediately on `domcontentloaded`.
-
 ### Step 6 — Upload to S3
 
 ```js
@@ -162,9 +159,8 @@ await s3.send(new PutObjectCommand({
   Body: pdfBytes,
   ContentType: 'application/pdf',
 }));
+const pdfUrl = `https://${S3_BUCKET_NAME}.s3.${AWS_REGION}.amazonaws.com/reports/${assessment_id}.pdf`;
 ```
-
-Public URL: `https://adizes-pdf-reports.s3.ap-south-1.amazonaws.com/reports/<assessment_id>.pdf`
 
 ### Step 7 — Patch Supabase
 
@@ -176,7 +172,20 @@ await fetch(`${SUPABASE_URL}/rest/v1/assessments?id=eq.${assessment_id}`, {
 });
 ```
 
-Retried once on failure. If both fail, the PDF is still in S3 — manual re-trigger restores it.
+Retried once on failure. Returns `{ statusCode: 200, assessment_id, pdf_url }` regardless —
+even if Supabase patch fails (PDF is still in S3; backend's redundant patch then takes over).
+
+**CRITICAL — `SUPABASE_SERVICE_ROLE_KEY` must be the production HS256 key.** Using the local dev
+ES256 key (header `"alg":"ES256","iss":"supabase-demo"`) against the production URL returns HTTP
+401. The Lambda silently logs the error and still returns 200, making it appear to succeed while
+`assessments.pdf_url` is never set. Always verify after deploy:
+
+```bash
+AWS_PROFILE=lax-t3-assumed aws lambda get-function-configuration \
+  --function-name adizes-pdf-generator-v2 --region ap-south-1 \
+  --query 'Environment.Variables.SUPABASE_URL'
+# → should print: "https://swiznkamzxyfzgckebqi.supabase.co"
+```
 
 ---
 
@@ -184,10 +193,10 @@ Retried once on failure. If both fail, the PDF is still in S3 — manual re-trig
 
 | Page | Title | Primary content |
 |---|---|---|
-| 1 | Energy Alignment Snapshot | 2×2 role card matrix + top tensions pills |
-| 2 | Tension Map | 4 full role cards with bars + primary tension highlight |
+| 1 | Energy Alignment Snapshot | 2×2 role card matrix + top gap pills |
+| 2 | Gap Map | 4 full role cards with Is/Should/Want bars + gap highlights |
 | 3 | What This Means | Strengths / friction / early warning signs |
-| 4 | Style Summary | Style label + tagline + three-column strengths/watchouts/stress |
+| 4 | Style Summary | Style label + tagline + strengths/watchouts/working-with-others |
 | 5 | Action Path | Stretch / Balance / Protect cards |
 
 ---
@@ -205,34 +214,38 @@ Results page loads
        └─ GET /results/:id  →  pdf_url set          →  window.open(pdfUrl, '_blank')
 ```
 
-The frontend never polls automatically — user triggers each check manually.
-Typical generation time: 15–45 s cold start, 5–10 s warm.
+The frontend does not poll automatically. Typical generation time: 15–45 s cold start, 5–10 s warm.
 
 ---
 
 ## Re-triggering a stuck assessment (pdf_url = null)
 
-If `pdf_url` is null after submission, invoke the Lambda synchronously with the full payload:
+> **Do NOT use `aws lambda invoke --payload file://`** — AWS CLI v2 with `file://` prefix
+> double-encodes the payload and throws `Invalid base64: "{...json...}"`. Use Python boto3.
 
-```bash
-# 1. Fetch the assessment record from Supabase
-SUPA_URL="https://swiznkamzxyfzgckebqi.supabase.co"
-SUPA_KEY="<service-role-key>"
-curl -s "${SUPA_URL}/rest/v1/assessments?id=eq.<uuid>&select=*" \
-  -H "apikey: ${SUPA_KEY}" -H "Authorization: Bearer ${SUPA_KEY}"
+```python
+import boto3, json
 
-# 2. Invoke Lambda with the payload (assessment_id = the id field)
-AWS_PROFILE=lax-t3-assumed aws lambda invoke \
-  --function-name adizes-pdf-generator-v2 \
-  --region ap-south-1 \
-  --invocation-type RequestResponse \
-  --payload '{"assessment_id":"<uuid>","user_name":"...","completed_at":"...","profile":{...},"scaled_scores":{...},"gaps":[...],"interpretation":{...}}' \
-  --cli-binary-format raw-in-base64-out \
-  /tmp/response.json && cat /tmp/response.json
+# Build payload dict from the full assessment row (all fields)
+with open('/tmp/lambda-payload.json') as f:
+    payload = json.load(f)
+
+session = boto3.Session(profile_name='lax-t3-assumed')
+client  = session.client('lambda', region_name='ap-south-1')
+resp = client.invoke(
+    FunctionName='adizes-pdf-generator-v2',
+    InvocationType='RequestResponse',
+    Payload=json.dumps(payload).encode('utf-8'),
+)
+result = json.loads(resp['Payload'].read())
+print(result)
+# → {"statusCode": 200, "assessment_id": "...", "pdf_url": "https://..."}
 ```
 
-On success the Lambda returns `{"statusCode":200,"assessment_id":"...","pdf_url":"https://..."}` and
-patches Supabase automatically. The user then clicks "Check again" to see the download button.
+On success the Lambda patches Supabase directly. No backend involvement needed.
+
+Required payload fields: `assessment_id`, `user_name`, `completed_at`, `profile`,
+`scaled_scores`, `gaps` (with execution/engagement/authenticity fields), `interpretation`.
 
 ---
 
@@ -240,12 +253,13 @@ patches Supabase automatically. The user then clicks "Check again" to see the do
 
 | Environment Variable | Where set | Purpose |
 |---|---|---|
-| `SUPABASE_URL` | Lambda env | Supabase project URL |
-| `SUPABASE_SERVICE_ROLE_KEY` | Lambda env | Service-role JWT for DB write |
+| `SUPABASE_URL` | Lambda env | Production Supabase project URL |
+| `SUPABASE_SERVICE_ROLE_KEY` | Lambda env | Production HS256 service-role JWT for DB write |
 | `S3_BUCKET_NAME` | Lambda env | S3 bucket for PDF storage |
-| `AWS_ACCESS_KEY_ID` | FastAPI `.env` only | IAM user key to invoke Lambda |
-| `AWS_SECRET_ACCESS_KEY` | FastAPI `.env` only | IAM user secret |
-| `PDF_LAMBDA_FUNCTION_NAME` | App Runner env var | Active Lambda name — change here to cut over or roll back |
+| `AWS_ACCESS_KEY_ID` | App Runner env only | IAM user key to invoke Lambda |
+| `AWS_SECRET_ACCESS_KEY` | App Runner env only | IAM user secret |
+| `PDF_LAMBDA_FUNCTION_NAME` | App Runner env | Active Lambda name — change to cut over or roll back |
+| `LAMBDA_INVOKE_ROLE_ARN` | App Runner env | Must be **empty** — direct invoke via resource-based policy |
 
 ---
 
@@ -254,7 +268,7 @@ patches Supabase automatically. The user then clicks "Check again" to see the do
 ```bash
 cd lambda/pdf-generator-v2
 export SUPABASE_URL=https://swiznkamzxyfzgckebqi.supabase.co
-export SUPABASE_SERVICE_ROLE_KEY=<service-role-key>
+export SUPABASE_SERVICE_ROLE_KEY=<production-service-role-key>   # HS256, NOT the local dev key
 export S3_BUCKET_NAME=adizes-pdf-reports
 ./deploy.sh
 ```
@@ -273,15 +287,17 @@ export S3_BUCKET_NAME=adizes-pdf-reports
 - `PowerUserAccess` managed policy
 - Inline policy `iam-pass-for-lambda`: `iam:PassRole` on `adizes-pdf-lambda-role`
 
+After deploy, verify the Lambda env var `SUPABASE_SERVICE_ROLE_KEY` is the production key
+(not the local dev key — see CRITICAL note in Step 7 above).
+
 ---
 
 ## AWS Infrastructure (one-time setup)
 
-Shared with v1 — no new infrastructure needed:
-
 | Resource | Notes |
 |---|---|
 | ECR repository `adizes-pdf-generator-v2` | Created by `deploy.sh` |
-| IAM role `adizes-pdf-lambda-role` | Same as v1: `AWSLambdaBasicExecutionRole` + `s3:PutObject` |
-| S3 bucket `adizes-pdf-reports` | Same bucket as v1 |
-| IAM user `adizes-backend-lambda-invoker` | Same user as v1: `lambda:InvokeFunction` |
+| IAM role `adizes-pdf-lambda-role` | `AWSLambdaBasicExecutionRole` + `s3:PutObject` on `adizes-pdf-reports` |
+| S3 bucket `adizes-pdf-reports` | Shared with v1; public-read PDFs |
+| IAM user `adizes-backend-lambda-invoker` | Resource-based policy grants direct invoke on `adizes-pdf-generator-v2` (managed policy only covered v1) |
+| Lambda resource-based policy | Grants `adizes-backend-lambda-invoker` `lambda:InvokeFunction` directly — no STS assume-role needed |
