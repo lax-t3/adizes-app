@@ -6,9 +6,9 @@ import { Badge } from "@/components/ui/Badge";
 import { Download, ArrowLeft, Users, FileText, UserPlus, X, Loader2, Trash2, Upload, CheckCircle2, AlertCircle, MinusCircle, MailCheck, Plus } from "lucide-react";
 import { motion } from "motion/react";
 import {
-  Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
-  ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
+  ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
 } from "recharts";
+import { EnergyMatrix } from "@/components/ui/EnergyMatrix";
 import * as XLSX from "xlsx";
 import { getCohort, enrollUser, removeMember, exportCohortCsv, bulkEnroll, resendEnrollmentInvite } from "@/api/admin";
 import type { BulkEnrollEntry, BulkEnrollResult } from "@/api/admin";
@@ -519,16 +519,6 @@ export function AdminCohortDetail() {
     );
   }
 
-  // Build radar data from team_scores
-  const radarData = cohort.team_scores
-    ? [
-        { subject: "Producer (P)", is: cohort.team_scores.average_scaled.is?.P ?? 0, should: cohort.team_scores.average_scaled.should?.P ?? 0, want: cohort.team_scores.average_scaled.want?.P ?? 0, fullMark: 50 },
-        { subject: "Administrator (A)", is: cohort.team_scores.average_scaled.is?.A ?? 0, should: cohort.team_scores.average_scaled.should?.A ?? 0, want: cohort.team_scores.average_scaled.want?.A ?? 0, fullMark: 50 },
-        { subject: "Entrepreneur (E)", is: cohort.team_scores.average_scaled.is?.E ?? 0, should: cohort.team_scores.average_scaled.should?.E ?? 0, want: cohort.team_scores.average_scaled.want?.E ?? 0, fullMark: 50 },
-        { subject: "Integrator (I)", is: cohort.team_scores.average_scaled.is?.I ?? 0, should: cohort.team_scores.average_scaled.should?.I ?? 0, want: cohort.team_scores.average_scaled.want?.I ?? 0, fullMark: 50 },
-      ]
-    : [];
-
   const distData = cohort.team_scores
     ? [
         { name: "Producer", count: cohort.team_scores.style_distribution.P ?? 0, fill: ROLE_COLORS.P },
@@ -585,30 +575,15 @@ export function AdminCohortDetail() {
           </div>
         </div>
 
-        {cohort.team_scores && radarData.length > 0 && (
+        {cohort.team_scores && (
           <div className="grid gap-6 md:grid-cols-2 mb-8">
             <Card className="shadow-sm">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Users className="h-5 w-5 text-gray-400" /> Team Aggregate Profile
-                </CardTitle>
-                <CardDescription>Average scores across all completed assessments</CardDescription>
+                <CardTitle className="text-base">Team Energy Profile</CardTitle>
+                <CardDescription>Average energy distribution across the cohort</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="h-[300px] w-full">
-                  <ResponsiveContainer width="99%" height="100%" debounce={50}>
-                    <RadarChart cx="50%" cy="50%" outerRadius="70%" data={radarData}>
-                      <PolarGrid stroke="#e5e7eb" />
-                      <PolarAngleAxis dataKey="subject" tick={{ fill: "#4b5563", fontSize: 12 }} />
-                      <PolarRadiusAxis angle={30} domain={[0, 50]} tick={{ fill: "#9ca3af" }} />
-                      <Radar name="Is" dataKey="is" stroke="#C8102E" fill="#C8102E" fillOpacity={0.4} />
-                      <Radar name="Should" dataKey="should" stroke="#1D3557" fill="#1D3557" fillOpacity={0.3} />
-                      <Radar name="Want" dataKey="want" stroke="#2A9D8F" fill="#2A9D8F" fillOpacity={0.3} />
-                      <Legend />
-                      <Tooltip />
-                    </RadarChart>
-                  </ResponsiveContainer>
-                </div>
+                <EnergyMatrix display_scores={cohort.team_scores.average_scaled} />
               </CardContent>
             </Card>
 
@@ -683,8 +658,12 @@ export function AdminCohortDetail() {
                         <td className="px-6 py-4">
                           {r.status === "completed" ? (
                             <Badge variant="secondary" className="bg-green-100 text-green-800">Completed</Badge>
+                          ) : r.status === "in_progress" ? (
+                            <Badge variant="secondary" className="bg-blue-100 text-blue-800">In Progress</Badge>
+                          ) : r.status === "expired" ? (
+                            <Badge variant="secondary" className="bg-amber-100 text-amber-800">Expired</Badge>
                           ) : (
-                            <Badge variant="secondary" className="bg-amber-100 text-amber-800">Pending</Badge>
+                            <Badge variant="secondary" className="bg-gray-100 text-gray-600">Pending</Badge>
                           )}
                         </td>
                         <td className="px-6 py-4 font-mono font-medium">{r.dominant_style || "—"}</td>

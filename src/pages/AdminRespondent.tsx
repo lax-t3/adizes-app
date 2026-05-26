@@ -2,30 +2,15 @@ import { useEffect, useState } from "react";
 import { useParams, Link, useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
-import { GapBadge } from "@/components/ui/GapBadge";
 import { ArrowLeft, Download, Loader2, Info } from "lucide-react";
 import { InfoTooltip } from "@/components/ui/InfoTooltip";
 import { Users, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { motion } from "motion/react";
-import { ScoresTable } from "@/components/ui/ScoresTable";
-import {
-  Radar,
-  RadarChart,
-  PolarGrid,
-  PolarAngleAxis,
-  PolarRadiusAxis,
-  ResponsiveContainer,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-} from "recharts";
+import { EnergyMatrix } from "@/components/ui/EnergyMatrix";
+import { GapCard } from "@/components/ui/GapCard";
 import { getRespondent } from "@/api/admin";
-import type { GapDetail, Interpretation, ScoreSet } from "@/types/api";
+import type { GapDetail, Interpretation, ScoreSet, TopGap } from "@/types/api";
 
 interface RespondentData {
   user: { id: string; email: string; name: string };
@@ -41,6 +26,27 @@ interface RespondentData {
     pdf_url: string | null;
   } | null;
   cohort_id: string;
+}
+
+function getTopGaps(gaps: GapDetail[]): TopGap[] {
+  const all: TopGap[] = [];
+  for (const g of gaps) {
+    for (const gapType of ["execution", "engagement", "authenticity"] as const) {
+      all.push({
+        role:       g.role,
+        role_name:  g.role_name,
+        gap_type:   gapType,
+        gap_abs:    g[`${gapType}_gap`],
+        gap_signed: g[`${gapType}_gap_signed`],
+        severity:   g[`${gapType}_severity`],
+        narrative:  g[`${gapType}_narrative`],
+        is_score:     g.is_score,
+        should_score: g.should_score,
+        want_score:   g.want_score,
+      });
+    }
+  }
+  return all.sort((a, b) => b.gap_abs - a.gap_abs).slice(0, 3);
 }
 
 export function AdminRespondent() {
@@ -137,21 +143,6 @@ export function AdminRespondent() {
   const result = data.result;
   const { scaled_scores, gaps, profile, interpretation } = result;
 
-  const radarData = (["P", "A", "E", "I"] as const).map((role) => ({
-    subject: { P: "Producer (P)", A: "Administrator (A)", E: "Entrepreneur (E)", I: "Integrator (I)" }[role],
-    is: scaled_scores.is[role],
-    should: scaled_scores.should[role],
-    want: scaled_scores.want[role],
-    fullMark: 50,
-  }));
-
-  const gapChartData = gaps.map((g) => ({
-    name: g.role_name,
-    is: g.is_score,
-    should: g.should_score,
-    gap: g.external_gap,
-  }));
-
   const profileBadges = (profile.want ?? "paei").split("").map((char) => {
     const role = char.toUpperCase() as "P" | "A" | "E" | "I";
     const isDominant = char === char.toUpperCase();
@@ -191,7 +182,7 @@ export function AdminRespondent() {
                     )
                   )}
                 </div>
-                <InfoTooltip text="PAEI profile from the 'Want' dimension. CAPITAL = dominant role (scored above 30, dominant). Scores range 12–48. Lowercase = non-dominant. Role colours: P = red, A = navy, E = amber, I = teal." />
+                <InfoTooltip text="PAEI profile from the 'Want' dimension. CAPITAL = dominant role (above 33 out of 132 — its proportional share — is considered dominant). Lowercase = non-dominant. Role colours: P = red, A = navy, E = amber, I = teal." />
               </div>
               <div className="flex flex-col items-end gap-1">
                 {pdfUrl ? (
@@ -229,33 +220,19 @@ export function AdminRespondent() {
           </div>
         ) : (
         <div className="grid gap-6 lg:grid-cols-2">
-          {/* Radar Chart */}
+          {/* Energy Matrix */}
           <Card className="h-full shadow-sm border-t-4 border-t-primary">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 Style Comparison
-                <InfoTooltip text="Three lines for three dimensions: 'Is' = how the respondent currently behaves. 'Should' = what their role demands. 'Want' = their natural preference. Gaps between lines reveal where role demands and instincts diverge." />
+                <InfoTooltip text="Three rows for three dimensions: 'Current State' = how the respondent currently behaves. 'Role Expectations' = what their role demands. 'Intrinsic Preference' = their natural preference. Gaps between rows reveal where role demands and instincts diverge." />
               </CardTitle>
               <CardDescription>
                 Visual representation of Is, Should, and Want profiles.
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="h-[260px] sm:h-[400px] w-full">
-                <ResponsiveContainer width="99%" height="100%" debounce={50}>
-                  <RadarChart cx="50%" cy="50%" outerRadius="70%" data={radarData}>
-                    <PolarGrid stroke="#e5e7eb" />
-                    <PolarAngleAxis dataKey="subject" tick={{ fill: "#4b5563", fontSize: 12, fontWeight: 500 }} />
-                    <PolarRadiusAxis angle={30} domain={[12, 48]} tick={{ fill: "#9ca3af" }} />
-                    <Radar name="Is" dataKey="is" stroke="#C8102E" fill="#C8102E" fillOpacity={0.4} />
-                    <Radar name="Should" dataKey="should" stroke="#1D3557" fill="#1D3557" fillOpacity={0.4} />
-                    <Radar name="Want" dataKey="want" stroke="#E87722" fill="#E87722" fillOpacity={0.4} />
-                    <Legend wrapperStyle={{ paddingTop: "20px" }} />
-                    <Tooltip contentStyle={{ borderRadius: "8px", border: "none", boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)" }} />
-                  </RadarChart>
-                </ResponsiveContainer>
-              </div>
-              <ScoresTable scaled_scores={scaled_scores} />
+              <EnergyMatrix display_scores={scaled_scores} />
             </CardContent>
           </Card>
 
@@ -264,40 +241,28 @@ export function AdminRespondent() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 Gap Analysis
-                <InfoTooltip text="Ext (External): gap between 'Is' and 'Should' — are they behaving as the role demands? Int (Internal): gap between 'Should' and 'Want' — does the role match their natural preference? Green < 7pts, Yellow 7–14pts, Red 15+pts." />
+                <InfoTooltip text="Top misalignments between Is, Should, and Want dimensions. Execution = Is vs Should. Engagement = Should vs Want. Authenticity = Is vs Want." />
               </CardTitle>
               <CardDescription>
-                Differences between current behavior (Is) and job demands (Should).
+                Most significant energy misalignments detected.
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="h-[200px] sm:h-[280px] w-full mb-6">
-                <ResponsiveContainer width="99%" height="100%" debounce={50}>
-                  <BarChart data={gapChartData} layout="vertical" margin={{ top: 5, right: 30, left: 40, bottom: 5 }}>
-                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f3f4f6" />
-                    <XAxis type="number" domain={[12, 48]} tick={{ fill: "#9ca3af" }} />
-                    <YAxis dataKey="name" type="category" tick={{ fill: "#4b5563", fontSize: 12, fontWeight: 500 }} width={100} />
-                    <Tooltip cursor={{ fill: "#f9fafb" }} contentStyle={{ borderRadius: "8px", border: "none", boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)" }} />
-                    <Legend />
-                    <Bar dataKey="is" name="Is" fill="#C8102E" radius={[0, 4, 4, 0]} barSize={16} />
-                    <Bar dataKey="should" name="Should" fill="#1D3557" radius={[0, 4, 4, 0]} barSize={16} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-              <div className="space-y-3 overflow-x-auto">
-                <h4 className="font-medium text-gray-900 text-sm uppercase tracking-wider mb-4 flex items-center gap-1.5">
-                  Gap Severity
-                  <InfoTooltip text="Ext = External gap (Is vs Should). Int = Internal gap (Should vs Want). Both scored on 0–50 scale. Positive = 'Is' exceeds 'Should'; Negative = 'Is' falls short." />
-                </h4>
-                {gaps.map((g) => (
-                  <div key={g.role} className="flex items-center justify-between p-3 rounded-lg bg-gray-50 border border-gray-100 min-w-[260px]">
-                    <span className="font-medium text-gray-700">{g.role_name}</span>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-gray-500">Ext: <GapBadge gap={g.external_gap} /></span>
-                      <span className="text-xs text-gray-500">Int: <GapBadge gap={g.internal_gap} /></span>
+              <div className="space-y-3">
+                {(() => {
+                  const topGaps = getTopGaps(gaps);
+                  return topGaps.filter(g => g.severity !== "low").length === 0 ? (
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-sm text-green-800">
+                      Energy profile is well-aligned — no significant misalignments detected.
                     </div>
-                  </div>
-                ))}
+                  ) : (
+                    <>
+                      {topGaps.filter(g => g.severity !== "low").map((g, i) => (
+                        <GapCard key={`${g.role}-${g.gap_type}-${i}`} gap={g} display_scores={scaled_scores} />
+                      ))}
+                    </>
+                  );
+                })()}
               </div>
             </CardContent>
           </Card>
@@ -314,7 +279,7 @@ export function AdminRespondent() {
                 </div>
                 <CardTitle className="text-2xl font-display flex items-center gap-2">
                   Style Interpretation
-                  <InfoTooltip text="Derived from the dominant 'Want' role. Describes natural leadership and collaboration tendencies. Strengths = core assets. Blind Spots = areas for development. Working with Others = how to adapt to colleagues with different styles." />
+                  <InfoTooltip text="Derived from the dominant 'Want' role. Describes natural leadership and collaboration tendencies. Strengths = core assets. Watchouts = areas for development. Working with Others = how to adapt to colleagues with different styles." />
                 </CardTitle>
                 {interpretation.combined_description && (
                   <CardDescription className="text-base">{interpretation.combined_description}</CardDescription>
@@ -337,10 +302,10 @@ export function AdminRespondent() {
                       <div className="h-8 w-8 rounded-full bg-amber-100 flex items-center justify-center">
                         <Info className="h-5 w-5" />
                       </div>
-                      Blind Spots
+                      Watchouts
                       <InfoTooltip text="Typical pitfalls of this style — patterns that can undermine effectiveness if left unchecked. Use as coaching input, not criticism." />
                     </div>
-                    <p className="text-gray-600 text-sm leading-relaxed">{interpretation.blind_spots}</p>
+                    <p className="text-gray-600 text-sm leading-relaxed">{interpretation.watchouts}</p>
                   </div>
                   <div className="space-y-4">
                     <div className="flex items-center gap-2 text-blue-700 font-medium">
