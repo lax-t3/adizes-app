@@ -8,16 +8,28 @@
 <body>
 
 <%
-  /* Helpers available in all pages */
-  function barW(score) { return Math.round(score / 50 * 100); }
-  function signedDelta(d) { return (d > 0 ? '+' : '') + d; }
-  function badgeText(level) {
-    return level === 'high' ? 'HIGH' : level === 'moderate' ? 'MODERATE' : 'ALIGNED';
+  /* ── Helpers ─────────────────────────────────────────────────────── */
+  function pct(val) { return Math.round(val); }  /* display% already 0-100 */
+  function signed(d) { return (d > 0 ? '+' : '') + d; }
+  function severityBadge(sev) {
+    if (sev === 'high')   return { emoji: '🔴', label: 'HIGH',     cls: 'sev-high' };
+    if (sev === 'medium') return { emoji: '🟡', label: 'MODERATE', cls: 'sev-medium' };
+    return { emoji: '⚪', label: 'LOW', cls: 'sev-low' };
+  }
+  function lensScore(role, lensKey) {
+    return pct(scaled_scores[lensKey][role]);
   }
   const dateStr = new Date(completed_at).toLocaleDateString('en-GB',
     { year: 'numeric', month: 'long', day: 'numeric' });
-  const highestTensionRole = ROLES.reduce((a, b) =>
-    tensions[a].peakGap >= tensions[b].peakGap ? a : b);
+
+  /* Top gap for core insight narrative */
+  const topGap = topGaps[0] || null;
+
+  const LENS_LABELS = {
+    is:     'Current State',
+    should: 'Role Expectations',
+    want:   'Intrinsic Preference',
+  };
 %>
 
 <!-- ═══════════════════════════════════════════════════════════
@@ -32,53 +44,72 @@
   <div class="snapshot-hero">
     <div class="snapshot-name"><%= user_name %></div>
     <div class="snapshot-date"><%= dateStr %></div>
-    <div class="identity-badge"><%= identityLine %></div>
+    <div class="identity-badge"><%= interpretation.identity_line %></div>
   </div>
 
+  <!-- 3×4 Energy Alignment Matrix -->
   <div class="section-label">Energy Alignment Matrix</div>
-  <div class="matrix-grid">
-    <% ROLES.forEach(function(role) {
-         const t = tensions[role];
-         const isHighest = (role === highestTensionRole);
-    %>
-    <div class="matrix-card<%= isHighest ? ' highlight-' + role : '' %>">
-      <div class="matrix-card-header" style="background:<%- ROLE_TINTS[role] %>;">
-        <div style="display:flex;align-items:center;gap:6pt;">
-          <div class="role-circle" style="background:<%- ROLE_COLORS[role] %>;"><%= role %></div>
-          <span class="role-full-name"><%= ROLE_NAMES[role] %></span>
-        </div>
-        <span class="tension-badge badge-<%= t.level %>"><%= badgeText(t.level) %></span>
+  <div class="matrix-table">
+    <!-- Header row -->
+    <div class="matrix-row matrix-header">
+      <div class="matrix-lens-label"></div>
+      <% ROLES.forEach(function(role) { %>
+      <div class="matrix-role-header" style="color:<%- ROLE_COLORS[role] %>;">
+        <%= ROLE_NAMES[role] %>&nbsp;(<%= role %>)
       </div>
-      <div class="matrix-card-bars">
-        <div class="bar-row">
-          <span class="bar-row-label">IS</span>
-          <div class="bar-track"><div class="bar-fill" style="width:<%- barW(t.is) %>%;background:<%- ROLE_COLORS[role] %>;"></div></div>
-          <span class="bar-val"><%= t.is %></span>
+      <% }); %>
+    </div>
+    <!-- Data rows: IS, SHOULD, WANT -->
+    <% ['is','should','want'].forEach(function(lens, li) { %>
+    <div class="matrix-row<%= lens === 'want' ? ' matrix-row-want' : '' %>">
+      <div class="matrix-lens-label"><%= LENS_LABELS[lens] %></div>
+      <% ROLES.forEach(function(role) {
+           const val = pct(scaled_scores[lens][role]);
+           const opacity = lens === 'want' ? '0.65' : '1';
+      %>
+      <div class="matrix-cell">
+        <div class="matrix-bar-track">
+          <div class="matrix-bar-fill"
+               style="width:<%- val %>%;background:<%- ROLE_COLORS[role] %>;opacity:<%= opacity %>;"></div>
         </div>
-        <div class="bar-row">
-          <span class="bar-row-label">SHOULD</span>
-          <div class="bar-track"><div class="bar-fill" style="width:<%- barW(t.should) %>%;background:<%- ROLE_COLORS[role] %>;opacity:0.55;"></div></div>
-          <span class="bar-val"><%= t.should %></span>
-        </div>
-        <div class="bar-row">
-          <span class="bar-row-label">WANT</span>
-          <div class="bar-track"><div class="bar-fill" style="width:<%- barW(t.want) %>%;background:<%- ROLE_COLORS[role] %>;opacity:0.3;"></div></div>
-          <span class="bar-val"><%= t.want %></span>
-        </div>
+        <div class="matrix-bar-label"><%= val %>%</div>
       </div>
+      <% }); %>
     </div>
     <% }); %>
   </div>
 
+  <!-- Core Insight -->
   <div class="section-label">Core Insight</div>
-  <div class="core-insight"><%= interpretation.combined_description || interpretation.style_tagline %></div>
+  <div class="core-insight-block">
+    <% if (topGap) {
+         const nb = severityBadge(topGap.severity);
+    %>
+    <span class="core-insight-accent" style="border-color:<%- ROLE_COLORS[topGap.role] %>;"></span>
+    <div class="core-insight-text">
+      <strong><%= ROLE_NAMES[topGap.role] %> (<%= topGap.role %>) — <%= topGap.meta.label %>:</strong>
+      <%= topGap.narrative %>
+    </div>
+    <% } else { %>
+    <div class="core-insight-text"><%= interpretation.style_tagline %></div>
+    <% } %>
+  </div>
 
-  <div class="section-label">Top Tensions</div>
-  <div class="top-tensions">
-    <% topTensions.forEach(function(tt) { %>
-    <div class="tension-pill">
-      <div class="pill-dot <%= tt.level %>"></div>
-      <span><%= ROLE_NAMES[tt.role] %> (<%= tt.role %>) — <%= TYPE_LABELS[tt.type] %>: <%= badgeText(tt.level) %> (<%= signedDelta(tt.delta) %>)</span>
+  <!-- Top Energy Misalignments -->
+  <div class="section-label">Top Energy Misalignments</div>
+  <div class="top-gaps-row">
+    <% topGaps.forEach(function(tg) {
+         const nb = severityBadge(tg.severity);
+         if (tg.severity === 'low') return;
+    %>
+    <div class="gap-pill gap-pill-<%= nb.cls %>">
+      <div class="gap-pill-role" style="background:<%- ROLE_COLORS[tg.role] %>;">
+        <%= tg.role %>
+      </div>
+      <div class="gap-pill-text">
+        <span class="gap-pill-type"><%= tg.meta.label %></span>
+        <span class="gap-pill-sev"><%= nb.emoji %> <%= nb.label %> &nbsp;<%= signed(tg.gap_signed) %>&nbsp;pts</span>
+      </div>
     </div>
     <% }); %>
   </div>
@@ -90,83 +121,65 @@
 </div>
 
 <!-- ═══════════════════════════════════════════════════════════
-     PAGE 2 — Tension Map
+     PAGE 2 — Gap Map
      ═══════════════════════════════════════════════════════════ -->
 <div class="page page-break">
   <div class="page-header">
     <img class="logo" src="./assets/logo.png" alt="HILeadership">
-    <span class="header-tagline">PAEI Energy Alignment Profile — Tension Map</span>
+    <span class="header-tagline">PAEI Energy Alignment Profile — Gap Map</span>
   </div>
 
-  <h2 style="margin-bottom:4pt;">Tension Map</h2>
-  <p style="font-size:8.5pt;color:#6b7280;margin-bottom:14pt;">
-    For each role: how your current behaviour (IS), role demands (SHOULD), and natural preference (WANT) compare.
-    Role Pressure = IS vs SHOULD · Energy Tension = WANT vs SHOULD · Identity Drift = WANT vs IS.
+  <h2 style="margin-bottom:4pt;">Gap Map</h2>
+  <p style="font-size:8.5pt;color:#6b7280;margin-bottom:18pt;line-height:1.6;">
+    The 3 largest energy misalignments across your PAEI profile. Each gap reflects where your
+    perceptions of current behaviour, role expectations, and intrinsic preferences diverge most.
   </p>
 
-  <div class="tension-grid">
-    <% ROLES.forEach(function(role) {
-         const t = tensions[role];
-         const gap = gapsMap[role];
-         const isHighest = (role === highestTensionRole);
-         let primaryMessage = '';
-         let primaryActionCue = '';
-         if (t.primaryType === 'rolePressure') {
-           primaryMessage   = gap ? gap.external_message : '';
-           primaryActionCue = ACTION_CUES.rolePressure[role][t.rolePressureDelta > 0 ? 'high' : 'low'];
-         } else if (t.primaryType === 'energyTension') {
-           primaryMessage   = t.energyTensionMessage;
-           primaryActionCue = ACTION_CUES.energyTension[role][t.energyTensionDelta < 0 ? 'high' : 'low'];
-         } else {
-           primaryMessage   = gap ? gap.internal_message : '';
-           primaryActionCue = ACTION_CUES.identityDrift[role][t.identityDriftDelta > 0 ? 'low' : 'high'];
-         }
-    %>
-    <div class="tension-card<%= isHighest ? ' highlight-' + role : '' %>">
-      <div class="tension-card-header" style="background:<%- ROLE_TINTS[role] %>;">
-        <div style="display:flex;align-items:center;gap:6pt;">
-          <div class="role-circle" style="background:<%- ROLE_COLORS[role] %>;"><%= role %></div>
-          <span class="role-full-name"><%= ROLE_NAMES[role] %></span>
-        </div>
-        <span class="tension-badge badge-<%= t.level %>"><%= badgeText(t.level) %></span>
-      </div>
-      <div class="tension-card-bars">
-        <div class="bar-row">
-          <span class="bar-row-label">IS</span>
-          <div class="bar-track"><div class="bar-fill" style="width:<%- barW(t.is) %>%;background:<%- ROLE_COLORS[role] %>;"></div></div>
-          <span class="bar-val"><%= t.is %></span>
-        </div>
-        <div class="bar-row">
-          <span class="bar-row-label">SHOULD</span>
-          <div class="bar-track"><div class="bar-fill" style="width:<%- barW(t.should) %>%;background:<%- ROLE_COLORS[role] %>;opacity:0.55;"></div></div>
-          <span class="bar-val"><%= t.should %></span>
-        </div>
-        <div class="bar-row">
-          <span class="bar-row-label">WANT</span>
-          <div class="bar-track"><div class="bar-fill" style="width:<%- barW(t.want) %>%;background:<%- ROLE_COLORS[role] %>;opacity:0.3;"></div></div>
-          <span class="bar-val"><%= t.want %></span>
+  <% topGaps.forEach(function(tg) {
+       const nb = severityBadge(tg.severity);
+       const meta = tg.meta;
+       const valA = pct(scaled_scores[meta.lensA][tg.role]);
+       const valB = pct(scaled_scores[meta.lensB][tg.role]);
+       const borderColor = tg.severity === 'high' ? '#C8102E' : '#E87722';
+       const pillBg      = tg.severity === 'high' ? '#fff0f0' : '#fffbf0';
+  %>
+  <div class="gap-card" style="border-color:<%= borderColor %>;">
+    <!-- Card header -->
+    <div class="gap-card-header">
+      <div class="gap-card-title-row">
+        <div class="role-circle" style="background:<%- ROLE_COLORS[tg.role] %>;"><%= tg.role %></div>
+        <div>
+          <div class="gap-card-type"><%= meta.label %></div>
+          <div class="gap-card-formula"><%= meta.formula %></div>
         </div>
       </div>
-      <div class="tension-card-body">
-        <% if (t.level === 'aligned') { %>
-        <div class="well-aligned-box">Well aligned — IS, SHOULD, and WANT are closely matched.</div>
-        <% } else { %>
-        <div class="tension-highlight <%= t.level %>">
-          <div class="tension-highlight-label <%= t.level %>">
-            <%= TYPE_LABELS[t.primaryType] %> (<%= signedDelta(
-              t.primaryType === 'rolePressure'  ? t.rolePressureDelta  :
-              t.primaryType === 'energyTension' ? t.energyTensionDelta :
-              t.identityDriftDelta
-            ) %>)
-          </div>
-          <div class="tension-highlight-text"><%= primaryMessage %></div>
-        </div>
-        <div class="action-cue <%= role %>">→ <%= primaryActionCue %></div>
-        <% } %>
+      <div class="gap-sev-pill" style="background:<%= pillBg %>;border-color:<%= borderColor %>;">
+        <%= nb.emoji %> <strong style="color:<%= borderColor %>;"><%= nb.label %> &nbsp;<%= signed(tg.gap_signed) %>&nbsp;pts</strong>
       </div>
     </div>
-    <% }); %>
+
+    <!-- Comparison bars -->
+    <div class="gap-bars">
+      <div class="gap-bar-row">
+        <div class="gap-bar-label"><%= meta.lensALabel %></div>
+        <div class="gap-bar-track">
+          <div class="gap-bar-fill" style="width:<%= valA %>%;background:<%- ROLE_COLORS[tg.role] %>;"></div>
+        </div>
+        <div class="gap-bar-val"><%= valA %>%</div>
+      </div>
+      <div class="gap-bar-row">
+        <div class="gap-bar-label"><%= meta.lensBLabel %></div>
+        <div class="gap-bar-track">
+          <div class="gap-bar-fill" style="width:<%= valB %>%;background:<%- ROLE_COLORS[tg.role] %>;opacity:0.55;"></div>
+        </div>
+        <div class="gap-bar-val"><%= valB %>%</div>
+      </div>
+    </div>
+
+    <!-- Narrative -->
+    <div class="gap-card-narrative"><%= tg.narrative %></div>
   </div>
+  <% }); %>
 
   <div class="page-footer">
     <span>HILeadership | PAEI Energy Alignment Profile</span>
@@ -188,18 +201,21 @@
   <div class="meaning-grid">
     <div class="meaning-card best">
       <h3>✓ When you are at your best</h3>
-      <p><%= interpretation.strengths %></p>
+      <p><%= interpretation.at_your_best %></p>
     </div>
     <div class="meaning-card friction">
       <h3>⚠ Where friction shows up</h3>
-      <p><%= interpretation.blind_spots %></p>
+      <p><%= interpretation.friction_shows_up %></p>
     </div>
   </div>
 
   <div class="section-label">Early Warning Signs</div>
-  <% interpretation.mismanagement_risks.forEach(function(risk) { %>
-  <div class="warning-card"><%= risk %></div>
+  <% (interpretation.early_warnings || []).forEach(function(warning) { %>
+  <div class="warning-card"><%= warning %></div>
   <% }); %>
+  <% if (!interpretation.early_warnings || interpretation.early_warnings.length === 0) { %>
+  <div class="well-aligned-box">No significant early warning signs — your energy profile is well-aligned.</div>
+  <% } %>
 
   <div class="page-footer">
     <span>HILeadership | PAEI Energy Alignment Profile</span>
@@ -233,11 +249,11 @@
     </div>
     <div class="summary-card watchouts">
       <h3>Watchouts</h3>
-      <p><%= interpretation.blind_spots %></p>
+      <p><%= interpretation.watchouts %></p>
     </div>
     <div class="summary-card stress">
       <h3>Under Stress</h3>
-      <% interpretation.mismanagement_risks.forEach(function(risk) { %>
+      <% (interpretation.mismanagement_risks || []).forEach(function(risk) { %>
       <p style="margin-bottom:5pt;"><%= risk %></p>
       <% }); %>
     </div>
@@ -259,50 +275,88 @@
   </div>
 
   <h2 style="margin-bottom:4pt;">Your Action Path</h2>
-  <p style="font-size:8.5pt;color:#6b7280;margin-bottom:16pt;">Three directions drawn from your energy alignment data. Focus on Stretch first, use Balance to recalibrate, and hold Protect as your anchor.</p>
+  <p style="font-size:8.5pt;color:#6b7280;margin-bottom:16pt;">
+    Four directions drawn from your energy alignment data. Internal shifts require personal adjustment;
+    external shifts involve your role, environment, or relationships.
+  </p>
 
-  <div class="action-path-cards">
-    <div class="action-card" style="border-left:3pt solid <%- actionPath.stretch.roleColor %>;">
-      <div class="action-card-left">
-        <div class="action-icon" style="background:<%- actionPath.stretch.roleColor %>;"><%= actionPath.stretch.role %></div>
-        <div class="action-type-label stretch">Stretch</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12pt;">
+    <div>
+      <div class="action-path-section-label">Internal Shifts</div>
+      <!-- Stretch -->
+      <div class="action-card" style="border-left:3pt solid <%- actionPath.stretch.roleColor %>;">
+        <div class="action-card-left">
+          <div class="action-icon" style="background:<%- actionPath.stretch.roleColor %>;"><%= actionPath.stretch.role %></div>
+          <div class="action-type-label stretch">Stretch</div>
+        </div>
+        <div class="action-card-right">
+          <h3><%= actionPath.stretch.roleName %></h3>
+          <p><%= actionPath.stretch.description %></p>
+          <div class="action-prompt">→ <%= actionPath.stretch.action %></div>
+        </div>
       </div>
-      <div class="action-card-right">
-        <h3><%= actionPath.stretch.roleName %></h3>
-        <p><%= actionPath.stretch.description %></p>
-        <div class="action-prompt">→ <%= actionPath.stretch.action %></div>
+      <!-- Balance -->
+      <div class="action-card" style="border-left:3pt solid <%- actionPath.balance.roleColor %>;">
+        <div class="action-card-left">
+          <div class="action-icon" style="background:<%- actionPath.balance.roleColor %>;"><%= actionPath.balance.role %></div>
+          <div class="action-type-label balance">Balance</div>
+        </div>
+        <div class="action-card-right">
+          <h3><%= actionPath.balance.roleName %></h3>
+          <p><%= actionPath.balance.description %></p>
+          <div class="action-prompt">→ <%= actionPath.balance.action %></div>
+        </div>
+      </div>
+      <!-- Protect -->
+      <div class="action-card" style="border-left:3pt solid <%- actionPath.protect.roleColor %>;">
+        <div class="action-card-left">
+          <div class="action-icon" style="background:<%- actionPath.protect.roleColor %>;"><%= actionPath.protect.role %></div>
+          <div class="action-type-label protect">Protect</div>
+        </div>
+        <div class="action-card-right">
+          <h3><%= actionPath.protect.roleName %></h3>
+          <p><%= actionPath.protect.description %></p>
+          <div class="action-prompt">→ <%= actionPath.protect.action %></div>
+        </div>
       </div>
     </div>
 
-    <div class="action-card" style="border-left:3pt solid <%- actionPath.balance.roleColor %>;">
-      <div class="action-card-left">
-        <div class="action-icon" style="background:<%- actionPath.balance.roleColor %>;"><%= actionPath.balance.role %></div>
-        <div class="action-type-label balance">Balance</div>
+    <div>
+      <div class="action-path-section-label">External Shifts</div>
+      <!-- Complement -->
+      <div class="action-card" style="border-left:3pt solid <%- actionPath.complement.roleColor %>;">
+        <div class="action-card-left">
+          <div class="action-icon" style="background:<%- actionPath.complement.roleColor %>;"><%= actionPath.complement.role %></div>
+          <div class="action-type-label complement">Complement</div>
+        </div>
+        <div class="action-card-right">
+          <h3><%= actionPath.complement.roleName %></h3>
+          <p><%= actionPath.complement.description %></p>
+          <div class="action-prompt">→ <%= actionPath.complement.action %></div>
+        </div>
       </div>
-      <div class="action-card-right">
-        <h3><%= actionPath.balance.roleName %></h3>
-        <p><%= actionPath.balance.description %></p>
-        <div class="action-prompt">→ <%= actionPath.balance.action %></div>
-      </div>
-    </div>
-
-    <div class="action-card" style="border-left:3pt solid <%- actionPath.protect.roleColor %>;">
-      <div class="action-card-left">
-        <div class="action-icon" style="background:<%- actionPath.protect.roleColor %>;"><%= actionPath.protect.role %></div>
-        <div class="action-type-label protect">Protect</div>
-      </div>
-      <div class="action-card-right">
-        <h3><%= actionPath.protect.roleName %></h3>
-        <p><%= actionPath.protect.description %></p>
-        <div class="action-prompt">→ <%= actionPath.protect.action %></div>
+      <!-- Role Design -->
+      <div class="action-card" style="border-left:3pt solid #6b7280;">
+        <div class="action-card-left">
+          <div class="action-icon" style="background:#6b7280;">R</div>
+          <div class="action-type-label" style="color:#6b7280;">Role Design</div>
+        </div>
+        <div class="action-card-right">
+          <h3>Reshaping your role</h3>
+          <p>Your Intrinsic Preference reveals the energy you find most natural.
+          Look for ways to redesign tasks, delegate, or negotiate responsibilities
+          so your role draws more on what energises you.</p>
+          <div class="action-prompt">→ Identify one responsibility that drains you and explore who could own it instead.</div>
+        </div>
       </div>
     </div>
   </div>
 
-  <div style="margin-top:18pt;padding:10pt 12pt;background:#f9fafb;border-radius:5pt;border:1pt solid #e5e7eb;">
+  <div style="margin-top:14pt;padding:10pt 12pt;background:#f9fafb;border-radius:5pt;border:1pt solid #e5e7eb;">
     <p style="font-size:8pt;color:#6b7280;line-height:1.6;">
-      <strong style="color:#374151;">How to use this report:</strong> Your PAEI profile is a tool for self-awareness, not a fixed label.
-      Strengths become liabilities when over-used. Use this report to open conversations with colleagues, coaches, and managers.
+      <strong style="color:#374151;">How to use this report:</strong> Your PAEI profile is a tool for
+      self-awareness, not a fixed label. Strengths become liabilities when over-used. Use this report
+      to open conversations with colleagues, coaches, and managers.
     </p>
   </div>
 
