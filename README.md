@@ -1,6 +1,6 @@
 # adizes-frontend
 
-React frontend for the **Adizes PAEI Management Style Assessment** platform.
+React frontend for the **Adizes PAEI Management Style Assessment** platform — **Adizes90** individual assessment tool. Adizes360 multi-rater is Phase 2 (pending).
 
 ## Tech Stack
 
@@ -88,6 +88,9 @@ adizes-frontend/
     components/
       layout/          # AdminSidebar (includes Organizations link), Header, Footer
       ui/              # Button, Card, Badge, Spinner, Modal
+                         # EnergyMatrix.tsx — role-centric PAEI bar chart (4 sections, one per role;
+                         #   each shows Is/Should/Want bars; gap badge when max gap ≥ 10pt; Want dimmed)
+                         # GapCard.tsx — individual gap detail card
     lib/
       jwt.ts           # decodeJwt() — base64url JWT payload decoder (no signature verify)
       utils.ts         # cn() Tailwind class merge helper
@@ -217,6 +220,13 @@ The **Reporting Tree** page (`/admin/organizations/:id/reporting`) builds a visu
 ### Axios + FormData — do NOT set `Content-Type` manually
 
 When uploading files with Axios + `FormData`, **never** set `Content-Type: multipart/form-data` manually. Axios auto-generates this header including the required `boundary` parameter. Setting it manually strips the boundary, causing the server to receive empty fields (all rows fail with "invalid email" or similar).
+
+## Adizes360 — Phase 2 (pending)
+
+Currently implements **Adizes90** — individual self-assessment. **Adizes360** (multi-rater 360°)
+is planned for Phase 2. When implemented it will add: rater cohort assignment UI, rater-facing
+assessment flow, and a results comparison view (self vs composite-rater scores). No implementation
+has started; design spec TBD.
 
 ## Related
 
