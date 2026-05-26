@@ -46,6 +46,10 @@ class AdminStats(BaseModel):
     recent_completions: List[dict]
 
 
+class UpdateCohortStatusRequest(BaseModel):
+    cohort_status: str   # 'active' | 'completed' | 'archived'
+
+
 class CohortSummary(BaseModel):
     id: str
     name: str
@@ -54,6 +58,7 @@ class CohortSummary(BaseModel):
     completed_count: int
     completion_pct: float
     created_at: str
+    cohort_status: str = "active"
 
 
 class RespondentSummary(BaseModel):
@@ -74,6 +79,7 @@ class CohortDetailResponse(BaseModel):
     id: str
     name: str
     description: Optional[str] = None
+    cohort_status: str = "active"
     respondents: List[RespondentSummary]
     team_scores: Optional[TeamScores] = None
 

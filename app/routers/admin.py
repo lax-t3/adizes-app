@@ -7,6 +7,7 @@ from app.schemas.admin import (
     CreateCohortRequest, CohortSummary, CohortDetailResponse,
     RespondentSummary, TeamScores, EnrollUserRequest, BulkEnrollRequest,
     InviteAdminRequest, AdminStats, AdminUserSummary, ChangePasswordRequest,
+    UpdateCohortStatusRequest,
 )
 from app.config import settings
 from app.services.export_service import generate_cohort_csv
@@ -74,7 +75,7 @@ def get_stats(admin: dict = Depends(require_admin)):
 def list_cohorts(admin: dict = Depends(require_admin)):
     rows = (
         supabase_admin.table("cohorts")
-        .select("id, name, description, created_at, cohort_members(user_id)")
+        .select("id, name, description, created_at, cohort_status, cohort_members(user_id)")
         .order("created_at", desc=True)
         .execute()
     )
@@ -100,6 +101,7 @@ def list_cohorts(admin: dict = Depends(require_admin)):
             completed_count=completed,
             completion_pct=round(completed / total * 100, 1) if total else 0.0,
             created_at=c["created_at"],
+            cohort_status=c.get("cohort_status", "active"),
         ))
 
     return results
@@ -123,6 +125,7 @@ def create_cohort(body: CreateCohortRequest, admin: dict = Depends(require_admin
         completed_count=0,
         completion_pct=0.0,
         created_at=c["created_at"],
+        cohort_status="active",
     )
 
 
@@ -143,11 +146,59 @@ def delete_cohort(cohort_id: str, admin: dict = Depends(require_admin)):
     supabase_admin.table("cohorts").delete().eq("id", cohort_id).execute()
 
 
+@router.patch("/cohorts/{cohort_id}/status", response_model=CohortSummary)
+def update_cohort_status(
+    cohort_id: str,
+    body: UpdateCohortStatusRequest,
+    admin: dict = Depends(require_admin),
+):
+    """Set cohort lifecycle status: active | completed | archived."""
+    allowed = {"active", "completed", "archived"}
+    if body.cohort_status not in allowed:
+        raise HTTPException(status_code=400, detail=f"cohort_status must be one of {allowed}")
+
+    row = (
+        supabase_admin.table("cohorts")
+        .select("id, name, description, created_at, cohort_status, cohort_members(user_id)")
+        .eq("id", cohort_id)
+        .single()
+        .execute()
+    )
+    if not row.data:
+        raise HTTPException(status_code=404, detail="Cohort not found")
+
+    supabase_admin.table("cohorts").update(
+        {"cohort_status": body.cohort_status}
+    ).eq("id", cohort_id).execute()
+
+    c = row.data
+    members = c.get("cohort_members", [])
+    comp_rows = (
+        supabase_admin.table("assessments")
+        .select("user_id")
+        .eq("cohort_id", cohort_id)
+        .eq("status", "completed")
+        .execute()
+    )
+    completed = len(comp_rows.data or [])
+    total = len(members)
+    return CohortSummary(
+        id=c["id"],
+        name=c["name"],
+        description=c.get("description"),
+        member_count=total,
+        completed_count=completed,
+        completion_pct=round(completed / total * 100, 1) if total else 0.0,
+        created_at=c["created_at"],
+        cohort_status=body.cohort_status,
+    )
+
+
 @router.get("/cohorts/{cohort_id}", response_model=CohortDetailResponse)
 def get_cohort(cohort_id: str, admin: dict = Depends(require_admin)):
     cohort = (
         supabase_admin.table("cohorts")
-        .select("id, name, description")
+        .select("id, name, description, cohort_status")
         .eq("id", cohort_id)
         .single()
         .execute()
@@ -207,6 +258,7 @@ def get_cohort(cohort_id: str, admin: dict = Depends(require_admin)):
         id=cohort.data["id"],
         name=cohort.data["name"],
         description=cohort.data.get("description"),
+        cohort_status=cohort.data.get("cohort_status", "active"),
         respondents=respondents,
         team_scores=team_scores,
     )
@@ -249,13 +301,15 @@ def enroll_user(cohort_id: str, body: EnrollUserRequest, admin: dict = Depends(r
     """Enroll a user into a cohort by email. If they have no account, invite them first."""
     cohort = (
         supabase_admin.table("cohorts")
-        .select("id")
+        .select("id, cohort_status")
         .eq("id", cohort_id)
         .single()
         .execute()
     )
     if not cohort.data:
         raise HTTPException(status_code=404, detail="Cohort not found")
+    if cohort.data.get("cohort_status", "active") != "active":
+        raise HTTPException(status_code=409, detail="Cannot enrol into a completed or archived cohort.")
 
     all_users = supabase_admin.auth.admin.list_users()
     target = next((u for u in all_users if u.email == body.email), None)
@@ -322,13 +376,15 @@ def bulk_enroll(cohort_id: str, body: BulkEnrollRequest, admin: dict = Depends(r
     """Bulk enroll users by email. New users are auto-invited."""
     cohort = (
         supabase_admin.table("cohorts")
-        .select("id")
+        .select("id, cohort_status")
         .eq("id", cohort_id)
         .single()
         .execute()
     )
     if not cohort.data:
         raise HTTPException(status_code=404, detail="Cohort not found")
+    if cohort.data.get("cohort_status", "active") != "active":
+        raise HTTPException(status_code=409, detail="Cannot enrol into a completed or archived cohort.")
 
     cohort_name_row = supabase_admin.table("cohorts").select("name").eq("id", cohort_id).single().execute()
     cohort_name_for_bulk = cohort_name_row.data.get("name", "") if cohort_name_row.data else ""
@@ -1418,6 +1474,18 @@ def list_org_cohorts(org_id: str, admin: dict = Depends(require_admin)):
 
 @router.post("/cohorts/{cohort_id}/enroll-from-org", response_model=EnrollFromOrgResult)
 def enroll_from_org(cohort_id: str, body: EnrollFromOrgRequest, admin: dict = Depends(require_admin)):
+    cohort_check = (
+        supabase_admin.table("cohorts")
+        .select("cohort_status")
+        .eq("id", cohort_id)
+        .single()
+        .execute()
+    )
+    if not cohort_check.data:
+        raise HTTPException(status_code=404, detail="Cohort not found")
+    if cohort_check.data.get("cohort_status", "active") != "active":
+        raise HTTPException(status_code=409, detail="Cannot enrol into a completed or archived cohort.")
+
     # Resolve which user_ids to enrol
     if body.user_ids:
         target_user_ids = body.user_ids
