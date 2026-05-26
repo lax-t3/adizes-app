@@ -220,8 +220,8 @@ export function AdminRespondent() {
           </div>
         ) : (
         <div className="grid gap-6 lg:grid-cols-2">
-          {/* Energy Matrix */}
-          <Card className="h-full shadow-sm border-t-4 border-t-primary">
+          {/* Style Comparison */}
+          <Card className="shadow-sm border-t-4 border-t-primary">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 Style Comparison
@@ -237,7 +237,7 @@ export function AdminRespondent() {
           </Card>
 
           {/* Gap Analysis */}
-          <Card className="h-full shadow-sm">
+          <Card className="shadow-sm">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 Gap Analysis

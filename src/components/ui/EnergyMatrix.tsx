@@ -14,68 +14,100 @@ const ROLE_META: Record<typeof ROLES[number], { label: string; color: string }> 
   I: { label: "Integrator",    color: "#2A9D8F" },
 };
 
-const ROWS: { label: string; key: keyof Props["display_scores"]; dimmed?: boolean }[] = [
-  { label: "Current State",        key: "is"     },
-  { label: "Role Expectations",    key: "should" },
-  { label: "Intrinsic Preference", key: "want",  dimmed: true },
+const LENSES: { key: keyof Props["display_scores"]; label: string; shortLabel: string; dimmed?: boolean }[] = [
+  { key: "is",     label: "Current State",        shortLabel: "Is"     },
+  { key: "should", label: "Role Expectations",    shortLabel: "Should" },
+  { key: "want",   label: "Intrinsic Preference", shortLabel: "Want",  dimmed: true },
 ];
 
 export function EnergyMatrix({ display_scores }: Props) {
   return (
-    <div className="w-full">
-      <div className="flex items-center gap-1.5 mb-3">
-        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-          Energy Alignment Matrix
-        </p>
-        <InfoTooltip text="Each bar shows what percentage of your total energy goes to each PAEI role, per lens. Current State = how you operate now. Role Expectations = what your role demands. Intrinsic Preference = your natural inclination (shown lighter as an anchor lens). Scores sum to 100% per row." />
-      </div>
-
-      {/* Column headers */}
-      <div className="grid gap-1" style={{ gridTemplateColumns: "130px repeat(4, 1fr)" }}>
-        <div />
-        {ROLES.map((r) => (
-          <div
-            key={r}
-            className="text-center text-xs font-bold pb-1"
-            style={{ color: ROLE_META[r].color }}
-          >
-            <span className="text-sm">{r}</span>
-            <span className="hidden sm:block text-[10px] font-normal text-gray-400">
-              {ROLE_META[r].label}
+    <div className="space-y-2.5">
+      <div className="flex items-center gap-1.5 mb-1">
+        <div className="flex items-center gap-3 flex-wrap">
+          {LENSES.map(({ shortLabel, dimmed }) => (
+            <span key={shortLabel} className="flex items-center gap-1.5 text-[11px] text-gray-400">
+              <span
+                className="inline-block w-3 h-3 rounded-sm bg-gray-300"
+                style={{ opacity: dimmed ? 0.5 : 1 }}
+              />
+              {shortLabel} = {LENSES.find(l => l.shortLabel === shortLabel)?.label}
             </span>
-          </div>
-        ))}
+          ))}
+        </div>
+        <InfoTooltip text="Each role section shows three bars: Is (Current State), Should (Role Expectations), and Want (Intrinsic Preference, shown lighter). Bars show what percentage of total energy goes to each PAEI role per lens. Each row sums to 100%." />
       </div>
 
-      {/* Data rows */}
-      <div className="space-y-2">
-        {ROWS.map(({ label, key, dimmed }) => (
+      {ROLES.map((role) => {
+        const { label, color } = ROLE_META[role];
+        const isVal     = display_scores.is[role];
+        const shouldVal = display_scores.should[role];
+        const wantVal   = display_scores.want[role];
+
+        const exGap  = Math.abs(shouldVal - isVal);
+        const authGap = Math.abs(isVal - wantVal);
+        const maxGap = Math.max(exGap, authGap);
+        const hasGap = maxGap >= 10;
+
+        return (
           <div
-            key={key}
-            className="grid gap-1 items-center"
-            style={{
-              gridTemplateColumns: "130px repeat(4, 1fr)",
-              opacity: dimmed ? 0.7 : 1,
-            }}
+            key={role}
+            className="rounded-xl border overflow-hidden"
+            style={{ borderColor: color + "33" }}
           >
-            <div className="text-xs font-medium text-gray-500 truncate pr-2">{label}</div>
-            {ROLES.map((r) => {
-              const val = display_scores[key][r];
-              return (
-                <div key={r} className="px-1">
-                  <div className="bg-gray-100 rounded-sm h-3 overflow-hidden">
-                    <div
-                      className="h-full rounded-sm transition-all duration-300"
-                      style={{ width: `${val}%`, backgroundColor: ROLE_META[r].color }}
-                    />
+            {/* Role header */}
+            <div
+              className="flex items-center justify-between px-3.5 py-2"
+              style={{ background: `linear-gradient(90deg, ${color}18 0%, ${color}08 100%)` }}
+            >
+              <div className="flex items-center gap-2.5">
+                <span
+                  className="flex items-center justify-center w-7 h-7 rounded-full text-white text-xs font-black flex-shrink-0"
+                  style={{ backgroundColor: color }}
+                >
+                  {role}
+                </span>
+                <span className="text-sm font-semibold text-gray-700">{label}</span>
+              </div>
+              {hasGap && (
+                <span
+                  className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                  style={{ color, background: color + "18" }}
+                >
+                  {maxGap}pt gap
+                </span>
+              )}
+            </div>
+
+            {/* Lens bars */}
+            <div className="px-3.5 py-2.5 space-y-2">
+              {LENSES.map(({ key, shortLabel, dimmed }) => {
+                const val = display_scores[key][role];
+                return (
+                  <div
+                    key={key}
+                    className="flex items-center gap-2.5"
+                    style={{ opacity: dimmed ? 0.55 : 1 }}
+                  >
+                    <span className="w-[46px] flex-shrink-0 text-[11px] font-semibold text-gray-400 uppercase tracking-wide">
+                      {shortLabel}
+                    </span>
+                    <div className="flex-1 bg-gray-100 rounded-full h-3.5 overflow-hidden">
+                      <div
+                        className="h-full rounded-full transition-all duration-500"
+                        style={{ width: `${val}%`, backgroundColor: color }}
+                      />
+                    </div>
+                    <span className="w-8 flex-shrink-0 text-right text-[11px] font-bold text-gray-600">
+                      {val}%
+                    </span>
                   </div>
-                  <div className="text-[10px] text-gray-400 text-center mt-0.5">{val}%</div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
-        ))}
-      </div>
+        );
+      })}
     </div>
   );
 }

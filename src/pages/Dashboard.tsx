@@ -165,14 +165,14 @@ function ResultsDashboard({ resultId }: { resultId: string }) {
 
       {/* Charts row */}
       <div className="grid gap-6 md:grid-cols-2">
-        {/* Energy Alignment Matrix */}
+        {/* Style Comparison */}
         <Card className="shadow-sm border-t-4 border-t-primary">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
-              Energy Alignment Matrix
-              <InfoTooltip text="Three lenses for three assessment questions: Current State = how you operate now. Role Expectations = what your role demands. Intrinsic Preference = how you naturally prefer to act (shown lighter). Bars show the percentage of total energy per role, per lens." />
+              Style Comparison
+              <InfoTooltip text="Each role shows three lenses side-by-side: Is (Current State), Should (Role Expectations), and Want (Intrinsic Preference, shown lighter). Bars show the percentage of total energy. Gaps between lenses highlight where role demands or natural instincts diverge from current behaviour." />
             </CardTitle>
-            <CardDescription>How your energy distributes across P, A, E, I — by lens.</CardDescription>
+            <CardDescription>How your PAEI energy distributes across Current State, Role Expectations, and Intrinsic Preference.</CardDescription>
           </CardHeader>
           <CardContent>
             <EnergyMatrix display_scores={scaled_scores} />

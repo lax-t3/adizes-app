@@ -146,16 +146,16 @@ export function Results() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 -mt-4 sm:-mt-8">
         <div className="grid gap-6 sm:gap-8 lg:grid-cols-2">
 
-          {/* Energy Alignment Matrix */}
+          {/* Style Comparison */}
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.1 }}>
-            <Card className="h-full shadow-md border-t-4 border-t-primary">
+            <Card className="shadow-md border-t-4 border-t-primary">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  Energy Alignment Matrix
-                  <InfoTooltip text="Three lenses for three assessment questions: Current State = how you operate now. Role Expectations = what your role demands. Intrinsic Preference = how you naturally prefer to act (shown lighter). Bars show the percentage of total energy per role, per lens." />
+                  Style Comparison
+                  <InfoTooltip text="Each role shows three lenses side-by-side: Is (Current State), Should (Role Expectations), and Want (Intrinsic Preference, shown lighter). Bars show the percentage of total energy. Gaps between lenses highlight where role demands or natural instincts diverge from current behaviour." />
                 </CardTitle>
                 <CardDescription>
-                  How your energy distributes across P, A, E, I — by lens.
+                  How your PAEI energy distributes across Current State, Role Expectations, and Intrinsic Preference.
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -166,7 +166,7 @@ export function Results() {
 
           {/* Top Gap Cards */}
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.2 }}>
-            <Card className="h-full shadow-md">
+            <Card className="shadow-md">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   Top Energy Misalignments
