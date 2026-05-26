@@ -250,6 +250,10 @@ export S3_BUCKET_NAME=adizes-pdf-reports
   silently swallowed the error and still returned 200, making PDF generation appear to work while
   Supabase was never patched. Fixed by setting the Lambda's `SUPABASE_SERVICE_ROLE_KEY` to the
   production HS256 key. **When redeploying Lambda, always pass the production key — not the local one.**
+- **`.dockerignore` is critical**: A missing `.dockerignore` caused `.env` to be baked into every Docker
+  image via `COPY . .`. `LAMBDA_INVOKE_ROLE_ARN` in `.env` was loaded by pydantic-settings in production,
+  overriding the "not set" App Runner env. STS AssumeRole failed (AccessDenied), Lambda was never invoked,
+  `pdf_url` stayed null. Fixed: `.dockerignore` now excludes `.env`. Never remove it.
 - **Lambda IAM — direct invoke, no STS**: `LAMBDA_INVOKE_ROLE_ARN` is cleared (`""`) on App Runner.
   Backend uses its base IAM user credentials directly. A Lambda resource-based policy grants
   `adizes-backend-lambda-invoker` direct `lambda:InvokeFunction` on `adizes-pdf-generator-v2`.
