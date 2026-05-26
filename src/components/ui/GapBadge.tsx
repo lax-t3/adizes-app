@@ -8,8 +8,8 @@ export interface GapBadgeProps extends React.HTMLAttributes<HTMLDivElement> {
 function GapBadge({ className, gap, ...props }: GapBadgeProps) {
   const absGap = Math.abs(gap);
   let variant = "green";
-  if (absGap >= 5 && absGap <= 6) variant = "amber";
-  if (absGap >= 7) variant = "red";
+  if (absGap >= 6 && absGap <= 15) variant = "amber";
+  if (absGap > 15) variant = "red";
 
   return (
     <div

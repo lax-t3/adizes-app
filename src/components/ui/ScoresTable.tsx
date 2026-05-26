@@ -26,9 +26,9 @@ export function ScoresTable({ scaled_scores }: Props) {
     <div className="mt-4 pt-4 border-t border-gray-100">
       <div className="flex items-center gap-1.5 mb-2">
         <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-          Raw Scores (12–48)
+          Energy Scores (0–100%)
         </p>
-        <InfoTooltip text="Each role score ranges from 12 (always ranked last) to 48 (always ranked first). A score above 30 is considered dominant (shown as a capital letter in your profile). Is = how you currently behave. Should = what your role demands. Want = your natural preference." />
+        <InfoTooltip text="Each role score shows the percentage of your total energy directed at that role, per lens. Scores sum to 100% per row. A raw score above 33 (out of 132) is considered dominant — shown as a capital letter in your profile. Current State = how you behave now. Role Expectations = what your role demands. Intrinsic Preference = your natural preference." />
       </div>
       <table className="w-full text-sm text-center border-collapse">
         <thead>
