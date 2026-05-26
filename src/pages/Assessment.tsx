@@ -49,6 +49,9 @@ export function Assessment() {
     setResultId,
     cohortId,
     setCohortId,
+    farthestSection,
+    farthestQuestion,
+    advanceFarthest,
   } = useAssessmentStore();
 
   const [searchParams] = useSearchParams();
@@ -59,6 +62,7 @@ export function Assessment() {
   const [submitting, setSubmitting] = useState(false);
   const [loadError, setLoadError] = useState("");   // full-page error (load failure)
   const [submitError, setSubmitError] = useState(""); // inline error (submit failure)
+  const [hasTriedSubmit, setHasTriedSubmit] = useState(false);
   const autoAdvanceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -133,6 +137,8 @@ export function Assessment() {
     const currentRank = currentRankMap[optionKey];
 
     if (currentRank !== null) {
+      // When all 4 are ranked, clicking the auto-assigned rank-4 option is a no-op
+      if (isComplete && currentRank === 4) return;
       // Clear this rank and all ranks greater than it
       const newMap: RankMap = { ...currentRankMap };
       for (const [k, v] of Object.entries(newMap)) {
@@ -166,6 +172,8 @@ export function Assessment() {
     const map = completedMap ?? currentRankMap;
     if (!isRankMapComplete(map)) return;
 
+    advanceFarthest(currentSection, currentQuestion);
+
     if (!isLastQuestion) {
       nextQuestion();
     } else if (!isLastSection) {
@@ -182,21 +190,17 @@ export function Assessment() {
       return;
     }
 
+    setHasTriedSubmit(true);
     setSubmitError("");
 
     // Validate every question has all 4 ranks filled in
     const allQuestions = sections.flatMap((s) => s.questions);
-    const incompleteNums = allQuestions
-      .filter((q) => {
-        const rm = answers[q.question_index];
-        return !rm || !isRankMapComplete(rm);
-      })
-      .map((q) => q.question_index + 1); // 1-based for display
+    const incompleteList = allQuestions.filter((q) => {
+      const rm = answers[q.question_index];
+      return !rm || !isRankMapComplete(rm);
+    });
 
-    if (incompleteNums.length > 0) {
-      setSubmitError(
-        `Question${incompleteNums.length > 1 ? "s" : ""} ${incompleteNums.join(", ")} ${incompleteNums.length > 1 ? "are" : "is"} incomplete — please go back and rank all 4 options.`
-      );
+    if (incompleteList.length > 0) {
       return;
     }
 
@@ -236,6 +240,28 @@ export function Assessment() {
   };
 
   const isAtStart = currentSection === 0 && currentQuestion === 0;
+
+  const handleJumpToQuestion = (questionIndex: number) => {
+    for (let si = 0; si < sections.length; si++) {
+      const qi = sections[si].questions.findIndex((q) => q.question_index === questionIndex);
+      if (qi !== -1) {
+        useAssessmentStore.setState({ currentSection: si as 0 | 1 | 2, currentQuestion: qi });
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        break;
+      }
+    }
+  };
+
+  const incompleteQuestions = hasTriedSubmit
+    ? sections.flatMap((s) => s.questions).filter((q) => {
+        const rm = answers[q.question_index];
+        return !rm || !isRankMapComplete(rm);
+      })
+    : [];
+
+  const isBehindFarthest =
+    currentSection < farthestSection ||
+    (currentSection === farthestSection && currentQuestion < farthestQuestion);
 
   // Pre-assessment video intro screen
   if (showVideoIntro) {
@@ -421,6 +447,25 @@ export function Assessment() {
 
           {/* Footer Controls */}
           <div className="mt-8 sm:mt-12 space-y-4">
+            {incompleteQuestions.length > 0 && (
+              <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
+                <p className="text-sm font-medium text-amber-800 mb-2">
+                  ⚠ {incompleteQuestions.length} question{incompleteQuestions.length !== 1 ? "s" : ""} need attention before you can submit.
+                </p>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-xs text-amber-700">Jump to:</span>
+                  {incompleteQuestions.map((q) => (
+                    <button
+                      key={q.question_index}
+                      onClick={() => handleJumpToQuestion(q.question_index)}
+                      className="text-xs font-medium text-amber-800 underline underline-offset-2 hover:text-amber-900"
+                    >
+                      Question {q.question_index + 1}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
             {submitError && (
               <p className="text-sm text-red-600 text-center font-medium">{submitError}</p>
             )}
@@ -434,30 +479,46 @@ export function Assessment() {
                 <ArrowLeft className="mr-2 h-4 w-4" /> Back
               </Button>
 
-              {/* On last question: always show submit button (no auto-advance).
-                  On other questions: show Next only when complete (fallback if auto-advance stalls). */}
-              {isLastQuestion && isLastSection ? (
-                <Button
-                  onClick={() => handleNext()}
-                  size="lg"
-                  className="px-8"
-                  disabled={!isComplete}
-                >
-                  Complete Assessment
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-              ) : (
-                isComplete && (
+              <div className="flex items-center gap-3">
+                {isBehindFarthest && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() =>
+                      useAssessmentStore.setState({
+                        currentSection: farthestSection,
+                        currentQuestion: farthestQuestion,
+                      })
+                    }
+                    className="text-gray-600 border-gray-300"
+                  >
+                    ↑ Back to where I was
+                  </Button>
+                )}
+
+                {isLastQuestion && isLastSection ? (
                   <Button
                     onClick={() => handleNext()}
                     size="lg"
                     className="px-8"
+                    disabled={!isComplete}
                   >
-                    Next Question
+                    Complete Assessment
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
-                )
-              )}
+                ) : (
+                  isComplete && (
+                    <Button
+                      onClick={() => handleNext()}
+                      size="lg"
+                      className="px-8"
+                    >
+                      Next Question
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  )
+                )}
+              </div>
             </div>
           </div>
         </div>

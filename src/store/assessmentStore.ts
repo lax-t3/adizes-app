@@ -13,6 +13,11 @@ interface AssessmentState {
   currentSection: 0 | 1 | 2;
   currentQuestion: number;
 
+  // Farthest position reached (for "Back to where I was" button)
+  farthestSection: 0 | 1 | 2;
+  farthestQuestion: number;
+  advanceFarthest: (section: 0 | 1 | 2, question: number) => void;
+
   // Answers: key = question_index (0-based), value = rank map for that question
   answers: Record<number, RankMap>;
   saveRanks: (questionIndex: number, rankMap: RankMap) => void;
@@ -37,6 +42,17 @@ export const useAssessmentStore = create<AssessmentState>((set) => ({
 
   currentSection: 0,
   currentQuestion: 0,
+  farthestSection: 0,
+  farthestQuestion: 0,
+
+  advanceFarthest: (section, question) =>
+    set((state) => {
+      const isAhead =
+        section > state.farthestSection ||
+        (section === state.farthestSection && question > state.farthestQuestion);
+      return isAhead ? { farthestSection: section, farthestQuestion: question } : state;
+    }),
+
   answers: {},
 
   saveRanks: (questionIndex, rankMap) =>
@@ -66,6 +82,8 @@ export const useAssessmentStore = create<AssessmentState>((set) => ({
     sections: [],
     currentSection: 0,
     currentQuestion: 0,
+    farthestSection: 0,
+    farthestQuestion: 0,
     answers: {},
     cohortId: null,
     resultId: null,
