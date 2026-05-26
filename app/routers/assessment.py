@@ -108,20 +108,18 @@ SECTION_META = [
 
 @router.get("/questions", response_model=QuestionsResponse)
 def get_questions(_: dict = Depends(get_current_user)):
-    """Return all 36 questions grouped into 3 sections."""
+    """Return all 36 questions grouped into 3 sections by the DB section column."""
     rows = (
         supabase_admin.table("questions")
-        .select("id, question_index, text, options(id, option_key, text, paei_role)")
+        .select("id, question_index, text, section, options(id, option_key, text, paei_role)")
         .order("question_index")
         .execute()
     )
 
-    # Group into sections of 12
+    all_qs = rows.data
     sections = []
-    for i, meta in enumerate(SECTION_META):
-        start = i * 12
-        end = start + 12
-        section_qs = rows.data[start:end]
+    for meta in SECTION_META:
+        section_qs = [q for q in all_qs if q["section"] == meta["name"]]
         questions = [
             Question(
                 id=q["id"],
@@ -180,8 +178,16 @@ def submit_assessment(body: SubmitRequest, background_tasks: BackgroundTasks, us
 
     answers_dicts = [a.model_dump() for a in body.answers]
 
+    # Fetch section map from DB so scoring always matches the questions table
+    section_rows = (
+        supabase_admin.table("questions")
+        .select("question_index, section")
+        .execute()
+    )
+    section_map = {row["question_index"]: row["section"] for row in section_rows.data}
+
     # Score
-    scores = score_answers(answers_dicts)
+    scores = score_answers(answers_dicts, section_map)
     gaps = compute_gaps(scores["raw"])
     interp = interpret(scores["raw"], scores["profile"], gaps=gaps)
 

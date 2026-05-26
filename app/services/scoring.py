@@ -64,15 +64,25 @@ RANK_POINTS = {1: 5, 2: 3, 3: 2, 4: 1}
 DOMINANT_THRESHOLD = 33   # raw score > 33 → dominant (capital letter)
 SECTION_TOTAL = 132       # 12 questions × 11 pts = 132
 
+# Correct per-question section assignments from PAEI_Questions_Turiyaskills_Format.xlsx.
+# Questions are interleaved across sections — NOT sequential blocks of 12.
+SECTION_MAP: Dict[int, str] = {
+    **{idx: "is"     for idx in (0, 4, 7, 9, 10, 14, 19, 21, 23, 29, 33, 35)},
+    **{idx: "should" for idx in (2, 5, 6, 12, 13, 18, 20, 24, 26, 27, 31, 34)},
+    **{idx: "want"   for idx in (1, 3, 8, 11, 15, 16, 17, 22, 25, 28, 30, 32)},
+}
 
-def score_answers(answers: List[Dict]) -> Dict:
+
+def score_answers(answers: List[Dict], section_map: Dict[int, str] = None) -> Dict:
     """
     Score a completed ranking assessment (v3: 132-point scale).
 
     Args:
-        answers: list of {question_index: int, ranks: {a:int, b:int, c:int, d:int}}
-                 ranks values must be a permutation of {1,2,3,4}
-                 rank 1 = most preferred (5 pts), rank 4 = least preferred (1 pt)
+        answers:     list of {question_index: int, ranks: {a:int, b:int, c:int, d:int}}
+                     ranks values must be a permutation of {1,2,3,4}
+                     rank 1 = most preferred (5 pts), rank 4 = least preferred (1 pt)
+        section_map: {question_index: section} — defaults to SECTION_MAP (correct Excel assignments).
+                     Pass the DB-fetched map in production to stay in sync with the questions table.
 
     Returns:
         {
@@ -81,6 +91,9 @@ def score_answers(answers: List[Dict]) -> Dict:
           "profile": {is: "paEI", should: "PaEi", want: "paei"}
         }
     """
+    if section_map is None:
+        section_map = SECTION_MAP
+
     raw: Dict[str, Dict[str, float]] = {s: {"P": 0.0, "A": 0.0, "E": 0.0, "I": 0.0} for s in SECTIONS}
 
     for answer in answers:
@@ -88,7 +101,9 @@ def score_answers(answers: List[Dict]) -> Dict:
         ranks = answer.get("ranks", {})
         if q_idx not in SCORING_KEY:
             continue
-        section = SECTIONS[q_idx // 12]
+        section = section_map.get(q_idx)
+        if section not in SECTIONS:
+            continue
         q_mapping = SCORING_KEY[q_idx]
         for opt, rank in ranks.items():
             role = q_mapping.get(opt)
@@ -96,9 +111,9 @@ def score_answers(answers: List[Dict]) -> Dict:
                 raw[section][role] += RANK_POINTS[rank]
 
     # Apply dominance factor per section, then round to int
-    for s_idx, section in enumerate(SECTIONS):
-        section_start = s_idx * 12
-        raw[section] = _apply_dominance_factor(raw[section], answers, section_start)
+    for section in SECTIONS:
+        section_q_indices = {idx for idx, s in section_map.items() if s == section}
+        raw[section] = _apply_dominance_factor(raw[section], answers, section_q_indices)
 
     raw_int: Dict[str, Dict[str, int]] = {
         s: {r: round(raw[s][r]) for r in ROLES} for s in SECTIONS
@@ -117,10 +132,10 @@ def score_answers(answers: List[Dict]) -> Dict:
 def _apply_dominance_factor(
     section_scores: Dict[str, float],
     answers: List[Dict],
-    section_start: int,
+    q_indices: set,
 ) -> Dict[str, float]:
     """Boost roles with >75% top-2 ranking consistency by 1.05, then rebalance to 132."""
-    q_indices = set(range(section_start, section_start + 12))
+    n = len(q_indices)
     top2_count: Dict[str, int] = {"P": 0, "A": 0, "E": 0, "I": 0}
 
     for answer in answers:
@@ -137,7 +152,7 @@ def _apply_dominance_factor(
     adjusted = dict(section_scores)
     boosted = False
     for role in ROLES:
-        if top2_count[role] / 12 > 0.75:
+        if n > 0 and top2_count[role] / n > 0.75:
             adjusted[role] = section_scores[role] * 1.05
             boosted = True
 
