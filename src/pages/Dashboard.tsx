@@ -1,27 +1,41 @@
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
-
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "@/store/authStore";
 import { useAssessmentStore } from "@/store/assessmentStore";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
-import { GapBadge } from "@/components/ui/GapBadge";
 import { Button } from "@/components/ui/Button";
+import { InfoTooltip } from "@/components/ui/InfoTooltip";
+import { EnergyMatrix } from "@/components/ui/EnergyMatrix";
+import { GapCard } from "@/components/ui/GapCard";
 import {
   Download, Info, Loader2, FileText, ArrowRight, CheckCircle2,
   Users, ClipboardList, LayoutDashboard, Clock, PlayCircle,
 } from "lucide-react";
-import {
-  Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
-  ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
-} from "recharts";
 import { motion } from "motion/react";
 import { getResult, getMyAssessments } from "@/api/results";
-import type { ResultResponse, CohortAssessmentHistory } from "@/types/api";
+import type { ResultResponse, CohortAssessmentHistory, TopGap } from "@/types/api";
+
+function getTopGaps(result: ResultResponse): TopGap[] {
+  const all: TopGap[] = [];
+  for (const g of result.gaps) {
+    for (const gapType of ["execution", "engagement", "authenticity"] as const) {
+      all.push({
+        role:       g.role,
+        role_name:  g.role_name,
+        gap_type:   gapType,
+        gap_abs:    g[`${gapType}_gap`],
+        gap_signed: g[`${gapType}_gap_signed`],
+        severity:   g[`${gapType}_severity`],
+        narrative:  g[`${gapType}_narrative`],
+        is_score:     g.is_score,
+        should_score: g.should_score,
+        want_score:   g.want_score,
+      });
+    }
+  }
+  return all.sort((a, b) => b.gap_abs - a.gap_abs).slice(0, 3);
+}
 
 // ─── Tab bar ──────────────────────────────────────────────────────────────────
 
@@ -108,22 +122,8 @@ function ResultsDashboard({ resultId }: { resultId: string }) {
     );
   }
 
-  const { profile, scaled_scores, gaps, interpretation } = result;
-
-  const radarData = (["P", "A", "E", "I"] as const).map((role) => ({
-    subject: { P: "Producer (P)", A: "Administrator (A)", E: "Entrepreneur (E)", I: "Integrator (I)" }[role],
-    is: scaled_scores.is[role],
-    should: scaled_scores.should[role],
-    want: scaled_scores.want[role],
-    fullMark: 50,
-  }));
-
-  const gapChartData = gaps.map((g) => ({
-    name: g.role_name,
-    is: g.is_score,
-    should: g.should_score,
-    gap: g.external_gap,
-  }));
+  const { profile, scaled_scores, interpretation } = result;
+  const topGaps = getTopGaps(result);
 
   const profileBadges = (profile.want ?? "paei").split("").map((char) => {
     const role = char.toUpperCase() as "P" | "A" | "E" | "I";
@@ -165,64 +165,41 @@ function ResultsDashboard({ resultId }: { resultId: string }) {
 
       {/* Charts row */}
       <div className="grid gap-6 md:grid-cols-2">
-        {/* Radar */}
+        {/* Energy Alignment Matrix */}
         <Card className="shadow-sm border-t-4 border-t-primary">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
-              Style Comparison <Info className="h-4 w-4 text-gray-400" />
+              Energy Alignment Matrix
+              <InfoTooltip text="Three lenses for three assessment questions: Current State = how you operate now. Role Expectations = what your role demands. Intrinsic Preference = how you naturally prefer to act (shown lighter). Bars show the percentage of total energy per role, per lens." />
             </CardTitle>
-            <CardDescription>Visual representation of your Is, Should, and Want profiles.</CardDescription>
+            <CardDescription>How your energy distributes across P, A, E, I — by lens.</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="h-[260px] sm:h-[360px] w-full">
-              <ResponsiveContainer width="99%" height="100%" debounce={50}>
-                <RadarChart cx="50%" cy="50%" outerRadius="70%" data={radarData}>
-                  <PolarGrid stroke="#e5e7eb" />
-                  <PolarAngleAxis dataKey="subject" tick={{ fill: "#4b5563", fontSize: 11, fontWeight: 500 }} />
-                  <PolarRadiusAxis angle={30} domain={[12, 48]} tick={{ fill: "#9ca3af" }} />
-                  <Radar name="Is" dataKey="is" stroke="#C8102E" fill="#C8102E" fillOpacity={0.4} />
-                  <Radar name="Should" dataKey="should" stroke="#1D3557" fill="#1D3557" fillOpacity={0.4} />
-                  <Radar name="Want" dataKey="want" stroke="#E87722" fill="#E87722" fillOpacity={0.4} />
-                  <Legend wrapperStyle={{ paddingTop: "16px" }} />
-                  <Tooltip contentStyle={{ borderRadius: "8px", border: "none", boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)" }} />
-                </RadarChart>
-              </ResponsiveContainer>
-            </div>
+            <EnergyMatrix display_scores={scaled_scores} />
           </CardContent>
         </Card>
 
-        {/* Gap Analysis */}
+        {/* Top Energy Misalignments */}
         <Card className="shadow-sm">
           <CardHeader>
-            <CardTitle className="text-lg sm:text-xl">Gap Analysis</CardTitle>
-            <CardDescription>Differences between your current behavior (Is) and job demands (Should).</CardDescription>
+            <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+              Top Energy Misalignments
+              <InfoTooltip text="The 3 largest gaps across your 12 gap values (4 roles × 3 types). Execution Gap = Role Expectations − Current State. Engagement Gap = Role Expectations − Intrinsic Preference. Authenticity Gap = Current State − Intrinsic Preference. Thresholds on the 132-point scale: < 6 aligned, 6–15 moderate, > 15 high." />
+            </CardTitle>
+            <CardDescription>Where your energy perceptions diverge most.</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="h-[250px] w-full mb-4">
-              <ResponsiveContainer width="99%" height="100%" debounce={50}>
-                <BarChart data={gapChartData} layout="vertical" margin={{ top: 5, right: 30, left: 40, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f3f4f6" />
-                  <XAxis type="number" domain={[12, 48]} tick={{ fill: "#9ca3af" }} />
-                  <YAxis dataKey="name" type="category" tick={{ fill: "#4b5563", fontSize: 12, fontWeight: 500 }} width={100} />
-                  <Tooltip cursor={{ fill: "#f9fafb" }} contentStyle={{ borderRadius: "8px", border: "none", boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)" }} />
-                  <Legend />
-                  <Bar dataKey="is" name="Is" fill="#C8102E" radius={[0, 4, 4, 0]} barSize={14} />
-                  <Bar dataKey="should" name="Should" fill="#1D3557" radius={[0, 4, 4, 0]} barSize={14} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-            <div className="space-y-2">
-              <h4 className="font-medium text-gray-900 text-xs uppercase tracking-wider mb-3">Gap Severity</h4>
-              {gaps.map((g) => (
-                <div key={g.role} className="flex items-center justify-between p-2.5 rounded-lg bg-gray-50 border border-gray-100">
-                  <span className="font-medium text-gray-700 text-sm">{g.role_name}</span>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-gray-500">Ext: <GapBadge gap={g.external_gap} /></span>
-                    <span className="text-xs text-gray-500">Int: <GapBadge gap={g.internal_gap} /></span>
-                  </div>
-                </div>
-              ))}
-            </div>
+            {topGaps.filter(g => g.severity !== "low").length === 0 ? (
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-sm text-green-800">
+                Your energy profile is well-aligned — no significant misalignments detected.
+              </div>
+            ) : (
+              topGaps
+                .filter(g => g.severity !== "low")
+                .map((g, i) => (
+                  <GapCard key={`${g.role}-${g.gap_type}-${i}`} gap={g} display_scores={scaled_scores} />
+                ))
+            )}
           </CardContent>
         </Card>
       </div>
@@ -257,9 +234,9 @@ function ResultsDashboard({ resultId }: { resultId: string }) {
                 <div className="h-7 w-7 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0">
                   <Info className="h-4 w-4" />
                 </div>
-                Blind Spots
+                Watchouts
               </div>
-              <p className="text-gray-600 text-sm leading-relaxed">{interpretation.blind_spots}</p>
+              <p className="text-gray-600 text-sm leading-relaxed">{interpretation.watchouts}</p>
             </div>
             <div className="space-y-3">
               <div className="flex items-center gap-2 text-blue-700 font-medium text-sm">
@@ -275,7 +252,7 @@ function ResultsDashboard({ resultId }: { resultId: string }) {
           {interpretation.mismanagement_risks.length > 0 && (
             <div className="mt-6 pt-5 border-t border-gray-100">
               <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
-                Mismanagement Risk Under Stress
+                Under Stress
               </h4>
               <div className="space-y-2">
                 {interpretation.mismanagement_risks.map((risk, i) => (
