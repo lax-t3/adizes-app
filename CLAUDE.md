@@ -26,12 +26,28 @@ Implementation plan: `docs/plans/2026-03-10-adizes-backend-implementation.md`
 | Entrepreneur | E | Change, vision | Innovative, creative | Arsonist |
 | Integrator | I | People, consensus | Nurturing, team builder | Super-Follower |
 
-## Assessment Structure
-- **36 questions** = 12 per dimension × 3 dimensions (Is / Should / Want)
-- Each option maps to one PAEI role (P / A / E / I)
-- Score per role per dimension = count of selections (max 12), scaled 0–50
-- Dominant trait: scaled score > 30 → capital letter (P vs p)
-- Gaps ≥ 7 points between dimensions indicate meaningful tension
+## Assessment Structure — Adizes90 (current tool)
+
+The individual PAEI self-assessment — sometimes called "Adizes90" internally.
+
+- **36 questions** = 12 per section × 3 sections (Is / Should / Want)
+- Each question: rank all 4 options (P / A / E / I) from 1st choice to 4th
+- **Scoring**: `RANK_POINTS = {1: 5, 2: 3, 3: 2, 4: 1}`
+- **Total per section** = 12 questions × 11 pts = **132 points** (always fixed)
+- **Dominant threshold** = 33 (= 132 ÷ 4, proportional equal share)
+  - Score > 33 → capital letter (e.g. `P`)
+  - Score ≤ 33 → lowercase (e.g. `p`)
+- **3 gap types** per role (all on the 132-point scale):
+  - **Execution Gap** = `|should − is|` — role demand vs current behaviour
+  - **Engagement Gap** = `|should − want|` — role demand vs natural preference
+  - **Authenticity Gap** = `|is − want|` — current behaviour vs natural preference
+- **Severity thresholds**: `< 6` → low · `6–15` → medium · `> 15` → high
+
+## Adizes360 — Phase 2 (pending)
+
+Multi-rater 360° assessment where peers, direct reports, and manager each rate the subject.
+Not yet implemented. Phase 2 scope: rater roles, multi-respondent data collection, aggregated
+scores, self-vs-rater comparison, and admin workflow for assigning rater cohorts.
 
 ## Source Files
 - `PAEI-Questions.xlsx` — all 36 questions + 4 options each
@@ -94,6 +110,9 @@ docker exec -i supabase_db_adizes-backend psql -U postgres -d postgres < migrati
 docker exec -i supabase_db_adizes-backend psql -U postgres -d postgres < migrations/007_organizations.sql
 docker exec -i supabase_db_adizes-backend psql -U postgres -d postgres < migrations/008_employee_extended_fields.sql
 docker exec -i supabase_db_adizes-backend psql -U postgres -d postgres < migrations/009_employee_name_column.sql
+docker exec -i supabase_db_adizes-backend psql -U postgres -d postgres < migrations/011_cohort_status.sql
+docker exec -i supabase_db_adizes-backend psql -U postgres -d postgres < migrations/012_fix_question_sections.sql
+docker exec -i supabase_db_adizes-backend psql -U postgres -d postgres < migrations/013_fix_q9_q26_sections.sql
 
 # 4. Create test users (REQUIRED after every supabase start — users reset)
 SK="<SUPABASE_SERVICE_ROLE_KEY from .env>"
@@ -130,12 +149,12 @@ cd /Users/vrln/adizes-frontend && npm run dev
 | AWS Profile | Use `lax-t3-assumed` for all ECR operations (`AWS_PROFILE=lax-t3-assumed`) |
 
 ### Migrations → Production Supabase
-The project is already linked in the Supabase CLI. Run pending migrations with:
+The project is already linked in the Supabase CLI. However, **`supabase db push --linked` only tracks migrations in `supabase/migrations/`** — the project's custom `migrations/` folder is NOT tracked by the CLI. New migrations in `migrations/` must be applied manually via the Supabase MCP `execute_sql` tool or the Supabase Dashboard SQL editor. The `supabase/migrations/` folder only contains copies of migrations 007–009 that were applied via `supabase db push`.
+
 ```bash
 cd /Users/vrln/adizes-backend
-supabase db push --linked
+supabase db push --linked        # dry-run: add --dry-run
 ```
-Dry-run first with `--dry-run` to confirm which migrations will be applied.
 
 ## Production Architecture
 ```
@@ -218,13 +237,47 @@ export S3_BUCKET_NAME=adizes-pdf-reports
   `PDF_LAMBDA_FUNCTION_NAME=adizes-pdf-generator-v2` (v2) or `=adizes-pdf-generator` (v1 rollback).
   V1 (`lambda/pdf-generator/`) is preserved deployed and untouched.
 - **PDF Lambda v2 report identity:** "PAEI Energy Alignment Profile" — 5 pages, no Chart.js, HTML div
-  bars only. Three tension types: Role Pressure (`abs(should−is)`), Energy Tension (`abs(want−should)`),
-  Identity Drift (`abs(want−is)`). Thresholds: <5 aligned, 5–15 moderate, >15 high.
-- **Re-trigger stuck PDF (pdf_url = null):** Fetch the assessment row from Supabase REST API, then
-  invoke Lambda directly with `RequestResponse` (synchronous). It patches Supabase itself on success.
-  See `lambda/pdf-generator-v2/how-does-lambda-fn-work.md` for the exact CLI commands.
+  bars only. Three gap types (132-scale): Execution (`abs(should−is)`), Engagement (`abs(should−want)`),
+  Authenticity (`abs(is−want)`). Severity thresholds: <6 low, 6–15 medium, >15 high.
+  Design: role-colored 2×2 matrix on page 1 (P=red, A=navy, E=amber, I=teal), IS/SHD/WNT bars per role,
+  WNT bars dimmed at 0.5 opacity, gap pills, colored gap cards page 2, style hero page 4 in dominant role color.
+- **Lambda invocation is synchronous (`RequestResponse`)**: backend calls Lambda and waits for the
+  response. Lambda generates PDF → uploads to S3 → patches Supabase directly. Backend also patches
+  Supabase from the returned `pdf_url` as a redundant safety net. Previously was fire-and-forget
+  (`"Event"`) — changed so the backend can confirm success and log failures.
+- **Lambda SUPABASE_SERVICE_ROLE_KEY must be the production key**: Lambda env var previously held the
+  local dev key (ES256, `iss: supabase-demo`), which production Supabase rejects with 401. The Lambda
+  silently swallowed the error and still returned 200, making PDF generation appear to work while
+  Supabase was never patched. Fixed by setting the Lambda's `SUPABASE_SERVICE_ROLE_KEY` to the
+  production HS256 key. **When redeploying Lambda, always pass the production key — not the local one.**
+- **Lambda IAM — direct invoke, no STS**: `LAMBDA_INVOKE_ROLE_ARN` is cleared (`""`) on App Runner.
+  Backend uses its base IAM user credentials directly. A Lambda resource-based policy grants
+  `adizes-backend-lambda-invoker` direct `lambda:InvokeFunction` on `adizes-pdf-generator-v2`.
+  (The managed IAM policy only covered v1; we could not add permissions so we used resource policy instead.)
+- **Re-trigger stuck PDF (pdf_url = null):** Use Python boto3 — **not** `aws lambda invoke --payload
+  file://`. AWS CLI v2 with `file://` raises `Invalid base64` due to double-encoding. Use:
+  ```python
+  import boto3, json
+  session = boto3.Session(profile_name='lax-t3-assumed')
+  client  = session.client('lambda', region_name='ap-south-1')
+  resp    = client.invoke(FunctionName='adizes-pdf-generator-v2',
+                          InvocationType='RequestResponse',
+                          Payload=json.dumps(payload).encode('utf-8'))
+  print(json.loads(resp['Payload'].read()))
+  ```
+  Build `payload` from the full assessment row. Lambda patches Supabase on success.
+  See `lambda/pdf-generator-v2/how-does-lambda-fn-work.md`.
 - **Lambda deploy IAM:** `power-admin-role` needs `AWSLambda_FullAccess` + `PowerUserAccess` +
   inline policy `iam-pass-for-lambda` (`iam:PassRole` on `adizes-pdf-lambda-role`).
+- **user_name fallback**: `submit_assessment` derives `user_name` as:
+  `user_metadata.name` → fallback to `email.split("@")[0]` → fallback to `""`.
+  This prevents `user_name = ""` for users who registered without setting a display name (causes
+  `"'s Results"` heading on results page). Frontend also guards: shows `"Your Results"` when
+  `result.user_name` is falsy. Dashboard welcome: `user?.name || user?.email?.split('@')[0]`
+  — email prefix fallback when `user.name` is empty string.
+- **EnergyMatrix component** is role-centric (4 sections, one per role) rather than lens-centric
+  (3 rows). Each role section shows Is / Should / Want bars with a gap badge when the max gap ≥ 10.
+  Want bars are dimmed (0.55 opacity) as the reference/background lens.
 - Frontend calls FastAPI for ALL API calls (auth, assessment, results, admin)
 - FastAPI validates Supabase JWT on every protected endpoint
 - Local Supabase uses ES256 JWT; cloud Supabase uses HS256 — auth.py handles both
@@ -273,6 +326,25 @@ export S3_BUCKET_NAME=adizes-pdf-reports
   the org. Uploading to a new org with no sub-nodes will fail all rows with "node_path not found".
   Options: (A) build node tree first then upload, or (B) leave node_path blank to place all employees
   on the selected node.
+- **Cohort lifecycle status** (migration 011): `cohorts` table has `cohort_status VARCHAR(20) NOT NULL DEFAULT 'active'`
+  with CHECK constraint `IN ('active', 'completed', 'archived')`. `PATCH /admin/cohorts/{id}/status` updates it.
+  Enrollment is blocked for non-active cohorts — `enroll_user`, `bulk_enroll`, and `enroll_from_org` all
+  raise HTTP 409 if `cohort_status != 'active'`. Frontend: status filter tabs, ⋮ action menu per cohort,
+  read-only banner on `AdminCohortDetail`, enrollment buttons hidden for non-active cohorts.
+  Migration applied directly to production via Supabase MCP `execute_sql` (not via `supabase db push`).
+- **scaled_scores are 0–100 percentages** (not 132-scale raw scores). The style distribution threshold in
+  `_compute_team_scores()` is `> 25` (equal share = 100 ÷ 4 = 25%). The dominant threshold on the raw 132-scale
+  is `> 33` (= 132 ÷ 4). Using `> 30` on scaled scores caused the style distribution chart to show all zeros
+  for typical assessments — fixed to `> 25`.
+- **Question section assignments are interleaved — NOT sequential blocks** (migrations 012 + 013): The
+  original seed and backend code wrongly assumed Q0-Q11=Is, Q12-Q23=Should, Q24-Q35=Want. The correct
+  distribution from `PAEI_Questions_Turiyaskills_Format.xlsx` interleaves sections throughout:
+  Is (12): Q0,Q4,Q7,Q9,Q10,Q14,Q19,Q21,Q23,Q29,Q33,Q35 · Should (12): Q2,Q5,Q6,Q12,Q13,Q18,Q20,Q24,Q26,Q27,Q31,Q34 · Want (12): Q1,Q3,Q8,Q11,Q15,Q16,Q17,Q22,Q25,Q28,Q30,Q32.
+  Fixed in three layers: (1) DB — migrations 012/013 applied to local + production, seed updated;
+  (2) `assessment.py` — `get_questions()` reads `section` column from DB; `submit_assessment()` fetches
+  `section_map` from DB and passes it to `score_answers()`; (3) `scoring.py` — added `SECTION_MAP`
+  constant, `score_answers()` now accepts optional `section_map` param (defaults to `SECTION_MAP`),
+  `_apply_dominance_factor()` accepts `q_indices: set` instead of `section_start: int`.
 
 ## Known Gotchas (Local Dev)
 
