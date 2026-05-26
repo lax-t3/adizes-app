@@ -72,11 +72,12 @@ class TestScoreAnswers:
 
     def test_max_raw_score_when_role_always_rank1(self):
         """Ranking P option rank 1 in all 12 Is questions → raw P(is) >= 60 (before possible boost)."""
-        # P option per Is question (from SCORING_KEY):
-        p_opts = {0:"b",1:"a",2:"b",3:"c",4:"a",5:"c",6:"d",7:"c",8:"b",9:"a",10:"d",11:"c"}
+        IS_INDICES = {0, 4, 7, 9, 10, 14, 19, 21, 23, 29, 33, 35}
+        # P option per Is question (from SCORING_KEY)
+        p_opts = {0:"b", 4:"a", 7:"c", 9:"a", 10:"d", 14:"c", 19:"a", 21:"c", 23:"c", 29:"a", 33:"c", 35:"b"}
         answers = []
         for q in range(36):
-            if q < 12:
+            if q in IS_INDICES:
                 p_opt = p_opts[q]
                 non_p = [o for o in "abcd" if o != p_opt]
                 answers.append({"question_index": q, "ranks": {p_opt:1, non_p[0]:2, non_p[1]:3, non_p[2]:4}})
@@ -87,10 +88,11 @@ class TestScoreAnswers:
 
     def test_min_raw_score_when_role_always_rank4(self):
         """Ranking P option rank 4 in all 12 Is questions → P(is) = 12."""
-        p_opts = {0:"b",1:"a",2:"b",3:"c",4:"a",5:"c",6:"d",7:"c",8:"b",9:"a",10:"d",11:"c"}
+        IS_INDICES = {0, 4, 7, 9, 10, 14, 19, 21, 23, 29, 33, 35}
+        p_opts = {0:"b", 4:"a", 7:"c", 9:"a", 10:"d", 14:"c", 19:"a", 21:"c", 23:"c", 29:"a", 33:"c", 35:"b"}
         answers = []
         for q in range(36):
-            if q < 12:
+            if q in IS_INDICES:
                 p_opt = p_opts[q]
                 non_p = [o for o in "abcd" if o != p_opt]
                 answers.append({"question_index": q, "ranks": {non_p[0]:1, non_p[1]:2, non_p[2]:3, p_opt:4}})
@@ -132,22 +134,22 @@ class TestDominanceFactor:
         """Role ranked top-2 in 10/12 questions (83%) gets 1.05x boost, total stays 132."""
         from app.services.scoring import _apply_dominance_factor
 
-        # P options in Is section: Q0=b, Q1=a, Q2=b, Q3=c, Q4=a, Q5=c,
-        #                           Q6=d, Q7=c, Q8=b, Q9=a, Q10=d, Q11=c
-        # Rank P=rank1 in Q0-Q9 (10 questions), default for Q10-Q11 (P=rank4,rank3)
+        IS_INDICES = {0, 4, 7, 9, 10, 14, 19, 21, 23, 29, 33, 35}
+        # P options: Q0=b, Q4=a, Q7=c, Q9=a, Q10=d, Q14=c, Q19=a, Q21=c, Q23=c, Q29=a, Q33=c, Q35=b
+        # Rank P=rank1 in first 10 Is questions; Q33 and Q35 P not in top-2
         overrides = {
-            0: {"b":1,"a":2,"c":3,"d":4},
-            1: {"a":1,"b":2,"c":3,"d":4},
-            2: {"b":1,"a":2,"c":3,"d":4},
-            3: {"c":1,"a":2,"b":3,"d":4},
-            4: {"a":1,"b":2,"c":3,"d":4},
-            5: {"c":1,"a":2,"b":3,"d":4},
-            6: {"d":1,"a":2,"b":3,"c":4},
-            7: {"c":1,"a":2,"b":3,"d":4},
-            8: {"b":1,"a":2,"c":3,"d":4},
-            9: {"a":1,"b":2,"c":3,"d":4},
-            10: {"a":1,"b":2,"c":3,"d":4},   # P=d → rank 4 (not top-2)
-            11: {"a":1,"b":2,"c":3,"d":4},   # P=c → rank 3 (not top-2)
+            0:  {"b":1,"a":2,"c":3,"d":4},   # P=b rank 1
+            4:  {"a":1,"b":2,"c":3,"d":4},   # P=a rank 1
+            7:  {"c":1,"a":2,"b":3,"d":4},   # P=c rank 1
+            9:  {"a":1,"b":2,"c":3,"d":4},   # P=a rank 1
+            10: {"d":1,"a":2,"b":3,"c":4},   # P=d rank 1
+            14: {"c":1,"a":2,"b":3,"d":4},   # P=c rank 1
+            19: {"a":1,"b":2,"c":3,"d":4},   # P=a rank 1
+            21: {"c":1,"a":2,"b":3,"d":4},   # P=c rank 1
+            23: {"c":1,"a":2,"b":3,"d":4},   # P=c rank 1
+            29: {"a":1,"b":2,"c":3,"d":4},   # P=a rank 1
+            33: {"a":1,"b":2,"d":3,"c":4},   # P=c rank 4 (not top-2)
+            35: {"a":1,"c":2,"d":3,"b":4},   # P=b rank 4 (not top-2)
         }
         answers = [
             {"question_index": q, "ranks": overrides.get(q, {"a":1,"b":2,"c":3,"d":4})}
@@ -155,7 +157,7 @@ class TestDominanceFactor:
         ]
         # Seed section_scores with plausible values summing to 132
         section_scores = {"P": 53.0, "A": 28.0, "E": 30.0, "I": 21.0}
-        result = _apply_dominance_factor(section_scores, answers, 0)
+        result = _apply_dominance_factor(section_scores, answers, IS_INDICES)
 
         assert abs(sum(result.values()) - 132) < 0.1   # rebalanced to 132
         assert result["P"] > section_scores["P"]        # P was boosted
@@ -164,38 +166,41 @@ class TestDominanceFactor:
         """Role ranked top-2 in exactly 9/12 questions (75%) does NOT get boosted."""
         from app.services.scoring import _apply_dominance_factor
 
-        # P top-2 in Q0-Q8 only (9 questions), Q9-Q11 P not in top-2
+        IS_INDICES = {0, 4, 7, 9, 10, 14, 19, 21, 23, 29, 33, 35}
+        # P options: Q0=b, Q4=a, Q7=c, Q9=a, Q10=d, Q14=c, Q19=a, Q21=c, Q23=c, Q29=a, Q33=c, Q35=b
+        # P top-2 in first 9 Is questions (Q0-Q23), P not top-2 in Q29, Q33, Q35
         overrides = {
-            0: {"b":1,"a":2,"c":3,"d":4},   # P=b rank 1
-            1: {"a":1,"b":2,"c":3,"d":4},   # P=a rank 1
-            2: {"b":1,"a":2,"c":3,"d":4},   # P=b rank 1
-            3: {"c":1,"a":2,"b":3,"d":4},   # P=c rank 1
-            4: {"a":1,"b":2,"c":3,"d":4},   # P=a rank 1
-            5: {"c":1,"a":2,"b":3,"d":4},   # P=c rank 1
-            6: {"d":1,"a":2,"b":3,"c":4},   # P=d rank 1
-            7: {"c":1,"a":2,"b":3,"d":4},   # P=c rank 1
-            8: {"b":1,"a":2,"c":3,"d":4},   # P=b rank 1
-            9: {"b":1,"c":2,"a":3,"d":4},   # P=a rank 3 (not top-2)
-            10: {"a":1,"b":2,"c":3,"d":4},  # P=d rank 4 (not top-2)
-            11: {"a":1,"b":2,"c":3,"d":4},  # P=c rank 3 (not top-2)
+            0:  {"b":1,"a":2,"c":3,"d":4},   # P=b rank 1
+            4:  {"a":1,"b":2,"c":3,"d":4},   # P=a rank 1
+            7:  {"c":1,"a":2,"b":3,"d":4},   # P=c rank 1
+            9:  {"a":1,"b":2,"c":3,"d":4},   # P=a rank 1
+            10: {"d":1,"a":2,"b":3,"c":4},   # P=d rank 1
+            14: {"c":1,"a":2,"b":3,"d":4},   # P=c rank 1
+            19: {"a":1,"b":2,"c":3,"d":4},   # P=a rank 1
+            21: {"c":1,"a":2,"b":3,"d":4},   # P=c rank 1
+            23: {"c":1,"a":2,"b":3,"d":4},   # P=c rank 1
+            29: {"b":1,"c":2,"d":3,"a":4},   # P=a rank 4 (not top-2)
+            33: {"a":1,"b":2,"d":3,"c":4},   # P=c rank 4 (not top-2)
+            35: {"a":1,"c":2,"d":3,"b":4},   # P=b rank 4 (not top-2)
         }
         answers = [
             {"question_index": q, "ranks": overrides.get(q, {"a":1,"b":2,"c":3,"d":4})}
             for q in range(36)
         ]
         section_scores = {"P": 48.0, "A": 28.0, "E": 30.0, "I": 26.0}
-        result = _apply_dominance_factor(section_scores, answers, 0)
+        result = _apply_dominance_factor(section_scores, answers, IS_INDICES)
 
         # 9/12 = 75% which is NOT > 75%, no boost, scores returned unchanged
         assert result == section_scores
 
     def test_full_score_answers_with_dominance_total_132(self):
         """End-to-end: score_answers always returns raw totals = 132 per section."""
-        # Use answers that trigger P dominance (all 12 Is questions, P=rank1)
-        p_opts = {0:"b",1:"a",2:"b",3:"c",4:"a",5:"c",6:"d",7:"c",8:"b",9:"a",10:"d",11:"c"}
+        IS_INDICES = {0, 4, 7, 9, 10, 14, 19, 21, 23, 29, 33, 35}
+        # P option per Is question (from SCORING_KEY) — triggers P dominance boost
+        p_opts = {0:"b", 4:"a", 7:"c", 9:"a", 10:"d", 14:"c", 19:"a", 21:"c", 23:"c", 29:"a", 33:"c", 35:"b"}
         answers = []
         for q in range(36):
-            if q < 12:
+            if q in IS_INDICES:
                 p_opt = p_opts[q]
                 non_p = [o for o in "abcd" if o != p_opt]
                 answers.append({"question_index": q, "ranks": {p_opt:1, non_p[0]:2, non_p[1]:3, non_p[2]:4}})
