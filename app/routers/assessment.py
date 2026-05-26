@@ -32,7 +32,7 @@ def _build_pdf_payload(result_id: str, user_name: str, now: str,
 
 
 def _trigger_pdf_lambda(assessment_id: str, payload: dict) -> None:
-    """Fire-and-forget: invoke Lambda async. Non-fatal if it fails."""
+    """Invoke Lambda synchronously, capture returned pdf_url, and patch local DB."""
     if not settings.aws_access_key_id:
         logger.info(f"[pdf-lambda] AWS credentials not configured — skipping trigger for {assessment_id}")
         return
@@ -44,7 +44,6 @@ def _trigger_pdf_lambda(assessment_id: str, payload: dict) -> None:
         )
 
         if settings.lambda_invoke_role_arn:
-            # Assume the invoke role — user has sts:AssumeRole permission only
             sts = boto3.client("sts", **base_kwargs)
             creds = sts.assume_role(
                 RoleArn=settings.lambda_invoke_role_arn,
@@ -60,12 +59,21 @@ def _trigger_pdf_lambda(assessment_id: str, payload: dict) -> None:
             lambda_kwargs = base_kwargs
 
         client = boto3.client("lambda", **lambda_kwargs)
-        client.invoke(
+        response = client.invoke(
             FunctionName=settings.pdf_lambda_function_name,
-            InvocationType="Event",
+            InvocationType="RequestResponse",
             Payload=json.dumps(payload).encode(),
         )
-        logger.info(f"[pdf-lambda] Triggered async PDF generation for assessment {assessment_id}")
+
+        resp_payload = json.loads(response["Payload"].read())
+        pdf_url = resp_payload.get("pdf_url")
+        status_code = resp_payload.get("statusCode", 0)
+
+        if pdf_url and status_code == 200:
+            supabase_admin.table("assessments").update({"pdf_url": pdf_url}).eq("id", assessment_id).execute()
+            logger.info(f"[pdf-lambda] PDF ready for {assessment_id}: {pdf_url}")
+        else:
+            logger.error(f"[pdf-lambda] Lambda returned no pdf_url for {assessment_id}: {resp_payload}")
     except Exception as e:
         logger.error(f"[pdf-lambda] Trigger failed for assessment {assessment_id}: {e}")
 

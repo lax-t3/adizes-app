@@ -223,7 +223,7 @@
       </tbody>
     </table>
     <p style="font-size:8pt;color:#9CA3AF;margin-top:8px;">
-      Scores are on a 0–50 scale. Score &gt; 30 indicates a dominant trait (shown as capital letter in profile code).
+      Scores shown as % of total energy per lens. Score &gt; 25% indicates a dominant trait (shown as capital letter in profile code).
     </p>
   </div>
 
@@ -231,9 +231,9 @@
   <div class="section page-break">
     <div class="section-title">Gap Analysis</div>
     <p style="font-size:9pt;color:#6B7280;margin-bottom:16px;">
-      <strong>External gap</strong> (Should vs Is): difference between job demands and current behaviour.<br>
-      <strong>Internal gap</strong> (Is vs Want): difference between current behaviour and your natural preference.<br>
-      Gaps ≤ 4 = aligned &nbsp;|&nbsp; 5–6 = worth monitoring &nbsp;|&nbsp; ≥ 7 = significant tension
+      <strong>Execution gap</strong> (Role Expectations − Current State): where role demands exceed how you operate.<br>
+      <strong>Authenticity gap</strong> (Current State − Intrinsic Preference): where you behave differently from your natural preference.<br>
+      Gaps &lt; 6 = aligned &nbsp;|&nbsp; 6–15 = moderate tension &nbsp;|&nbsp; &gt; 15 = high tension (132-pt scale)
     </p>
 
     {% for gap in gaps %}
@@ -247,24 +247,24 @@
           <div class="gap-bar-label">{{ dim }}</div>
           <div class="gap-bar-track">
             <div class="gap-bar-fill"
-                 style="width:{{ val * 2 }}%;background:{% if gap.role == 'P' %}#C8102E{% elif gap.role == 'A' %}#1D3557{% elif gap.role == 'E' %}#E87722{% else %}#2A9D8F{% endif %};opacity:0.8;"></div>
+                 style="width:{{ (val / 1.32) | int }}%;background:{% if gap.role == 'P' %}#C8102E{% elif gap.role == 'A' %}#1D3557{% elif gap.role == 'E' %}#E87722{% else %}#2A9D8F{% endif %};opacity:0.8;"></div>
           </div>
           <div class="gap-bar-val">{{ val }}</div>
         </div>
         {% endfor %}
         <div style="margin-top:4px;font-size:8pt;">
-          External:
-          <span class="severity-{{ gap.external_severity }}">{{ gap.external_gap }} pts ({{ gap.external_severity }})</span>
+          Execution:
+          <span class="severity-{{ gap.execution_severity }}">{{ gap.execution_gap }} pts ({{ gap.execution_severity }})</span>
           &nbsp;|&nbsp;
-          Internal:
-          <span class="severity-{{ gap.internal_severity }}">{{ gap.internal_gap }} pts ({{ gap.internal_severity }})</span>
+          Authenticity:
+          <span class="severity-{{ gap.authenticity_severity }}">{{ gap.authenticity_gap }} pts ({{ gap.authenticity_severity }})</span>
         </div>
         <div class="gap-messages">
-          {% if gap.external_message and gap.external_severity != 'aligned' %}
-          <div class="gap-msg"><strong>External:</strong> {{ gap.external_message }}</div>
+          {% if gap.execution_narrative and gap.execution_severity != 'low' %}
+          <div class="gap-msg"><strong>Execution:</strong> {{ gap.execution_narrative }}</div>
           {% endif %}
-          {% if gap.internal_message and gap.internal_severity != 'aligned' %}
-          <div class="gap-msg"><strong>Internal:</strong> {{ gap.internal_message }}</div>
+          {% if gap.authenticity_narrative and gap.authenticity_severity != 'low' %}
+          <div class="gap-msg"><strong>Authenticity:</strong> {{ gap.authenticity_narrative }}</div>
           {% endif %}
         </div>
       </div>
@@ -292,8 +292,8 @@
     </div>
 
     <div class="interp-block">
-      <div class="interp-label">Blind Spots to Watch</div>
-      <div class="interp-text">{{ interpretation.blind_spots }}</div>
+      <div class="interp-label">Watchouts</div>
+      <div class="interp-text">{{ interpretation.watchouts }}</div>
     </div>
 
     <div class="interp-block">
