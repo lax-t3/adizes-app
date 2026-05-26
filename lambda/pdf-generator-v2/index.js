@@ -8,16 +8,12 @@ const path        = require('path');
 const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
 
 const {
-  computeTensions, getTopTensions, computeActionPath, generateActionPathMessages,
-  ROLES, ROLE_NAMES, ROLE_COLORS, ROLE_TINTS, TYPE_LABELS, ACTION_CUES,
-} = require('./lib/tensions');
+  getTopGaps, computeActionPath, generateActionPathMessages,
+  ROLES, ROLE_NAMES, ROLE_COLORS, ROLE_TINTS, GAP_TYPE_META,
+} = require('./lib/gaps');
 
 const TEMPLATE_PATH = path.join(__dirname, 'template', 'report.html');
 
-/**
- * Inline CSS and convert ./assets/* src references to base64 data URIs.
- * page.setContent() does not resolve relative paths — everything must be inline.
- */
 function inlineAssets(html) {
   const templateDir = path.join(__dirname, 'template');
 
@@ -51,48 +47,39 @@ exports.handler = async (event) => {
     user_name,
     completed_at,
     profile,
-    scaled_scores,
-    gaps,
+    scaled_scores,   // display% 0-100 — used for bar widths
+    gaps,            // pre-computed by backend (132-scale, 3 gap types per role)
     interpretation,
   } = event;
-  // Backend sends result_id; support both for backwards compatibility
   const assessment_id = event.result_id || event.assessment_id;
 
   console.log(`[pdf-v2] Starting PDF for assessment ${assessment_id}, user: ${user_name}`);
 
-  // ── Compute derived data ───────────────────────────────────────────────────
-  const tensions       = computeTensions(scaled_scores);
-  const topTensions    = getTopTensions(tensions, 2);
-  const actionPath     = computeActionPath(tensions);
-  const actionPathMsgs = generateActionPathMessages(tensions, actionPath);
+  // ── Compute derived data from pre-computed gaps ────────────────────────────
+  const topGaps     = getTopGaps(gaps, 3);
+  const actionPath  = computeActionPath(gaps);
+  const actionPathMsgs = generateActionPathMessages(gaps, actionPath, scaled_scores);
 
   const gapsMap = {};
   for (const g of gaps) gapsMap[g.role] = g;
 
-  const identityLine = interpretation.combined_description
-    ? interpretation.combined_description.split(' — ')[0].replace(/^The /, '')
-    : interpretation.style_label;
-
   // ── Render EJS template ────────────────────────────────────────────────────
-  const templateSrc = fs.readFileSync(TEMPLATE_PATH, 'utf8');
+  const templateSrc  = fs.readFileSync(TEMPLATE_PATH, 'utf8');
   const renderedHtml = ejs.render(templateSrc, {
     user_name,
     completed_at,
     profile,
-    scaled_scores,
+    scaled_scores,    // display% for bar widths
     interpretation,
     gaps,
-    tensions,
-    topTensions,
-    actionPath: actionPathMsgs,
     gapsMap,
-    identityLine,
+    topGaps,
+    actionPath: actionPathMsgs,
     ROLES,
     ROLE_NAMES,
     ROLE_COLORS,
     ROLE_TINTS,
-    TYPE_LABELS,
-    ACTION_CUES,
+    GAP_TYPE_META,
   });
 
   const html = inlineAssets(renderedHtml);
@@ -158,7 +145,6 @@ exports.handler = async (event) => {
       break;
     } catch (err) {
       console.error(`[pdf-v2] Supabase PATCH attempt ${attempt} failed: ${err.message}`);
-      // Intentional: PDF is already in S3. DB update failure is non-fatal — caller can retry via assessment status check.
       if (attempt === 2) console.error(`[pdf-v2] Giving up on Supabase PATCH`);
     }
   }
