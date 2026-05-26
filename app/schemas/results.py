@@ -25,23 +25,33 @@ class GapDetail(BaseModel):
     is_score: int
     should_score: int
     want_score: int
-    external_gap: int
-    internal_gap: int
-    external_severity: str   # 'aligned' | 'watch' | 'tension'
-    internal_severity: str
-    external_message: str
-    internal_message: str
+    execution_gap: int
+    execution_gap_signed: int
+    execution_severity: str
+    execution_narrative: str
+    engagement_gap: int
+    engagement_gap_signed: int
+    engagement_severity: str
+    engagement_narrative: str
+    authenticity_gap: int
+    authenticity_gap_signed: int
+    authenticity_severity: str
+    authenticity_narrative: str
 
 
 class Interpretation(BaseModel):
     dominant_roles: List[str]
+    identity_line: str
     style_label: str
     style_tagline: str
     strengths: str
-    blind_spots: str
+    watchouts: str
     working_with_others: str
     combined_description: Optional[str]
     mismanagement_risks: List[str]
+    at_your_best: str
+    friction_shows_up: str
+    early_warnings: List[str]
 
 
 class ResultResponse(BaseModel):
