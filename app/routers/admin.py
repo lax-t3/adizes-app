@@ -783,7 +783,7 @@ def _compute_team_scores(all_scaled: list) -> TeamScores:
     for s in all_scaled:
         want = s.get("want", {})
         for r in roles:
-            if want.get(r, 0) > 30:
+            if want.get(r, 0) > 25:   # scaled_scores are 0-100%; equal share = 25%
                 dist[r] += 1
 
     return TeamScores(average_scaled=avg, style_distribution=dist)
