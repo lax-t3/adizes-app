@@ -3,8 +3,8 @@
 -- Section assignments from PAEI_Questions_Turiyaskills_Format.xlsx
 -- (Question Tag column — interleaved, NOT sequential blocks)
 --
--- Is     (12): Q0, Q4, Q7, Q10, Q14, Q19, Q21, Q23, Q26, Q29, Q33, Q35
--- Should (12): Q2, Q5, Q6, Q9, Q12, Q13, Q18, Q20, Q24, Q27, Q31, Q34
+-- Is     (12): Q0, Q4, Q7, Q9, Q10, Q14, Q19, Q21, Q23, Q29, Q33, Q35
+-- Should (12): Q2, Q5, Q6, Q12, Q13, Q18, Q20, Q24, Q26, Q27, Q31, Q34
 -- Want   (12): Q1, Q3, Q8, Q11, Q15, Q16, Q17, Q22, Q25, Q28, Q30, Q32
 -- ============================================================
 
@@ -40,7 +40,7 @@ INSERT INTO options (question_id, option_key, text, paei_role) VALUES (q,'a','Cr
 INSERT INTO questions (question_index, text, section) VALUES (8, 'If I had some spare time at work, I would like to:', 'want') RETURNING id INTO q;
 INSERT INTO options (question_id, option_key, text, paei_role) VALUES (q,'a','Clean up and/or organize my paper work.','A'),(q,'b','Get through some of the day-to-day work.','P'),(q,'c','Get a development project under way.','E'),(q,'d','Walk around to maintain contact with my colleagues.','I');
 
-INSERT INTO questions (question_index, text, section) VALUES (9, 'My job is characterized by:', 'should') RETURNING id INTO q;
+INSERT INTO questions (question_index, text, section) VALUES (9, 'My job is characterized by:', 'is') RETURNING id INTO q;
 INSERT INTO options (question_id, option_key, text, paei_role) VALUES (q,'a','Lots of repetitive tasks.','P'),(q,'b','Demands for managing people.','I'),(q,'c','Lots of time following up and supervising others'' work.','A'),(q,'d','Lots of new tasks.','E');
 
 INSERT INTO questions (question_index, text, section) VALUES (10, 'In my opinion, my closest colleagues think that I am:', 'is') RETURNING id INTO q;
@@ -91,7 +91,7 @@ INSERT INTO options (question_id, option_key, text, paei_role) VALUES (q,'a','Wo
 INSERT INTO questions (question_index, text, section) VALUES (25, 'The kinds of tasks I like are:', 'want') RETURNING id INTO q;
 INSERT INTO options (question_id, option_key, text, paei_role) VALUES (q,'a','Those that require cooperation with colleagues.','I'),(q,'b','Those that give me the opportunity to plan for the future.','E'),(q,'c','Those that make it possible to work systematically and within a structure.','A'),(q,'d','Those in which you can see the results the same day.','P');
 
-INSERT INTO questions (question_index, text, section) VALUES (26, 'My most important quality in my current job is:', 'is') RETURNING id INTO q;
+INSERT INTO questions (question_index, text, section) VALUES (26, 'My most important quality in my current job is:', 'should') RETURNING id INTO q;
 INSERT INTO options (question_id, option_key, text, paei_role) VALUES (q,'a','My ability to systematize.','A'),(q,'b','My ability to achieve goals.','P'),(q,'c','My flexibility.','E'),(q,'d','My ability to work well with others.','I');
 
 INSERT INTO questions (question_index, text, section) VALUES (27, 'The person taking over from me should like:', 'should') RETURNING id INTO q;
