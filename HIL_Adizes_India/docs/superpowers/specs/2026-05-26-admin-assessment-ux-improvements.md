@@ -1,6 +1,42 @@
 # Admin & Assessment UX Improvements
 
-Two independent features, both captured here for a single implementation sprint.
+Three items: two UX features (pending implementation) and one infrastructure bug (already fixed).
+
+---
+
+## ~~Bug Fix — PDF Report "Still Generating" After Assessment Completion~~ ✅ Fixed 2026-05-26
+
+### Symptoms
+After submitting the assessment, the Results page stayed in "generating…" state indefinitely. The `pdf_url` column in Supabase was `null` even hours after completion.
+
+### Root Cause (Three-Layer Failure)
+
+**Layer 1 — `.env` baked into Docker image.**
+No `.dockerignore` existed, so `COPY . .` in the Dockerfile included `.env` in every production image. pydantic-settings reads `env_file = ".env"` at app startup; it found the file inside the container and loaded it.
+
+**Layer 2 — `LAMBDA_INVOKE_ROLE_ARN` set in `.env` to `power-admin-role`.**
+The `.env` file had `LAMBDA_INVOKE_ROLE_ARN=arn:aws:iam::094492115510:role/power-admin-role`. App Runner's service config does not include this key (it was intentionally cleared per CLAUDE.md: "direct invoke, no STS"). With no App Runner override, the `.env` value took precedence.
+
+**Layer 3 — IAM user cannot assume that role.**
+`adizes-backend-lambda-invoker` has direct `lambda:InvokeFunction` permission on the Lambda (via resource-based policy) but does NOT have `sts:AssumeRole` permission on `power-admin-role`. The STS call returned `AccessDenied`, which `_trigger_pdf_lambda` caught in its `except Exception` block and logged silently. Lambda was never invoked. The redundant Supabase PATCH never ran. `pdf_url` stayed `null`.
+
+Error from App Runner application logs:
+```
+[pdf-lambda] Trigger failed for assessment 0779ee7f: An error occurred (AccessDenied)
+when calling the AssumeRole operation: User: arn:aws:iam::094492115510:user/adizes-backend-lambda-invoker
+is not authorized to perform: sts:AssumeRole on resource: arn:aws:iam::094492115510:role/power-admin-role
+```
+
+### Fix Applied
+1. **`.dockerignore` created** — `.env` and caches are now excluded from Docker build context. The production image no longer contains any local credentials or config.
+2. **`.env` `LAMBDA_INVOKE_ROLE_ARN` cleared** — set to empty string for local dev safety.
+3. **ECR image rebuilt and pushed** — App Runner auto-redeploys with the clean image.
+4. **Stuck assessment re-triggered** — harpreet's assessment (`0779ee7f`) manually re-triggered via boto3; `pdf_url` confirmed populated in Supabase.
+
+### Permanent Prevention
+- The `.dockerignore` makes this class of leak structurally impossible.
+- Never add `LAMBDA_INVOKE_ROLE_ARN` to `.env` — direct invoke via resource-based policy is the documented and working approach (see CLAUDE.md Key Decisions).
+- To diagnose a stuck PDF in future: check App Runner application logs, filter on `pdf-lambda`.
 
 ---
 
