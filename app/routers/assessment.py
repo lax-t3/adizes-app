@@ -158,7 +158,10 @@ def submit_assessment(body: SubmitRequest, background_tasks: BackgroundTasks, us
         )
 
     user_id = user["sub"]
-    user_name = (user.get("user_metadata") or {}).get("name", "")
+    user_email = user.get("email") or ""
+    user_name = (user.get("user_metadata") or {}).get("name", "").strip()
+    if not user_name:
+        user_name = user_email.split("@")[0] if user_email else ""
 
     # Verify user is enrolled in the specified cohort
     cohort_id = body.cohort_id
