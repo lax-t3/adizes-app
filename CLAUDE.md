@@ -349,6 +349,21 @@ export S3_BUCKET_NAME=adizes-pdf-reports
   `section_map` from DB and passes it to `score_answers()`; (3) `scoring.py` — added `SECTION_MAP`
   constant, `score_answers()` now accepts optional `section_map` param (defaults to `SECTION_MAP`),
   `_apply_dominance_factor()` accepts `q_indices: set` instead of `section_start: int`.
+- **Cohort member activation status** (added 2026-05-26): `GET /admin/cohorts/{id}` returns `activated: bool`
+  per respondent — `True` if `email_confirmed_at` is set in `auth.users`, `False` if the user never clicked
+  the invite link. Frontend `AdminCohortDetail` shows green "Active" / amber "Invite Pending" badge per row.
+  "Resend Invite" button now appears for all unactivated members (`!r.activated`), not just `pending` ones.
+  No migration needed — pure read from the existing `auth.users` object already fetched in `get_cohort`.
+- **Assessment navigation UX** (added 2026-05-26): Three problems fixed in `Assessment.tsx` + `assessmentStore.ts`:
+  (1) Submit failure now shows a persistent amber panel with clickable "Jump to: Question N" buttons for each
+  incomplete question — panel auto-updates as questions are answered (`hasTriedSubmit` state gates first display).
+  `handleJumpToQuestion(questionIndex)` finds section+position by searching `sections[si].questions.findIndex(...)`.
+  (2) Auto-assigned rank-4 option is locked — when all 4 options are ranked, clicking the rank-4 option is a
+  no-op (`if (isComplete && currentRank === 4) return;` at top of click handler).
+  (3) `assessmentStore` tracks `farthestSection`/`farthestQuestion` (high-water mark). `handleNext()` calls
+  `advanceFarthest(currentSection, currentQuestion)` before navigating. A "↑ Back to where I was" button
+  appears when `currentSection/currentQuestion < farthestSection/farthestQuestion`, jumping back to the
+  farthest reached point.
 
 ## Known Gotchas (Local Dev)
 
