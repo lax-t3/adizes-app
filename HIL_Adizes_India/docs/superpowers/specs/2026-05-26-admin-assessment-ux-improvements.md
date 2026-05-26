@@ -40,7 +40,7 @@ is not authorized to perform: sts:AssumeRole on resource: arn:aws:iam::094492115
 
 ---
 
-## Feature 1 — Cohort Member Activation Status
+## ~~Feature 1 — Cohort Member Activation Status~~ ✅ Implemented 2026-05-26
 
 **Goal:** Allow admins to see whether an enrolled user has activated their account (clicked the invite link and set their password), distinct from whether they have started or completed the assessment.
 
@@ -143,7 +143,7 @@ No new API endpoints, no migrations, no schema changes. Pure read-only data alre
 
 ---
 
-## Feature 2 — Assessment Navigation & Completion UX
+## ~~Feature 2 — Assessment Navigation & Completion UX~~ ✅ Implemented 2026-05-26
 
 ### Problems Reported
 
