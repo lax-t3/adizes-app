@@ -263,47 +263,74 @@ export function Assessment() {
     currentSection < farthestSection ||
     (currentSection === farthestSection && currentQuestion < farthestQuestion);
 
-  // Pre-assessment video intro screen
+  // Pre-assessment prose intro screen
   if (showVideoIntro) {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          className="w-full max-w-3xl"
+          className="w-full max-w-2xl"
         >
-          <Card className="border-t-4 border-t-primary shadow-lg">
+          <Card className="border-t-4 border-t-[#1D3557] shadow-lg">
             <CardContent className="p-6 sm:p-10">
-              <div className="text-center mb-6">
-                <h2 className="font-display text-3xl font-bold text-gray-900 mb-2">
+              <div className="text-center mb-8">
+                <p className="text-xs font-semibold text-[#1D3557] uppercase tracking-widest mb-3">
+                  LEAP™ — Leadership Energy Alignment Profile
+                </p>
+                <h2 className="font-display text-3xl font-bold text-gray-900 mb-3">
                   Before You Begin
                 </h2>
-                <p className="text-gray-500 text-base max-w-xl mx-auto">
-                  Watch this short video to understand the Adizes PAEI framework and get the most out of your assessment.
+                <p className="text-gray-500 text-base">
+                  Leadership clarity starts with honest reflection.
                 </p>
               </div>
 
-              {/* 16:9 YouTube embed */}
-              <div className="relative w-full mb-8" style={{ paddingBottom: "56.25%" }}>
-                <iframe
-                  className="absolute inset-0 w-full h-full rounded-lg shadow"
-                  src="https://www.youtube.com/embed/qhtbLtR2zBE"
-                  title="Adizes PAEI Framework Introduction"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                />
+              <div className="space-y-4 text-gray-700 text-sm leading-relaxed mb-8">
+                <p>Welcome to LEAP™ — the Leadership Energy Alignment Profile.</p>
+                <p>This assessment explores three perspectives:</p>
+                <ul className="space-y-1.5 pl-0 list-none">
+                  {["how you currently operate", "what your role requires from you", "and what naturally energizes you"].map((item) => (
+                    <li key={item} className="flex items-center gap-2">
+                      <span className="text-[#1D3557] font-bold flex-shrink-0">→</span>
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+                <p>
+                  The 36 questions are divided into three short sections:{" "}
+                  <strong>Current State</strong>,{" "}
+                  <strong>Role Expectations</strong>, and{" "}
+                  <strong>Intrinsic Preference</strong>.
+                </p>
+                <p className="text-gray-500 italic">
+                  There are no ideal profiles. LEAP is designed to help surface patterns of alignment,
+                  pressure, adaptation, and leadership tension — not to judge or label you.
+                </p>
+                <p>To get the most meaningful insights:</p>
+                <ul className="space-y-1.5 pl-0 list-none">
+                  {[
+                    "answer based on reality, not aspiration",
+                    "avoid overthinking",
+                    "trust your first instinct where possible",
+                  ].map((item) => (
+                    <li key={item} className="flex items-center gap-2 text-gray-600">
+                      <span className="text-[#1D3557] font-bold flex-shrink-0">·</span>
+                      {item}
+                    </li>
+                  ))}
+                </ul>
               </div>
 
               <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                <p className="text-sm text-gray-400">
-                  Take your time — click the button when you're ready to start.
-                </p>
+                <p className="text-sm text-gray-400">Approximately 15 minutes to complete.</p>
                 <Button
+                  variant="leap"
                   size="lg"
                   onClick={() => setShowVideoIntro(false)}
                   className="w-full sm:w-auto px-10 text-lg h-14 shrink-0"
                 >
-                  I'm Ready — Begin Assessment <ArrowRight className="ml-2 h-5 w-5" />
+                  Begin LEAP Assessment <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
               </div>
             </CardContent>
@@ -370,7 +397,7 @@ export function Assessment() {
         <div className="mx-auto max-w-4xl px-4 py-4">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              <span className="font-display font-bold text-gray-900">AMSI</span>
+              <span className="font-display font-bold text-gray-900">LEAP™</span>
               <span className="text-gray-400">|</span>
               <span className="text-sm font-medium text-gray-600">{section.label}</span>
             </div>
