@@ -1,6 +1,6 @@
 # adizes-frontend
 
-React frontend for the **Adizes PAEI Management Style Assessment** platform — **Adizes90** individual assessment tool. Adizes360 multi-rater is Phase 2 (pending).
+React frontend for the **LEAP™ — Leadership Energy Alignment Profile** platform, powered by the Adizes PAEI framework. Implements the **Adizes90** individual assessment tool (publicly branded as LEAP™). Adizes360 multi-rater is Phase 2 (pending).
 
 ## Tech Stack
 
@@ -102,11 +102,13 @@ adizes-frontend/
       SetPassword.tsx         # Redirect shim → /register (for old invite email links)
       ForgotPassword.tsx      # Forgot-password flow: email input → sent/not_activated/error states
       ResetPassword.tsx       # Reset-password flow: reads recovery token from URL hash → set new password
-      Dashboard.tsx           # PAEI results tabs + My Assessments list; all "Begin Assessment" CTAs pass ?cohort_id=
-                              #   Welcome greeting uses `user?.name || user?.email?.split('@')[0]` — email prefix fallback when name not set.
+      Dashboard.tsx           # LEAP™ results tabs + My LEAP Profiles list; all "Begin LEAP Assessment" CTAs pass ?cohort_id=
+                              #   Header: "Discover Your Leadership Alignment". Tabs: "Alignment Overview" / "My LEAP Profiles".
+                              #   Empty state: two-column LEAP split layout with dot-grid, sample alignment matrix, sample insight card, 3 value cards.
       Assessment.tsx          # 36-question flow; reads cohort_id from query param; redirects to /dashboard if missing.
-                              #   Pre-assessment YouTube video intro screen shown once before Section 1 gate.
-                              #   Section intro cards show a highlighted callout with ranking instructions (1st→4th) and deselect hint.
+                              #   Pre-assessment "Before You Begin" LEAP prose card (replaces old YouTube embed).
+                              #   Sticky header shows "LEAP™ | <Section Label>" (was "AMSI").
+                              #   Section intro callout: "most applicable → least applicable" framing; CTA "Begin Questions" (was "Begin Section").
                               #   Submit failure shows amber panel listing incomplete questions as clickable "Jump to: Question N" buttons.
                               #   Auto-assigned rank-4 option is locked — clicking it when all 4 are ranked is a no-op (prevents accidental deselect).
                               #   "↑ Back to where I was" button appears when user navigated backward; jumps to their farthest reached question.
@@ -136,6 +138,10 @@ adizes-frontend/
       AdminSettings.tsx       # SMTP config + email template editor
       AdminHelp.tsx           # Admin FAQ including Employee Activation & Password Reset section;
                               #   bulk upload node_path troubleshooting; reporting tree setup guide
+      LeapLanding.tsx         # Public LEAP™ marketing page at /leap (no auth). Sections: Hero, Tension Cards
+                              #   (Execution/Engagement/Authenticity Gap), Sample Insights, Why Different
+                              #   (comparison table), What You Receive (5 deliverables), No Ideal Profiles,
+                              #   Org Applications (7 use-case pills), Final CTA. CTAs navigate to "/" (login).
       PolicyPage.tsx
     store/
       authStore.ts       # Zustand auth state (JWT, user, role)
@@ -154,12 +160,13 @@ adizes-frontend/
 | Route | Component | Auth | Notes |
 |-------|-----------|------|-------|
 | `/` | `Landing` | Public | Login form; "Forgot password?" link; `?message=password-updated` success banner |
+| `/leap` | `LeapLanding` | Public | LEAP™ marketing landing page — no navbar, no auth required |
 | `/register` | `Register` | Public | Self-registration **or** invite acceptance (auto-detected from URL hash) |
 | `/set-password` | `SetPassword` | Public | Redirect shim — forwards old email links to `/register` |
 | `/forgot-password` | `ForgotPassword` | Public | Email input → `POST /auth/forgot-password` → sent/not_activated/error states |
 | `/reset-password` | `ResetPassword` | Public | Reads `#access_token=...&type=recovery` from hash; set new password |
-| `/dashboard` | `Dashboard` | JWT | PAEI results (inline) + My Assessments tab |
-| `/assessment?cohort_id=<uuid>` | `Assessment` | JWT | 36-question flow. `cohort_id` query param required — redirects to `/dashboard` if missing. |
+| `/dashboard` | `Dashboard` | JWT | LEAP™ alignment overview + My LEAP Profiles tab |
+| `/assessment?cohort_id=<uuid>` | `Assessment` | JWT | 36-question LEAP™ flow. `cohort_id` query param required — redirects to `/dashboard` if missing. |
 | `/results/:id` | `Results` | JWT | Full results + PDF |
 | `/admin` | `AdminDashboard` | Admin | Admin overview |
 | `/admin/cohorts` | `AdminCohortList` | Admin | Cohort list |
