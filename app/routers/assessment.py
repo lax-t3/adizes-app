@@ -81,26 +81,26 @@ def _trigger_pdf_lambda(assessment_id: str, payload: dict) -> None:
 SECTION_META = [
     {
         "name": "is",
-        "label": "Is",
+        "label": "Current State",
         "description": (
-            "Answer each question based on how you currently operate "
-            "in your role — the 'here and now' of your management style."
+            "Answer each question based on how you believe you currently "
+            "operate in your day-to-day work and leadership."
         ),
     },
     {
         "name": "should",
-        "label": "Should",
+        "label": "Role Expectations",
         "description": (
-            "Answer each question based on what you believe your job "
-            "and organisation requires of you."
+            "Answer each question based on what you believe your role, "
+            "responsibilities, or environment currently require from you."
         ),
     },
     {
         "name": "want",
-        "label": "Want",
+        "label": "Intrinsic Preference",
         "description": (
-            "Answer each question based on what you genuinely prefer — "
-            "your core, inner management style."
+            "Answer each question based on the ways of operating that feel "
+            "most natural, energizing, and sustainable to you over time."
         ),
     },
 ]
