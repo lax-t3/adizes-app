@@ -1,6 +1,6 @@
 # adizes-backend
 
-FastAPI backend for the **Adizes PAEI Management Style Assessment** platform (**Adizes90** individual assessment tool; Adizes360 multi-rater is Phase 2 — pending).
+FastAPI backend for the **LEAP™ — Leadership Energy Alignment Profile** platform, powered by the Adizes PAEI framework (**Adizes90** individual assessment tool, publicly branded as LEAP™; Adizes360 multi-rater is Phase 2 — pending).
 
 ## Tech Stack
 
@@ -16,11 +16,14 @@ FastAPI backend for the **Adizes PAEI Management Style Assessment** platform (**
 | Email | Python smtplib (AWS SES / Gmail / Resend / Custom SMTP) |
 | Container | Docker |
 
-## Scoring Model (Adizes90 — 132-scale ranking)
+## Scoring Model (Adizes90 / LEAP™ — 132-scale ranking)
+
+Display labels: **Current State** (Is) · **Role Expectations** (Should) · **Intrinsic Preference** (Want).
+Internal/DB keys remain `is` / `should` / `want` — the scoring engine and schema are unchanged.
 
 | Concept | Value |
 |---------|-------|
-| Sections | 3 (Is / Should / Want) |
+| Sections | 3 (Is / Should / Want) — displayed as Current State / Role Expectations / Intrinsic Preference |
 | Questions per section | 12 (interleaved — NOT sequential Q0-Q11/Q12-Q23/Q24-Q35) |
 | Options per question | 4 (P, A, E, I — ranked 1st → 4th) |
 | Rank points | 1st = 5 · 2nd = 3 · 3rd = 2 · 4th = 1 |
@@ -469,13 +472,14 @@ from the returned `pdf_url` (redundant fallback). Both must use the **production
 
 ### Report: v2 vs v1
 
-| | v2 (PAEI Energy Alignment Profile) | v1 (AMSI) |
+| | v2 (LEAP™ — Leadership Energy Alignment Profile) | v1 (AMSI) |
 |---|---|---|
 | Pages | 5 | 9 |
-| Primary visual | Role card matrix + tension bars | Radar chart |
+| Primary visual | Lens-rows matrix (IS/SHD/WNT × P/A/E/I) + tension bars | Radar chart |
 | Chart.js | No — pure HTML div bars | Yes |
 | Key concept | Role Pressure / Energy Tension / Identity Drift | External Gap / Internal Gap |
 | Lambda name | `adizes-pdf-generator-v2` | `adizes-pdf-generator` |
+| Rebranded | 2026-05-27 (was "PAEI Energy Alignment Profile" with 2×2 role-card grid) | — |
 
 ### Deploy Lambda v2
 
