@@ -415,3 +415,95 @@ p  { font-size: 9pt; color: #374151; line-height: 1.65; }
   font-style: italic;
   line-height: 1.45;
 }
+
+/* ── Lens-rows matrix table (replaces 2×2 role-card grid) ─────────────────── */
+.matrix-table {
+  width: 100%;
+  margin-bottom: 14pt;
+  border-radius: 8pt;
+  overflow: hidden;
+  border: 1.5pt solid #e5e7eb;
+  background: #ffffff;
+}
+.matrix-col-headers {
+  display: grid;
+  grid-template-columns: 80pt repeat(4, 1fr);
+  gap: 0;
+  background: #f9fafb;
+  border-bottom: 1.5pt solid #e5e7eb;
+  padding: 7pt 10pt;
+}
+.matrix-corner { /* empty top-left cell */ }
+.matrix-col-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3pt;
+  padding: 2pt 4pt;
+}
+.matrix-col-circle {
+  width: 20pt; height: 20pt;
+  border-radius: 50%;
+  color: white;
+  font-size: 9pt;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.matrix-col-name {
+  font-size: 7pt;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.3pt;
+  text-align: center;
+}
+.matrix-lens-row {
+  display: grid;
+  grid-template-columns: 80pt repeat(4, 1fr);
+  gap: 0;
+  align-items: center;
+  padding: 8pt 10pt;
+  border-top: 1pt solid #f3f4f6;
+}
+.matrix-lens-row:first-of-type { border-top: none; }
+.matrix-lens-label {
+  display: flex;
+  flex-direction: column;
+  gap: 1pt;
+}
+.matrix-lens-short {
+  font-size: 7pt;
+  font-weight: 800;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 0.5pt;
+}
+.matrix-lens-name {
+  font-size: 7.5pt;
+  color: #374151;
+  font-weight: 600;
+}
+.matrix-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2pt;
+  padding: 0 4pt;
+}
+.matrix-cell-track {
+  width: 100%;
+  height: 9pt;
+  background: #ebebeb;
+  border-radius: 5pt;
+  overflow: hidden;
+}
+.matrix-cell-fill {
+  height: 100%;
+  border-radius: 5pt;
+}
+.matrix-cell-val {
+  font-size: 7pt;
+  color: #6b7280;
+  font-weight: 700;
+}

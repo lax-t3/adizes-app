@@ -48,42 +48,43 @@
     <div class="identity-badge" style="background:<%- heroColor %>;"><%= interpretation.identity_line %></div>
   </div>
 
-  <!-- 2×2 Energy Alignment Matrix -->
+  <!-- Energy Alignment Matrix — lens-rows layout -->
   <div class="section-label">Energy Alignment Matrix</div>
-  <div class="matrix-grid">
-    <% ROLES.forEach(function(role) {
-         const color    = ROLE_COLORS[role];
-         const isVal    = pct(scaled_scores.is[role]);
-         const shdVal   = pct(scaled_scores.should[role]);
-         const wntVal   = pct(scaled_scores.want[role]);
-         const maxGap   = Math.max(Math.abs(shdVal - isVal), Math.abs(isVal - wntVal));
-         const hasGap   = maxGap >= 10;
+  <div class="matrix-table">
+    <!-- Column header row: empty corner + 4 role headers -->
+    <div class="matrix-col-headers">
+      <div class="matrix-corner"></div>
+      <% ROLES.forEach(function(role) {
+           const color = ROLE_COLORS[role];
+      %>
+      <div class="matrix-col-header">
+        <div class="matrix-col-circle" style="background:<%- color %>;"><%= role %></div>
+        <span class="matrix-col-name" style="color:<%- color %>;"><%= ROLE_NAMES[role] %></span>
+      </div>
+      <% }); %>
+    </div>
+
+    <!-- Lens rows: IS, SHOULD, WANT -->
+    <% [['is','IS','Current State'], ['should','SHD','Role Expectations'], ['want','WNT','Intrinsic Preference']].forEach(function(triplet) {
+         const lens = triplet[0], lensShort = triplet[1], lensLabel = triplet[2];
+         const rowOpacity = lens === 'want' ? '0.55' : '1';
     %>
-    <div class="matrix-card" style="border-color:<%- color %>44;">
-      <div class="matrix-card-header" style="background:linear-gradient(90deg,<%- color %>1a 0%,<%- color %>08 100%);">
-        <div class="matrix-role-info">
-          <div class="matrix-role-circle" style="background:<%- color %>;"><%= role %></div>
-          <span class="matrix-role-name"><%= ROLE_NAMES[role] %></span>
-        </div>
-        <% if (hasGap) { %>
-        <span class="matrix-gap-badge" style="color:<%- color %>;background:<%- color %>1a;"><%- maxGap %>pt gap</span>
-        <% } %>
+    <div class="matrix-lens-row" style="opacity:<%- rowOpacity %>;">
+      <div class="matrix-lens-label">
+        <div class="matrix-lens-short"><%= lensShort %></div>
+        <div class="matrix-lens-name"><%= lensLabel %></div>
       </div>
-      <div class="matrix-bars">
-        <% [['is', isVal], ['should', shdVal], ['want', wntVal]].forEach(function(pair) {
-             const lens = pair[0], val = pair[1];
-             const meta = LENS_META[lens];
-             const opacity = lens === 'want' ? '0.5' : '1';
-        %>
-        <div class="matrix-bar-row" style="opacity:<%= opacity %>;">
-          <span class="matrix-bar-label"><%= meta.short %></span>
-          <div class="matrix-bar-track">
-            <div class="matrix-bar-fill" style="width:<%- val %>%;background:<%- color %>;"></div>
-          </div>
-          <span class="matrix-bar-val"><%= val %>%</span>
+      <% ROLES.forEach(function(role) {
+           const val = pct(scaled_scores[lens][role]);
+           const color = ROLE_COLORS[role];
+      %>
+      <div class="matrix-cell">
+        <div class="matrix-cell-track">
+          <div class="matrix-cell-fill" style="width:<%- val %>%;background:<%- color %>;"></div>
         </div>
-        <% }); %>
+        <span class="matrix-cell-val"><%= val %>%</span>
       </div>
+      <% }); %>
     </div>
     <% }); %>
   </div>
