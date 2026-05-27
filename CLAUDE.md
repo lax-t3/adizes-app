@@ -1,9 +1,13 @@
 # CLAUDE.md — HIL Adizes India Project
 
 ## What This Is
-Assessment platform for the **Adizes PAEI Management Style Indicator (AMSI)**.
-Users take a 36-question assessment across 3 dimensions (Is / Should / Want),
-view a PAEI dashboard, and download a full PDF report.
+Assessment platform for the **LEAP™ — Leadership Energy Alignment Profile**, powered by the Adizes PAEI framework.
+Users take a 36-question assessment across 3 dimensions (Current State / Role Expectations / Intrinsic Preference),
+view a PAEI alignment dashboard, and download a full PDF report.
+
+> **Rebrand note (2026-05-27):** The platform was previously branded "Adizes PAEI Management Style Indicator (AMSI)".
+> The product is now publicly named **LEAP™**. The underlying PAEI scoring engine, question set, and DB schema
+> are unchanged. Frontend display labels use LEAP vocabulary; internal code still uses `is/should/want` as keys.
 
 ## Repo Map
 | Repo | Path | Branch | Purpose |
@@ -26,9 +30,12 @@ Implementation plan: `docs/plans/2026-03-10-adizes-backend-implementation.md`
 | Entrepreneur | E | Change, vision | Innovative, creative | Arsonist |
 | Integrator | I | People, consensus | Nurturing, team builder | Super-Follower |
 
-## Assessment Structure — Adizes90 (current tool)
+## Assessment Structure — Adizes90 / LEAP™ (current tool)
 
-The individual PAEI self-assessment — sometimes called "Adizes90" internally.
+The individual PAEI self-assessment — sometimes called "Adizes90" internally, publicly branded as **LEAP™**.
+
+Display labels (frontend + PDF): **Current State** (Is) · **Role Expectations** (Should) · **Intrinsic Preference** (Want).
+Internal/DB keys: `is` / `should` / `want` — unchanged across all scoring, DB, and API code.
 
 - **36 questions** = 12 per section × 3 sections (Is / Should / Want)
 - Each question: rank all 4 options (P / A / E / I) from 1st choice to 4th
@@ -236,11 +243,12 @@ export S3_BUCKET_NAME=adizes-pdf-reports
 - **PDF Lambda v2 is active** (`adizes-pdf-generator-v2`). Cutover/rollback is one App Runner env var:
   `PDF_LAMBDA_FUNCTION_NAME=adizes-pdf-generator-v2` (v2) or `=adizes-pdf-generator` (v1 rollback).
   V1 (`lambda/pdf-generator/`) is preserved deployed and untouched.
-- **PDF Lambda v2 report identity:** "PAEI Energy Alignment Profile" — 5 pages, no Chart.js, HTML div
-  bars only. Three gap types (132-scale): Execution (`abs(should−is)`), Engagement (`abs(should−want)`),
+- **PDF Lambda v2 report identity:** "LEAP™ — Leadership Energy Alignment Profile" — 5 pages, no Chart.js,
+  HTML div bars only. Three gap types (132-scale): Execution (`abs(should−is)`), Engagement (`abs(should−want)`),
   Authenticity (`abs(is−want)`). Severity thresholds: <6 low, 6–15 medium, >15 high.
-  Design: role-colored 2×2 matrix on page 1 (P=red, A=navy, E=amber, I=teal), IS/SHD/WNT bars per role,
-  WNT bars dimmed at 0.5 opacity, gap pills, colored gap cards page 2, style hero page 4 in dominant role color.
+  Page 1 matrix: **3-row (IS/SHD/WNT) × 4-col (P/A/E/I) lens-rows table** — each cell shows a role-colored
+  progress bar and percentage; WNT row dimmed at 0.55 opacity. Gap pills, colored gap cards page 2, style hero
+  page 4 in dominant role color. Rebranded 2026-05-27 (was "PAEI Energy Alignment Profile" with 2×2 role-card grid).
 - **Lambda invocation is synchronous (`RequestResponse`)**: backend calls Lambda and waits for the
   response. Lambda generates PDF → uploads to S3 → patches Supabase directly. Backend also patches
   Supabase from the returned `pdf_url` as a redundant safety net. Previously was fire-and-forget
@@ -364,6 +372,17 @@ export S3_BUCKET_NAME=adizes-pdf-reports
   `advanceFarthest(currentSection, currentQuestion)` before navigating. A "↑ Back to where I was" button
   appears when `currentSection/currentQuestion < farthestSection/farthestQuestion`, jumping back to the
   farthest reached point.
+- **LEAP™ rebrand** (2026-05-27): Full frontend/PDF rebrand from "AMSI / PAEI Energy Alignment Profile" to LEAP™.
+  Frontend: Inter Tight display font; navy `leap` Button variant (`--color-leap: #1D3557`); Dashboard header
+  "Discover Your Leadership Alignment", tabs "Alignment Overview" / "My LEAP Profiles"; empty state full
+  two-column LEAP split layout with decorative sample matrix and insight card; Assessment "Before You Begin"
+  LEAP prose card replaces YouTube embed; LEAP™ replaces AMSI in sticky assessment header; ranking instruction
+  callout updated to "most/least applicable" framing; "Begin Section" → "Begin Questions".
+  Backend: `SECTION_META` labels "Is"→"Current State", "Should"→"Role Expectations", "Want"→"Intrinsic Preference".
+  PDF Lambda v2: all 5 page headers/footers rebranded to LEAP™; page 1 matrix redesigned to lens-rows layout.
+  New public `/leap` landing page (no auth) with hero, tension cards, sample insights, comparison table, and CTA.
+  Lambda ECR redeployed with updated template (2026-05-27, SHA `e5a5875`).
+  Note: backend `adizes-backend` section label change is committed to git but requires ECR redeploy to go live on App Runner.
 
 ## Known Gotchas (Local Dev)
 
