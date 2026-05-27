@@ -96,8 +96,8 @@ adizes-frontend/
       jwt.ts           # decodeJwt() — base64url JWT payload decoder (no signature verify)
       utils.ts         # cn() Tailwind class merge helper
     pages/
-      Landing.tsx             # Login page; "Forgot password?" links to /forgot-password;
-                              #   shows green banner on ?message=password-updated redirect
+      Landing.tsx             # Login page; h1 "Discover your leadership alignment."; LEAP™ tagline description;
+                              #   "Forgot password?" links to /forgot-password; shows green banner on ?message=password-updated redirect
       Register.tsx            # Self-registration (Normal mode) + invite acceptance (Activate mode)
       SetPassword.tsx         # Redirect shim → /register (for old invite email links)
       ForgotPassword.tsx      # Forgot-password flow: email input → sent/not_activated/error states
@@ -137,12 +137,15 @@ adizes-frontend/
       AdminRespondent.tsx     # Respondent detail; reads cohort_id from ?cohort_id= query param; shows pending state if no result
       AdminSettings.tsx       # SMTP config + email template editor
       AdminHelp.tsx           # Admin FAQ including Employee Activation & Password Reset section;
-                              #   bulk upload node_path troubleshooting; reporting tree setup guide
+                              #   bulk upload node_path troubleshooting; reporting tree setup guide.
+                              #   Subtitle + footer attribution → LEAP™ (was "Adizes PAEI platform" / "AMSI").
+      UserHelp.tsx            # User FAQ and dos/don'ts. Subtitle → "LEAP™ Assessment"; results description uses
+                              #   "Current State / Role Expectations / Intrinsic Preference"; footer attribution → LEAP™.
       LeapLanding.tsx         # Public LEAP™ marketing page at /leap (no auth). Sections: Hero, Tension Cards
                               #   (Execution/Engagement/Authenticity Gap), Sample Insights, Why Different
                               #   (comparison table), What You Receive (5 deliverables), No Ideal Profiles,
                               #   Org Applications (7 use-case pills), Final CTA. CTAs navigate to "/" (login).
-      PolicyPage.tsx
+      PolicyPage.tsx          # Terms of Service, Privacy Policy, Refund Policy. "AMSI platform" → "LEAP™ platform" in Terms §1 and Refund §1.
     store/
       authStore.ts       # Zustand auth state (JWT, user, role)
       assessmentStore.ts # Assessment session state including cohortId (set from ?cohort_id= query param).
