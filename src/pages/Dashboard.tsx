@@ -302,29 +302,151 @@ function ResultsDashboard({ resultId }: { resultId: string }) {
 
 function NoAssessmentCTA({ hasEnrollments, cohortId }: { hasEnrollments: boolean; cohortId: string | null }) {
   const navigate = useNavigate();
-  return (
-    <div className="flex flex-col items-center justify-center py-20 text-center">
-      <div className="h-20 w-20 rounded-full bg-gray-100 flex items-center justify-center mb-6">
-        <FileText className="h-10 w-10 text-gray-400" />
+
+  if (!hasEnrollments) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center">
+        <div className="h-20 w-20 rounded-full bg-gray-100 flex items-center justify-center mb-6">
+          <FileText className="h-10 w-10 text-gray-400" />
+        </div>
+        <h3 className="text-xl font-semibold text-gray-900 mb-2">No assessment yet</h3>
+        <p className="text-gray-500 max-w-sm">
+          You haven't been enrolled in any cohort yet. Contact your administrator to get enrolled.
+        </p>
       </div>
-      {hasEnrollments ? (
-        <>
-          <h3 className="text-xl font-semibold text-gray-900 mb-2">Ready to begin your assessment?</h3>
-          <p className="text-gray-500 max-w-sm mb-6">
-            You're enrolled in an assessment cohort. Complete your AMSI assessment to see your PAEI dashboard here.
+    );
+  }
+
+  return (
+    <div className="relative overflow-hidden rounded-2xl bg-[#F8F9FC] border border-gray-200">
+      {/* Subtle dot-grid background */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          backgroundImage: "radial-gradient(circle, #1D355714 1px, transparent 1px)",
+          backgroundSize: "28px 28px",
+        }}
+      />
+
+      <div className="relative grid grid-cols-1 lg:grid-cols-2">
+        {/* LEFT: messaging + CTA */}
+        <div className="flex flex-col justify-center px-8 sm:px-12 py-12">
+          <p className="text-xs font-semibold text-[#1D3557] uppercase tracking-widest mb-4">
+            LEAP™ — Leadership Energy Alignment Profile
           </p>
-          <Button onClick={() => navigate(cohortId ? `/assessment?cohort_id=${cohortId}` : "/dashboard")}>
-            Start Assessment <ArrowRight className="ml-2 h-4 w-4" />
+          <h2 className="font-display text-3xl sm:text-4xl font-bold text-gray-900 mb-5 leading-tight">
+            Discover where your leadership energy is aligned.
+          </h2>
+          <p className="text-gray-600 text-sm mb-3">
+            LEAP™ helps you understand the relationship between:
+          </p>
+          <ul className="space-y-2 mb-5">
+            {["how you currently operate", "what your role demands", "and what naturally energizes you"].map((item) => (
+              <li key={item} className="flex items-center gap-2 text-gray-700 text-sm">
+                <span className="h-5 w-5 rounded-full bg-[#1D3557] text-white flex items-center justify-center flex-shrink-0 text-[10px] font-bold">→</span>
+                {item}
+              </li>
+            ))}
+          </ul>
+          <p className="text-gray-500 text-sm mb-6 leading-relaxed">
+            Your personalized profile will reveal execution pressures, engagement tensions,
+            authenticity gaps, and sustainable leadership strengths.
+          </p>
+          <div className="flex items-center gap-5 flex-wrap mb-8">
+            {["~15 minutes", "36 questions", "Immediate insights"].map((item) => (
+              <span key={item} className="text-xs text-gray-500 flex items-center gap-1.5">
+                <span className="h-1.5 w-1.5 rounded-full bg-[#1D3557]" />
+                {item}
+              </span>
+            ))}
+          </div>
+          <Button
+            variant="leap"
+            size="lg"
+            onClick={() => navigate(cohortId ? `/assessment?cohort_id=${cohortId}` : "/dashboard")}
+            className="w-full sm:w-auto self-start"
+          >
+            Begin LEAP Assessment <ArrowRight className="ml-2 h-5 w-5" />
           </Button>
-        </>
-      ) : (
-        <>
-          <h3 className="text-xl font-semibold text-gray-900 mb-2">No assessment yet</h3>
-          <p className="text-gray-500 max-w-sm">
-            You haven't been enrolled in any cohort yet. Contact your administrator to get enrolled.
-          </p>
-        </>
-      )}
+
+          {/* 3 value cards */}
+          <div className="grid grid-cols-3 gap-3 mt-8">
+            {[
+              { title: "Alignment Matrix", desc: "Visualize role, behavior & preference alignment" },
+              { title: "Gap Map", desc: "Identify execution, engagement & authenticity tensions" },
+              { title: "Action Path", desc: "Practical developmental guidance" },
+            ].map((card) => (
+              <div key={card.title} className="rounded-xl border border-gray-200 bg-white/80 p-3">
+                <p className="text-xs font-semibold text-gray-800 mb-1">{card.title}</p>
+                <p className="text-xs text-gray-500 leading-relaxed">{card.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* RIGHT: decorative preview (desktop only) */}
+        <div className="hidden lg:flex flex-col justify-center items-center px-8 py-12 border-l border-gray-200/70">
+          <div className="w-full max-w-xs">
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3 text-center">
+              Sample Alignment Matrix
+            </p>
+
+            {/* Mini matrix */}
+            <div className="rounded-xl border border-gray-200 bg-white p-4 mb-4 shadow-sm">
+              {/* Column headers: P A E I */}
+              <div className="grid grid-cols-5 gap-1.5 mb-3">
+                <div />
+                {(["P", "A", "E", "I"] as const).map((r, i) => {
+                  const cols = ["#C8102E", "#1D3557", "#E87722", "#2A9D8F"];
+                  return (
+                    <div key={r} className="text-center text-xs font-extrabold" style={{ color: cols[i] }}>
+                      {r}
+                    </div>
+                  );
+                })}
+              </div>
+              {/* Rows: IS, SHD, WNT */}
+              {[
+                { label: "IS",  vals: [38, 32, 18, 12] },
+                { label: "SHD", vals: [33, 28, 24, 15] },
+                { label: "WNT", vals: [28, 38, 12, 22] },
+              ].map((row) => {
+                const cols = ["#C8102E", "#1D3557", "#E87722", "#2A9D8F"];
+                return (
+                  <div
+                    key={row.label}
+                    className="grid grid-cols-5 gap-1.5 mb-2 items-center"
+                    style={{ opacity: row.label === "WNT" ? 0.55 : 1 }}
+                  >
+                    <span className="text-[10px] text-gray-400 font-medium">{row.label}</span>
+                    {row.vals.map((v, i) => (
+                      <div key={i} className="relative h-3 rounded bg-gray-100 overflow-hidden">
+                        <div
+                          className="absolute inset-y-0 left-0 rounded"
+                          style={{ width: `${v}%`, background: cols[i] }}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Sample insight card */}
+            <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
+              <p className="text-[10px] font-semibold text-amber-600 uppercase tracking-wide mb-1">
+                Sample Insight
+              </p>
+              <p className="text-sm font-bold text-gray-900 mb-1.5">
+                Entrepreneur — Execution Gap
+              </p>
+              <p className="text-xs text-gray-700 leading-relaxed">
+                Your role currently demands more entrepreneurial energy than you are naturally expressing.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
