@@ -382,6 +382,10 @@ export S3_BUCKET_NAME=adizes-pdf-reports
   PDF Lambda v2: all 5 page headers/footers rebranded to LEAP™; page 1 matrix redesigned to lens-rows layout.
   New public `/leap` landing page (no auth) with hero, tension cards, sample insights, comparison table, and CTA.
   Lambda ECR redeployed with updated template (2026-05-27, SHA `e5a5875`).
+  Remaining AMSI strings cleaned up (2026-05-27, commit `b4de9c1`): Landing.tsx h1 "management style" → "leadership
+  alignment" + LEAP™ tagline description; UserHelp.tsx subtitle → "LEAP™ Assessment", results description uses
+  "Current State / Role Expectations / Intrinsic Preference", footer attribution → LEAP™; AdminHelp.tsx subtitle +
+  footer attribution → LEAP™; PolicyPage.tsx Terms §1 + Refund §1 "AMSI platform" → "LEAP™ platform".
   Note: backend `adizes-backend` section label change is committed to git but requires ECR redeploy to go live on App Runner.
 
 ## Known Gotchas (Local Dev)
