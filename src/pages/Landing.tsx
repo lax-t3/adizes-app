@@ -81,12 +81,12 @@ export function Landing() {
             className="max-w-xl"
           >
             <h1 className="font-display text-5xl font-medium leading-[1.1] tracking-tight mb-6">
-              {isAdminRoute ? "Manage assessments and cohorts." : "Discover your management style."}
+              {isAdminRoute ? "Manage assessments and cohorts." : "Discover your leadership alignment."}
             </h1>
             <p className="text-xl text-gray-300 font-light leading-relaxed mb-12">
               {isAdminRoute 
                 ? "Access the admin dashboard to view cohort results, manage users, and export data."
-                : "The Adizes Management Style Indicator (AMSI) helps you understand your natural tendencies, job demands, and inner preferences."}
+                : "LEAP™ — Leadership Energy Alignment Profile — reveals the hidden tensions between how you lead today, what your role demands, and what energises you."}
             </p>
 
             {!isAdminRoute && (

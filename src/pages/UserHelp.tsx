@@ -126,7 +126,7 @@ const assessmentGuide: FAQItem[] = [
     a: [
       "Your results open automatically after you submit the assessment.",
       "You can also return to them any time from your Dashboard — click View Results next to your completed cohort.",
-      "The results include your PAEI profile, a radar chart comparing Is / Should / Want, a gap analysis, and a personalised style interpretation.",
+      "The results include your PAEI profile, a chart comparing Current State / Role Expectations / Intrinsic Preference, a gap analysis, and a personalised style interpretation.",
     ],
   },
   {
@@ -200,7 +200,7 @@ export function UserHelp() {
           <h1 className="text-2xl font-bold text-gray-900">Help & FAQs</h1>
         </div>
         <p className="text-gray-500 text-sm">
-          Everything you need to know about taking the Adizes PAEI Management Style Assessment.
+          Everything you need to know about taking the LEAP™ Assessment.
         </p>
       </div>
 
@@ -253,7 +253,7 @@ export function UserHelp() {
           <AlertTriangle className="h-4 w-4 text-amber-500 flex-shrink-0 mt-0.5" />
           <p className="text-xs text-gray-500 leading-relaxed">
             <span className="font-medium text-gray-700">About this platform — </span>
-            The Adizes PAEI Management Style Indicator (AMSI) is developed by the Adizes Institute.
+            LEAP™ — Leadership Energy Alignment Profile — is powered by the Adizes PAEI framework, developed by the Adizes Institute.
             This platform is operated by HILeadership in partnership with Turiyaskills.
             For programme questions contact{" "}
             <a href="mailto:support@hileadership.com" className="text-primary hover:underline">support@hileadership.com</a>.

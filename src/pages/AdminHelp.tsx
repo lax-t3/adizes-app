@@ -304,7 +304,7 @@ export function AdminHelp() {
           <h1 className="text-2xl font-bold text-gray-900">Help & FAQs</h1>
         </div>
         <p className="text-gray-500 text-sm">
-          Answers to common questions for administrators and users of the Adizes PAEI platform.
+          Answers to common questions for administrators and users of the LEAP™ platform.
         </p>
       </div>
 
@@ -366,7 +366,7 @@ export function AdminHelp() {
       {/* Footer note */}
       <div className="rounded-xl border border-gray-100 bg-gray-50 px-6 py-4">
         <p className="text-xs text-gray-500 leading-relaxed">
-          <span className="font-medium text-gray-700">About this platform —</span> The Adizes PAEI Management Style Indicator (AMSI) is developed by the Adizes Institute. This platform is operated by HILeadership in partnership with Turiyaskills. For programme-related questions contact <a href="mailto:support@hileadership.com" className="text-primary hover:underline">support@hileadership.com</a>. For technical issues contact <a href="mailto:team@turiyaskills.co" className="text-primary hover:underline">team@turiyaskills.co</a>.
+          <span className="font-medium text-gray-700">About this platform —</span> LEAP™ — Leadership Energy Alignment Profile — is powered by the Adizes PAEI framework, developed by the Adizes Institute. This platform is operated by HILeadership in partnership with Turiyaskills. For programme-related questions contact <a href="mailto:support@hileadership.com" className="text-primary hover:underline">support@hileadership.com</a>. For technical issues contact <a href="mailto:team@turiyaskills.co" className="text-primary hover:underline">team@turiyaskills.co</a>.
         </p>
       </div>
     </div>

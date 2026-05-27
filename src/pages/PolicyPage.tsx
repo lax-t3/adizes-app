@@ -11,7 +11,7 @@ const POLICIES: Record<string, { title: string; lastUpdated: string; sections: {
     sections: [
       {
         heading: "1. Acceptance of Terms",
-        body: "By registering for or using the Adizes PAEI Management Style Indicator (AMSI) platform ('Platform'), you agree to be bound by these Terms of Service. If you do not agree, please do not use the Platform.",
+        body: "By registering for or using the LEAP™ — Leadership Energy Alignment Profile platform ('Platform'), you agree to be bound by these Terms of Service. If you do not agree, please do not use the Platform.",
       },
       {
         heading: "2. Use of the Platform",
@@ -89,7 +89,7 @@ const POLICIES: Record<string, { title: string; lastUpdated: string; sections: {
     sections: [
       {
         heading: "1. Assessment Access",
-        body: "Access to the AMSI assessment platform is typically provisioned by your organisation or a designated administrator. Individual purchases, where available, may be subject to the refund terms below.",
+        body: "Access to the LEAP™ assessment platform is typically provisioned by your organisation or a designated administrator. Individual purchases, where available, may be subject to the refund terms below.",
       },
       {
         heading: "2. Eligibility for Refunds",
