@@ -43,8 +43,8 @@ type Tab = "dashboard" | "my-assessments";
 
 function TabBar({ active, onChange }: { active: Tab; onChange: (t: Tab) => void }) {
   const tabs: { id: Tab; label: string; icon: React.ReactNode }[] = [
-    { id: "dashboard", label: "Dashboard", icon: <LayoutDashboard className="h-4 w-4" /> },
-    { id: "my-assessments", label: "My Assessments", icon: <ClipboardList className="h-4 w-4" /> },
+    { id: "dashboard", label: "Alignment Overview", icon: <LayoutDashboard className="h-4 w-4" /> },
+    { id: "my-assessments", label: "My LEAP Profiles", icon: <ClipboardList className="h-4 w-4" /> },
   ];
   return (
     <div className="flex flex-nowrap gap-1 bg-gray-100 p-1 rounded-xl w-full overflow-x-auto mb-8">
@@ -522,10 +522,10 @@ export function Dashboard() {
         >
           <div className="mb-6">
             <h1 className="text-2xl sm:text-3xl font-display font-bold text-gray-900">
-              Welcome, {user?.name || user?.email?.split('@')[0]}
+              Discover Your Leadership Alignment
             </h1>
             <p className="mt-1 text-gray-500">
-              Your Adizes Management Style Indicator (AMSI) overview.
+              Leadership Energy Alignment Profile — Powered by the Adizes PAEI Framework
             </p>
           </div>
 
