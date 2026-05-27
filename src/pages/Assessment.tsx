@@ -359,18 +359,21 @@ export function Assessment() {
               </h2>
               <p className="text-xl text-gray-600 mb-4">{section.description}</p>
               <p className="text-sm text-gray-400 mb-4">{totalPerSection} questions</p>
-              <div className="mb-8 sm:mb-12 mx-auto max-w-md rounded-lg bg-primary/8 border border-primary/20 px-5 py-4 text-left space-y-2">
-                <p className="text-sm font-semibold text-primary/90 leading-relaxed">
-                  💡 Click the options in order of preference —{" "}
-                  <span className="underline underline-offset-2">1st</span> for most like you,
-                  through to <span className="underline underline-offset-2">4th</span> for least like you.
+              <div className="mb-8 sm:mb-12 mx-auto max-w-md rounded-lg bg-[#1D3557]/8 border border-[#1D3557]/20 px-5 py-4 text-left space-y-2">
+                <p className="text-sm font-semibold text-[#1D3557]/90 leading-relaxed">
+                  💡 Rank the four options from{" "}
+                  <span className="underline underline-offset-2">most applicable</span> to{" "}
+                  <span className="underline underline-offset-2">least applicable</span> for this section.
                 </p>
-                <p className="text-sm text-primary/70 leading-relaxed">
-                  Changed your mind? Click a chosen option again to deselect it and re-rank.
+                <p className="text-sm text-[#1D3557]/70 leading-relaxed">
+                  1 = most applicable &nbsp;·&nbsp; 4 = least applicable
+                </p>
+                <p className="text-sm text-[#1D3557]/70 leading-relaxed">
+                  You can click a selected option again to deselect and re-rank.
                 </p>
               </div>
               <Button size="lg" onClick={() => setShowIntro(false)} className="w-full sm:w-auto px-12 text-lg h-14">
-                Begin Section <ArrowRight className="ml-2 h-5 w-5" />
+                Begin Questions <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
             </CardContent>
           </Card>
