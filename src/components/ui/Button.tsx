@@ -20,7 +20,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
             "rounded-md hover:bg-gray-100 hover:text-gray-900": variant === "ghost",
             "rounded-md bg-red-500 text-white hover:bg-red-600": variant === "danger",
             "rounded-md bg-gray-100 text-gray-900 hover:bg-gray-200": variant === "secondary",
-            "rounded-xl bg-[#1D3557] text-white hover:bg-[#152a43] shadow-sm hover:shadow-md hover:shadow-[#1D3557]/20": variant === "leap",
+            "rounded-xl bg-leap text-white hover:bg-leap-dark shadow-sm hover:shadow-md": variant === "leap",
             "h-10 px-4 py-2": size === "default",
             "h-9 rounded-md px-3": size === "sm",
             "h-11 rounded-md px-8": size === "lg",
