@@ -228,7 +228,7 @@ export function AdminRespondent() {
                 <InfoTooltip text="Three rows for three dimensions: 'Current State' = how the respondent currently behaves. 'Role Expectations' = what their role demands. 'Intrinsic Preference' = their natural preference. Gaps between rows reveal where role demands and instincts diverge." />
               </CardTitle>
               <CardDescription>
-                Visual representation of Is, Should, and Want profiles.
+                Visual representation of Current State, Role Expectations, and Intrinsic Preference.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -241,7 +241,7 @@ export function AdminRespondent() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 Gap Analysis
-                <InfoTooltip text="Top misalignments between Is, Should, and Want dimensions. Execution = Is vs Should. Engagement = Should vs Want. Authenticity = Is vs Want." />
+                <InfoTooltip text="Top misalignments across the three dimensions. Execution Gap = Role Expectations vs Current State. Engagement Gap = Role Expectations vs Intrinsic Preference. Authenticity Gap = Current State vs Intrinsic Preference." />
               </CardTitle>
               <CardDescription>
                 Most significant energy misalignments detected.

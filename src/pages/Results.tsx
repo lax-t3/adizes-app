@@ -152,7 +152,7 @@ export function Results() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   Style Comparison
-                  <InfoTooltip text="Each role shows three lenses side-by-side: Is (Current State), Should (Role Expectations), and Want (Intrinsic Preference, shown lighter). Bars show the percentage of total energy. Gaps between lenses highlight where role demands or natural instincts diverge from current behaviour." />
+                  <InfoTooltip text="Each role shows three bars: Current State (how you currently operate), Role Expectations (what your role demands), and Intrinsic Preference (your natural tendency, shown lighter). Bars show the percentage of total energy. Gaps highlight where role demands or natural instincts diverge from current behaviour." />
                 </CardTitle>
                 <CardDescription>
                   How your PAEI energy distributes across Current State, Role Expectations, and Intrinsic Preference.

@@ -15,9 +15,9 @@ const ROLE_META: Record<typeof ROLES[number], { label: string; color: string }> 
 };
 
 const LENSES: { key: keyof Props["display_scores"]; label: string; shortLabel: string; dimmed?: boolean }[] = [
-  { key: "is",     label: "Current State",        shortLabel: "Is"     },
-  { key: "should", label: "Role Expectations",    shortLabel: "Should" },
-  { key: "want",   label: "Intrinsic Preference", shortLabel: "Want",  dimmed: true },
+  { key: "is",     label: "Current State",        shortLabel: "Current"   },
+  { key: "should", label: "Role Expectations",    shortLabel: "Role"      },
+  { key: "want",   label: "Intrinsic Preference", shortLabel: "Intrinsic", dimmed: true },
 ];
 
 export function EnergyMatrix({ display_scores }: Props) {
@@ -25,17 +25,17 @@ export function EnergyMatrix({ display_scores }: Props) {
     <div className="space-y-2.5">
       <div className="flex items-center gap-1.5 mb-1">
         <div className="flex items-center gap-3 flex-wrap">
-          {LENSES.map(({ shortLabel, dimmed }) => (
-            <span key={shortLabel} className="flex items-center gap-1.5 text-[11px] text-gray-400">
+          {LENSES.map(({ label, dimmed }) => (
+            <span key={label} className="flex items-center gap-1.5 text-[11px] text-gray-400">
               <span
                 className="inline-block w-3 h-3 rounded-sm bg-gray-300"
                 style={{ opacity: dimmed ? 0.5 : 1 }}
               />
-              {shortLabel} = {LENSES.find(l => l.shortLabel === shortLabel)?.label}
+              {label}
             </span>
           ))}
         </div>
-        <InfoTooltip text="Each role section shows three bars: Is (Current State), Should (Role Expectations), and Want (Intrinsic Preference, shown lighter). Bars show what percentage of total energy goes to each PAEI role per lens. Each row sums to 100%." />
+        <InfoTooltip text="Each role section shows three bars: Current State (how you currently operate), Role Expectations (what your role demands), and Intrinsic Preference (your natural tendency, shown lighter). Bars show the percentage of total energy per role. Each set of three sums to 100%." />
       </div>
 
       {ROLES.map((role) => {
@@ -89,7 +89,7 @@ export function EnergyMatrix({ display_scores }: Props) {
                     className="flex items-center gap-2.5"
                     style={{ opacity: dimmed ? 0.55 : 1 }}
                   >
-                    <span className="w-[46px] flex-shrink-0 text-[11px] font-semibold text-gray-400 uppercase tracking-wide">
+                    <span className="w-[68px] flex-shrink-0 text-[11px] font-semibold text-gray-400 uppercase tracking-wide">
                       {shortLabel}
                     </span>
                     <div className="flex-1 bg-gray-100 rounded-full h-3.5 overflow-hidden">
