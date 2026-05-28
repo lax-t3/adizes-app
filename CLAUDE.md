@@ -120,6 +120,7 @@ docker exec -i supabase_db_adizes-backend psql -U postgres -d postgres < migrati
 docker exec -i supabase_db_adizes-backend psql -U postgres -d postgres < migrations/011_cohort_status.sql
 docker exec -i supabase_db_adizes-backend psql -U postgres -d postgres < migrations/012_fix_question_sections.sql
 docker exec -i supabase_db_adizes-backend psql -U postgres -d postgres < migrations/013_fix_q9_q26_sections.sql
+docker exec -i supabase_db_adizes-backend psql -U postgres -d postgres < migrations/014_update_question_texts.sql
 
 # 4. Create test users (REQUIRED after every supabase start — users reset)
 SK="<SUPABASE_SERVICE_ROLE_KEY from .env>"
@@ -348,15 +349,15 @@ export S3_BUCKET_NAME=adizes-pdf-reports
   `_compute_team_scores()` is `> 25` (equal share = 100 ÷ 4 = 25%). The dominant threshold on the raw 132-scale
   is `> 33` (= 132 ÷ 4). Using `> 30` on scaled scores caused the style distribution chart to show all zeros
   for typical assessments — fixed to `> 25`.
-- **Question section assignments are interleaved — NOT sequential blocks** (migrations 012 + 013): The
+- **Question section assignments are interleaved — NOT sequential blocks** (migrations 012 + 013 + 014): The
   original seed and backend code wrongly assumed Q0-Q11=Is, Q12-Q23=Should, Q24-Q35=Want. The correct
-  distribution from `PAEI_Questions_Turiyaskills_Format.xlsx` interleaves sections throughout:
-  Is (12): Q0,Q4,Q7,Q9,Q10,Q14,Q19,Q21,Q23,Q29,Q33,Q35 · Should (12): Q2,Q5,Q6,Q12,Q13,Q18,Q20,Q24,Q26,Q27,Q31,Q34 · Want (12): Q1,Q3,Q8,Q11,Q15,Q16,Q17,Q22,Q25,Q28,Q30,Q32.
-  Fixed in three layers: (1) DB — migrations 012/013 applied to local + production, seed updated;
+  distribution (confirmed 2026-05-28 against source spreadsheet) interleaves sections throughout:
+  Is (12): Q0,Q4,Q7,Q10,Q14,Q19,Q21,Q23,Q26,Q29,Q33,Q35 · Should (12): Q2,Q5,Q6,Q9,Q12,Q13,Q18,Q20,Q24,Q27,Q31,Q34 · Want (12): Q1,Q3,Q8,Q11,Q15,Q16,Q17,Q22,Q25,Q28,Q30,Q32.
+  Note: migration 013 had Q9 and Q26 swapped; migration 014 corrects them (Q9→should, Q26→is).
+  Fixed in three layers: (1) DB — migrations 012/013/014 applied to local + production, seed updated;
   (2) `assessment.py` — `get_questions()` reads `section` column from DB; `submit_assessment()` fetches
-  `section_map` from DB and passes it to `score_answers()`; (3) `scoring.py` — added `SECTION_MAP`
-  constant, `score_answers()` now accepts optional `section_map` param (defaults to `SECTION_MAP`),
-  `_apply_dominance_factor()` accepts `q_indices: set` instead of `section_start: int`.
+  `section_map` from DB and passes it to `score_answers()`; (3) `scoring.py` — `SECTION_MAP` constant
+  updated, `score_answers()` accepts optional `section_map` param (defaults to `SECTION_MAP`).
 - **Cohort member activation status** (added 2026-05-26): `GET /admin/cohorts/{id}` returns `activated: bool`
   per respondent — `True` if `email_confirmed_at` is set in `auth.users`, `False` if the user never clicked
   the invite link. Frontend `AdminCohortDetail` shows green "Active" / amber "Invite Pending" badge per row.
