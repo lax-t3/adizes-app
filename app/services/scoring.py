@@ -64,11 +64,11 @@ RANK_POINTS = {1: 5, 2: 3, 3: 2, 4: 1}
 DOMINANT_THRESHOLD = 33   # raw score > 33 → dominant (capital letter)
 SECTION_TOTAL = 132       # 12 questions × 11 pts = 132
 
-# Correct per-question section assignments from PAEI_Questions_Turiyaskills_Format.xlsx.
+# Correct per-question section assignments from Updated ISWANTSHOULD questions.xls (2026-05-28).
 # Questions are interleaved across sections — NOT sequential blocks of 12.
 SECTION_MAP: Dict[int, str] = {
-    **{idx: "is"     for idx in (0, 4, 7, 9, 10, 14, 19, 21, 23, 29, 33, 35)},
-    **{idx: "should" for idx in (2, 5, 6, 12, 13, 18, 20, 24, 26, 27, 31, 34)},
+    **{idx: "is"     for idx in (0, 4, 7, 10, 14, 19, 21, 23, 26, 29, 33, 35)},
+    **{idx: "should" for idx in (2, 5, 6, 9, 12, 13, 18, 20, 24, 27, 31, 34)},
     **{idx: "want"   for idx in (1, 3, 8, 11, 15, 16, 17, 22, 25, 28, 30, 32)},
 }
 
