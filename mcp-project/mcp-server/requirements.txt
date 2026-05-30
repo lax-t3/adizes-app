@@ -1,5 +1,0 @@
-fastapi
-uvicorn[standard]
-mcp[cli]
-pytest
-pytest-asyncio
