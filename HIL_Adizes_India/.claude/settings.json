@@ -1,0 +1,26 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/Users/vrln/HIL_Adizes_India/.claude/hooks/block-env-edits.sh"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/Users/vrln/HIL_Adizes_India/.claude/hooks/check-ts-types.sh"
+          }
+        ]
+      }
+    ]
+  }
+}
