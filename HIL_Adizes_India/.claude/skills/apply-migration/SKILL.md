@@ -1,6 +1,6 @@
 ---
 name: apply-migration
-description: Apply a migration file to the local Supabase instance and print the reminder to also apply to production. Usage: /apply-migration <filename>
+description: "Apply a migration file to the local Supabase instance and print the reminder to also apply to production. Usage: /apply-migration <filename>"
 ---
 
 The user will specify a migration filename (e.g. `015_add_cohort_tags.sql`).

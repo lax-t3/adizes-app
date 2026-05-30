@@ -1,6 +1,6 @@
 ---
 name: new-router
-description: Scaffold a new FastAPI router for adizes-backend — creates the router file with standard structure and wires it into main.py. Usage: /new-router <name>
+description: "Scaffold a new FastAPI router for adizes-backend — creates the router file with standard structure and wires it into main.py. Usage: /new-router <name>"
 ---
 
 The user will provide a router name (e.g. `reports`).

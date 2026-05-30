@@ -1,6 +1,6 @@
 ---
 name: new-page
-description: Scaffold a new React page for adizes-frontend — creates the page component and wires it into App.tsx. Usage: /new-page <PageName>
+description: "Scaffold a new React page for adizes-frontend — creates the page component and wires it into App.tsx. Usage: /new-page <PageName>"
 ---
 
 The user will provide a PascalCase page name (e.g. `Reports`).

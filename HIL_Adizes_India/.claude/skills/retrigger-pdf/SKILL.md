@@ -1,6 +1,6 @@
 ---
 name: retrigger-pdf
-description: Re-trigger PDF generation for a stuck assessment where pdf_url is null. Uses boto3 to invoke adizes-pdf-generator-v2 synchronously. Usage: /retrigger-pdf <assessment_id>
+description: "Re-trigger PDF generation for a stuck assessment where pdf_url is null. Uses boto3 to invoke adizes-pdf-generator-v2 synchronously. Usage: /retrigger-pdf <assessment_id>"
 ---
 
 Use this when an assessment has completed scoring but `pdf_url` is still null.
