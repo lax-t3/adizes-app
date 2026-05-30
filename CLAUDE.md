@@ -420,3 +420,46 @@ separate exception classes — `JWKError` does NOT inherit from `JWTError`.
 - `sb_publishable_*` / `sb_secret_*` — new SDK keys (use for admin API calls)
 - JWT-format `ANON_KEY` / `SERVICE_ROLE_KEY` — still needed for `.env`
 Both key formats work for the admin API (`/auth/v1/admin/users`).
+
+---
+
+## Claude Code Automations
+
+Skill files live in `HIL_Adizes_India/.claude/skills/`, agents in `.claude/agents/`, hooks in `.claude/hooks/`.
+
+### Skills (invoke with `/skill-name`)
+
+| Skill | Purpose |
+|-------|---------|
+| `/dev-start` | Full local stack boot — Supabase → rotate keys → 14 migrations → test users → Docker → frontend |
+| `/db-reset` | Full DB teardown and rebuild (after `supabase stop`) |
+| `/rotate-env` | Patch `.env` with new `ANON_KEY`/`SERVICE_ROLE_KEY` after `supabase start` |
+| `/seed-local` | Recreate the two test users (admin + user) after a Supabase restart |
+| `/check-stack` | One-glance health table for all local services |
+| `/deploy-backend` | Build `linux/amd64` Docker image → ECR push → App Runner redeploy |
+| `/deploy-lambda` | Deploy PDF Lambda v2 with production-key guard |
+| `/check-prod` | Production health check — App Runner, Lambda, Supabase, CloudWatch logs |
+| `/add-migration` | Auto-number + scaffold the next migration file with apply reminders |
+| `/apply-migration` | Apply a migration locally + print the production apply reminder |
+| `/new-router` | Scaffold a FastAPI router and wire it into `main.py` |
+| `/new-page` | Scaffold a React page and wire it into `App.tsx` |
+| `/retrigger-pdf` | Re-invoke Lambda via boto3 for assessments stuck with `pdf_url = null` |
+
+### Subagent
+
+**`security-reviewer`** — audits JWT algo confusion (ES256/HS256), Supabase RLS, `.dockerignore` secret leakage, IAM least-privilege, and CORS. References CLAUDE.md Key Decisions where applicable.
+
+### Hooks (always-on)
+
+| Hook | Trigger | Action |
+|------|---------|--------|
+| `block-env-edits.sh` | PreToolUse on Edit/Write | Blocks any `.env` file edit with explanation |
+| `check-ts-types.sh` | PostToolUse on Edit/Write | Runs `tsc --noEmit` after any `.ts`/`.tsx` edit in `adizes-frontend` |
+
+### MCP Servers
+
+| Server | Package | Purpose |
+|--------|---------|---------|
+| `context7` | `@upstash/context7-mcp` | Live docs for React 19, FastAPI, Supabase, boto3, Tailwind v4 |
+| `awslabs-lambda` | `awslabs.lambda-tool-mcp-server` | Lambda invoke, config, and policy tools |
+| `awslabs-cloudwatch` | `awslabs.cloudwatch-mcp-server` | App Runner log tailing and CloudWatch queries |
