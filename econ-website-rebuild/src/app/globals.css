@@ -1,0 +1,9 @@
+@import "tailwindcss";
+
+@theme {
+  --color-econ-red: #C8102E;
+  --color-econ-dark: #1A1A1A;
+  --color-econ-navy: #1D3557;
+  --color-econ-amber: #E87722;
+  --color-econ-teal: #2A9D8F;
+}
