@@ -42,7 +42,7 @@ export default async function CatalogPage({ searchParams }: Props) {
     <div className="max-w-6xl mx-auto px-4 py-8">
       <div className="mb-6">
         <h1 className="text-2xl font-bold">Camera Catalog</h1>
-        <p className="text-gray-500 text-sm mt-1">{totalDocs} products across all categories</p>
+        <p className="text-gray-500 text-sm mt-1">{filtered.length} of {totalDocs} products</p>
       </div>
 
       {/* Search bar */}
