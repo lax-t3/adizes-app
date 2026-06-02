@@ -32,7 +32,6 @@ services:
     volumes:
       - ./src:/app/src
       - ./seed:/app/seed
-      - ./src/collections:/app/src/collections
       - ./payload.config.ts:/app/payload.config.ts
 
   medusa:
