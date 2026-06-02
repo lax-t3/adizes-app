@@ -1,0 +1,7 @@
+node_modules/
+.next/
+.env
+.env.local
+medusa-backend/node_modules/
+medusa-backend/.medusa/
+.superpowers/
