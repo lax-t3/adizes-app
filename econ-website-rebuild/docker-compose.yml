@@ -33,6 +33,7 @@ services:
       - ./src:/app/src
       - ./seed:/app/seed
       - ./payload.config.ts:/app/payload.config.ts
+      - ./package.json:/app/package.json
 
   medusa:
     build:
