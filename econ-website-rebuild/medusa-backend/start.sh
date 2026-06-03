@@ -19,6 +19,7 @@ echo "Waiting for Medusa API to be ready..."
 until wget -q -O- http://localhost:9000/health > /dev/null 2>&1; do sleep 3; done
 echo "Medusa ready. Running seed..."
 
-npx tsx /seed/medusa-seed.ts
+# Seed is best-effort: a seed hiccup must never take down the Medusa API.
+npx tsx /seed/medusa-seed.ts || echo "Seed reported an issue — Medusa stays up, continuing."
 
 wait $MEDUSA_PID

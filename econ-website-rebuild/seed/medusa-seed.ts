@@ -80,7 +80,7 @@ async function seed() {
       status: cam.status === 'published' ? 'published' : 'draft',
       sales_channels: [{ id: sales_channel.id }],
       categories: catMap[cam.category_slug] ? [{ id: catMap[cam.category_slug] }] : [],
-      options: [{ title: 'Type' }],
+      options: [{ title: 'Type', values: ['OEM Module', 'Development Kit'] }],
       variants: [
         {
           title: 'OEM Module',
