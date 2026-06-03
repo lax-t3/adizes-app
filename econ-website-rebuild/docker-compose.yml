@@ -47,7 +47,10 @@ services:
       COOKIE_SECRET: econ-demo-cookie-secret
       MEDUSA_ADMIN_EMAIL: admin@econ-demo.com
       MEDUSA_ADMIN_PASSWORD: Admin@1234
-      NODE_ENV: development
+      # production: `medusa start` serves the compiled admin from .medusa/server.
+      # With development it runs the admin via a Vite dev server on a random port
+      # (browser ERR_CONNECTION_REFUSED). The build is baked into the image.
+      NODE_ENV: production
     depends_on:
       postgres:
         condition: service_healthy
