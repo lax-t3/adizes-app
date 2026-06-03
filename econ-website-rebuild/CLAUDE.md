@@ -27,7 +27,7 @@ See `README.md` for the user-facing overview and `docs/superpowers/` for the des
 | `src/app/(store)/` | Storefront routes (homepage, catalog, product, cart) |
 | `src/app/(payload)/admin/` | Payload admin route group |
 | `seed/camera-data.ts` | 8 cameras + 4 categories — single source of truth, imported by both seeders |
-| `medusa-backend/` | Medusa v2 app (Dockerfile, start.sh, medusa-config.ts) |
+| `medusa-backend/` | Medusa v2 app. Dockerfile runs `medusa build` (needs `@medusajs/admin-sdk`) → `.medusa/server`; `start.sh` runs from there with `NODE_ENV=production` |
 
 ## Demo Stories (what the workshop walks through)
 - **A:** Edit `See3CAM_CU135` in Payload admin → refresh storefront → live.
@@ -149,6 +149,22 @@ In `seed/medusa-seed.ts`, product `options` must be `[{ title: 'Type', values: [
 'Development Kit'] }]`. Omitting `values` gives `400 Field 'options, 0, values' is required`. The
 medusa seed runs (best-effort, non-fatal) from `medusa-backend/start.sh` after the API is healthy.
 
+### 16. Medusa admin must be PRODUCTION-BUILT, and needs `@medusajs/admin-sdk`
+Without a build, `medusa start` serves the admin via a **Vite dev server on a random port** — the browser
+console shows `GET http://localhost:<random>/app/ net::ERR_CONNECTION_REFUSED` and the admin never loads.
+Two requirements:
+- **`@medusajs/admin-sdk`** in `medusa-backend/package.json`. A core module (`@medusajs/draft-order`) ships
+  an admin extension that imports `defineRouteConfig` from it; without it `medusa build` fails with
+  `"defineRouteConfig" is not exported by "__vite-optional-peer-dep:@medusajs/admin-sdk..."`.
+- **`RUN npx medusa build`** in `medusa-backend/Dockerfile` (at image-build time) → compiles the admin into
+  `.medusa/server/public/admin`. Then `cd .medusa/server && npm install`, and `start.sh` runs from
+  `/app/.medusa/server`.
+
+### 17. Medusa container MUST run with `NODE_ENV=production`
+Even with a built admin, `medusa start` serves the **Vite dev** admin if `NODE_ENV=development`. The
+`docker-compose.yml` medusa service sets `NODE_ENV: production` so `medusa start` serves the compiled
+admin from `.medusa/server/public/admin` (HTML references `/app/assets/index-*.js`, no `/@vite/client`).
+
 ---
 
 ## ✅ Full stack working (resolved 2026-06-03)
@@ -201,3 +217,6 @@ docker compose up -d medusa   # migrates (164, ~15s) → creates user → seeds 
 | Admin loads but **completely unstyled** (serif) | missing `import '@payloadcms/next/css'` | #12b |
 | **Medusa migration count stuck at 0, no error** | SSL handshake hang on non-SSL Postgres | **#13** |
 | `400 Field 'options, 0, values' is required` | Medusa product options missing `values` | #15 |
+| Browser: `GET localhost:<random>/app/ ERR_CONNECTION_REFUSED` | Medusa admin served via Vite dev (not built) | #16, #17 |
+| `medusa build` fails: `defineRouteConfig not exported` | missing `@medusajs/admin-sdk` dep | #16 |
+| `/app` HTML has `/@vite/client` | `NODE_ENV` not `production` | #17 |
