@@ -69,7 +69,9 @@ Three Docker containers, one `docker-compose.yml`, managed in Docker Desktop.
 
 ## Quick start
 
-> **Prerequisites:** Docker Desktop running. Ports 3000, 9000 free.
+> **Prerequisites:** Docker Desktop running with **≥ 6 GB memory** allocated
+> (Settings → Resources → Memory — the Payload admin compile OOMs at the 3.8 GB default).
+> Ports 3000, 9000 free.
 
 ```bash
 cd /Users/vrln/econ-website-rebuild

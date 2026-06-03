@@ -85,36 +85,46 @@ Both Dockerfiles use `RUN --mount=type=cache,target=/root/.npm npm install --pre
 reuse the cache. **Requires BuildKit** (`DOCKER_BUILDKIT=1`, default in modern Docker Desktop).
 
 ### 7. package.json is volume-mounted
-`docker-compose.yml` mounts `./package.json:/app/package.json` so changes to the `dev` script (webpack vs
-turbopack) take effect on container recreate without an image rebuild. After editing it, you must
-**recreate** the container (`docker compose up -d --force-recreate app`), not just `restart` — restart
-keeps the old mount set.
+`docker-compose.yml` mounts `./package.json:/app/package.json` so changes to the `dev` script take effect
+on container recreate without an image rebuild. After editing it, you must **recreate** the container
+(`docker compose up -d --force-recreate app`), not just `restart` — restart keeps the old mount set.
+
+### 8. Use webpack, NOT turbopack, for the dev server
+`next dev --turbopack` boots and compiles, then **hangs on `Pulling schema from database...`** — turbopack
+skips Payload's `withPayload` webpack plugin, breaking the DB-layer init. Plain `next dev` (webpack) compiles
+the storefront in ~3s and completes the schema push cleanly (`[✓]`). `package.json` `dev` script is
+`next dev` (no `--turbopack`), and `start.sh` invokes it directly (see #9).
+
+### 9. start.sh invokes `next` directly, not via `npm run dev`
+`exec npm run dev` with npm as PID 1 sometimes fails to spawn the `next` child (container idles at ~22MiB,
+no next-server). `start.sh` uses `exec node_modules/.bin/next dev` directly, which spawns reliably.
+
+### 10. Docker Desktop needs ≥ 6 GB RAM
+The Payload **admin** bundle (~3600 modules) is memory-heavy to compile. At the default 3.8 GiB the container
+is **OOM-killed** mid-compile (`OOMKilled: true`, silent exit 0) — storefront works but `/admin` dies.
+Bump Docker Desktop → Settings → Resources → Memory to **6 GB+**. With 3 containers running, 6 GB is the floor.
+
+### 11. Payload admin requires `(payload)/layout.tsx` + API routes
+The admin is NOT just the `[[...segments]]/page.tsx`. It needs:
+- **`src/app/(payload)/layout.tsx`** — wraps admin with `RootLayout` from `@payloadcms/next/layouts`,
+  passing `config`, `importMap`, and a `serverFunction` (wrapping `handleServerFunctions`). Without it:
+  `Error: Cannot destructure property 'config' of '…' as it is undefined`.
+- **`src/app/(payload)/api/[...slug]/route.ts`** (REST), **`api/graphql/route.ts`**,
+  **`api/graphql-playground/route.ts`** — re-export Payload's route handlers. Needed for admin login + data ops.
+
+### 12. No root `app/layout.tsx` — route groups own `<html>/<body>`
+Payload's `RootLayout` renders its own `<html>/<body>`. A root `app/layout.tsx` that also renders them would
+**nest `<html>` tags**. So there is **no `src/app/layout.tsx`**; instead `(store)/layout.tsx` provides the
+storefront's `<html>/<body>` and `(payload)/layout.tsx` (via RootLayout) provides the admin's. Both `<html>`
+and `<body>` carry `suppressHydrationWarning` to absorb browser-extension (Grammarly) attribute injection.
 
 ---
 
-## 🚧 UNRESOLVED: Task 9 — app won't finish booting in Docker (as of 2026-06-03)
+## ✅ Boot is working (resolved 2026-06-03)
 
-Tasks 1–8 (all code) are complete, reviewed, and committed. The app **image builds fine** and **postgres
-works**, but the Payload app does not finish its first boot. Two failure modes, depending on dev bundler:
-
-- **Turbopack (`next dev --turbopack`):** server boots, banner prints, compiles in ~135s, then logs
-  `Pulling schema from database...` and **hangs forever**. Root cause (strong suspicion): Turbopack skips
-  Payload's `withPayload` webpack plugin, and drizzle's `push: true` schema sync waits on an interactive
-  TTY confirmation that never comes in a non-TTY container.
-- **Webpack (`next dev`, no flag):** `npm run dev` as PID 1 **never spawns the `next` child** (container
-  sits at 22MiB RAM, only `npm` running). BUT invoking `./node_modules/.bin/next dev` **directly** inside
-  the container DID start node and begin compiling — pointing at the fix.
-
-### Recommended fix (not yet applied — awaiting restart approval)
-1. **Invoke Next directly** in `start.sh`: `exec node_modules/.bin/next dev` (or `next start` after a build)
-   instead of `exec npm run dev`. The npm-as-PID-1 wrapper is the webpack-mode blocker.
-2. **Replace interactive `push: true`** with a **pre-generated migration** applied non-interactively, so
-   schema creation never waits on a TTY prompt. Generate the migration once on the host (Node 25 there works),
-   commit it, and apply it programmatically via `payload.db.migrate()` in `onInit` or a dedicated step — OR
-   add `--accept-data-loss` / non-interactive flag to the drizzle push if Payload exposes one.
-
-When picking this back up: confirm the bundler choice first, fix `start.sh` invocation, then resolve the
-schema-push interactivity. Don't re-litigate #1–#6 above — those are settled.
+After resolving gotchas #1–#12, the full app boots: storefront (home, catalog, product, cart), Payload admin
+login, schema push, and seeding of all 8 cameras all work. First `/admin` compile takes ~25s (3611 modules);
+storefront routes compile in 1–3s. Requires Docker Desktop at 6 GB+ RAM.
 
 ---
 
