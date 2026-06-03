@@ -62,7 +62,7 @@ Three Docker containers, one `docker-compose.yml`, managed in Docker Desktop.
 | Commerce | Medusa v2 |
 | Database | PostgreSQL 16 |
 | Styling | Tailwind CSS v4 |
-| Runtime | Node.js 22 (Alpine) |
+| Runtime | Node.js 22 (app/Payload) · Node.js 20 (Medusa) — Alpine |
 | Containers | Docker + Docker Compose |
 
 ---
@@ -124,15 +124,17 @@ econ-website-rebuild/
 ├── next.config.ts            # withPayload wrapper
 │
 ├── src/
-│   ├── app/
-│   │   ├── layout.tsx                       # root layout (html/body)
-│   │   ├── (payload)/admin/...              # Payload admin route group
-│   │   └── (store)/                         # storefront route group
-│   │       ├── layout.tsx                   # nav header + footer
-│   │       ├── page.tsx                     # homepage
-│   │       ├── cameras/page.tsx             # catalog
-│   │       ├── cameras/[slug]/page.tsx      # product detail
-│   │       └── cart/page.tsx                # cart + quote form
+│   ├── app/                                  # NO root layout.tsx — route groups own <html>/<body>
+│   │   ├── (payload)/                        # Payload admin route group
+│   │   │   ├── layout.tsx                    # RootLayout + serverFunction + import '@payloadcms/next/css'
+│   │   │   ├── admin/[[...segments]]/...     # admin page + not-found + importMap
+│   │   │   └── api/                          # REST + graphql + graphql-playground route handlers
+│   │   └── (store)/                          # storefront route group
+│   │       ├── layout.tsx                    # owns <html>/<body> + nav header + footer
+│   │       ├── page.tsx                      # homepage
+│   │       ├── cameras/page.tsx              # catalog
+│   │       ├── cameras/[slug]/page.tsx       # product detail
+│   │       └── cart/page.tsx                 # cart + quote form
 │   ├── collections/          # Payload: Users, Categories, Cameras
 │   ├── components/           # CameraCard, CatalogFilters, AddToCartButton, CartLineItems
 │   └── lib/payload.ts        # getPayloadClient() helper
@@ -168,6 +170,18 @@ docker compose down -v
 
 # Reseed only: down -v then up again (seeds run on empty DB)
 ```
+
+### Timing on first boot
+- **Build:** several minutes the first time (Medusa v2 has a large dependency tree); fast afterwards (npm cache).
+- **App:** storefront routes compile in 1–3s; the **first `/admin` load compiles ~25s** (~3600 modules) — this is normal.
+- **Medusa:** migrates 164 rows in ~15s, then seeds 8 products.
+
+### Troubleshooting
+This build hit a number of non-obvious issues; every one is documented with its fix in **`CLAUDE.md`**
+(see the "Symptom → Fix Quick Reference" table). The two that matter most:
+- **Admin loads but is completely unstyled (serif font):** `(payload)/layout.tsx` must `import '@payloadcms/next/css'`.
+- **Medusa migration count stuck at 0 with no error:** the Medusa `DATABASE_URL` must end with `?sslmode=disable`.
+- **`/admin` killed mid-compile (`OOMKilled`):** raise Docker Desktop memory to 6 GB+.
 
 ---
 

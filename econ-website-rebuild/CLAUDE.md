@@ -46,14 +46,17 @@ See `README.md` for the user-facing overview and `docs/superpowers/` for the des
 
 ## ⚠️ Build & Runtime Gotchas (hard-won — read before debugging boot issues)
 
-These were discovered during the first end-to-end boot. The fixes are committed; the reasoning is here so
-they aren't accidentally reverted.
+These were discovered during the first end-to-end boot (it took 13 distinct fixes to get a clean boot). The
+fixes are committed; the reasoning is here so they aren't accidentally reverted. The two that were the real
+demo-blockers: **#9** (Payload admin CSS) and **#13** (Medusa migration SSL hang).
 
-### 1. Node.js MUST be 22, not 20
-`node:20-alpine` (currently 20.20.2) crashes on startup with
-`TypeError: Illegal constructor` from `undici/lib/web/cache/cachestorage.js`. Node 20.20's `CacheStorage`
+### Build / Docker / Node
+
+### 1. App/Payload image MUST be Node 22 (Medusa image is Node 20 — see #14)
+The **app** `Dockerfile` pins `node:22-alpine`. On `node:20-alpine` (20.20.2) it crashes on startup with
+`TypeError: Illegal constructor` from `undici/lib/web/cache/cachestorage.js` — Node 20.20's `CacheStorage`
 global is non-constructible and undici v7 (bundled via Payload) tries to instantiate it at import time.
-**Both Dockerfiles pin `node:22-alpine`.** Do not downgrade.
+Do not downgrade the app image. (The **medusa** image deliberately uses `node:20-alpine`; they're separate.)
 
 ### 2. `payload.config.ts` imports collections with `.ts` extensions
 On Node 22 + tsx ESM, extensionless imports (`./src/collections/Users`) fail with
@@ -89,6 +92,8 @@ reuse the cache. **Requires BuildKit** (`DOCKER_BUILDKIT=1`, default in modern D
 on container recreate without an image rebuild. After editing it, you must **recreate** the container
 (`docker compose up -d --force-recreate app`), not just `restart` — restart keeps the old mount set.
 
+### Next.js / Payload
+
 ### 8. Use webpack, NOT turbopack, for the dev server
 `next dev --turbopack` boots and compiles, then **hangs on `Pulling schema from database...`** — turbopack
 skips Payload's `withPayload` webpack plugin, breaking the DB-layer init. Plain `next dev` (webpack) compiles
@@ -118,7 +123,13 @@ Payload's `RootLayout` renders its own `<html>/<body>`. A root `app/layout.tsx` 
 storefront's `<html>/<body>` and `(payload)/layout.tsx` (via RootLayout) provides the admin's. Both `<html>`
 and `<body>` carry `suppressHydrationWarning` to absorb browser-extension (Grammarly) attribute injection.
 
----
+### 12b. Payload admin CSS — `import '@payloadcms/next/css'` (CRITICAL, was a demo-blocker)
+`src/app/(payload)/layout.tsx` MUST `import '@payloadcms/next/css'`. Without it, Payload's 381KB admin theme
+bundle lands only in the page-level CSS chunk, which Next.js emits as **preload-only (never applied)** — the
+admin renders completely unstyled (serif fallback, no theme vars). The import puts the CSS in the *layout*
+chunk, which loads as `rel=stylesheet`. Symptom: admin works but looks like raw HTML.
+
+### Medusa
 
 ### 13. Medusa DATABASE_URL MUST end with `?sslmode=disable`
 **This was the single hardest bug.** Without it, `medusa db:migrate` creates the `mikro_orm_migrations`
@@ -163,5 +174,30 @@ docker compose up -d --force-recreate app   # recreate app to pick up package.js
 ```
 
 ## Reset / Reseed
-Seeders are idempotent and only run on an empty DB. To reseed: `docker compose down -v` (removes the
-postgres volume) then `docker compose up`. The `onInit` seed checks for existing cameras and skips if present.
+Seeders are idempotent and only run on an empty DB. To reseed everything: `docker compose down -v` (removes
+the postgres volume) then `docker compose up`. The Payload `onInit` seed checks for existing cameras and
+skips if present; the Medusa seed checks `/store/products`.
+
+To reseed **only Medusa** (keeps Payload data): stop medusa, drop+recreate just its DB, restart:
+```bash
+docker compose stop medusa
+docker compose exec -T postgres psql -U econ -d postgres -c "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname='econ_medusa'"
+docker compose exec -T postgres psql -U econ -d postgres -c "DROP DATABASE econ_medusa"
+docker compose exec -T postgres psql -U econ -d postgres -c "CREATE DATABASE econ_medusa"
+docker compose up -d medusa   # migrates (164, ~15s) → creates user → seeds 8 products
+```
+
+## Symptom → Fix Quick Reference
+| Symptom | Cause | Gotcha |
+|---------|-------|--------|
+| App crashes at boot, `Illegal constructor` / `cachestorage.js` | app image on Node 20 | #1 |
+| `ERR_MODULE_NOT_FOUND` on a collection import | extensionless import | #2 |
+| `ERR_REQUIRE_ASYNC_MODULE` | ran `npx payload migrate` / `import.meta.url` | #3, #4 |
+| Boot hangs on `Pulling schema from database...` | turbopack skips Payload plugin | #8 |
+| Container idle ~22MiB, no next-server | `npm run dev` didn't spawn next | #9 |
+| `/admin` dies mid-compile, `OOMKilled: true` | Docker RAM < 6 GB | #10 |
+| `Cannot destructure property 'config'` on /admin | missing `(payload)/layout.tsx` | #11 |
+| Nested `<html>` / hydration tag errors | root layout + RootLayout both render html | #12 |
+| Admin loads but **completely unstyled** (serif) | missing `import '@payloadcms/next/css'` | #12b |
+| **Medusa migration count stuck at 0, no error** | SSL handshake hang on non-SSL Postgres | **#13** |
+| `400 Field 'options, 0, values' is required` | Medusa product options missing `values` | #15 |
