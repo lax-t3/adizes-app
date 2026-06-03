@@ -5,6 +5,10 @@ echo "Waiting for postgres..."
 until pg_isready -h postgres -U econ; do sleep 2; done
 echo "Postgres ready."
 
+# Run from the built production server (.medusa/server) so `medusa start` serves
+# the compiled admin dashboard (not a Vite dev server on a random port).
+cd /app/.medusa/server
+
 echo "Running Medusa migrations..."
 npx medusa db:migrate
 

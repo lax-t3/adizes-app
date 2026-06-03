@@ -10,6 +10,14 @@ RUN --mount=type=cache,target=/root/.npm \
     npm install --prefer-offline
 COPY medusa-backend/ .
 COPY seed/ /seed
+# Build the production app (backend + admin dashboard) into .medusa/server.
+# Requires @medusajs/admin-sdk (a Medusa module's admin extension imports
+# defineRouteConfig from it). Without a build, `medusa start` serves the admin
+# via a Vite dev server on a random port → ERR_CONNECTION_REFUSED in the browser.
+RUN npx medusa build
+# Install production deps inside the built server (it has its own package.json)
+RUN --mount=type=cache,target=/root/.npm \
+    cd .medusa/server && npm install --prefer-offline
 RUN chmod +x start.sh
 EXPOSE 9000
 CMD ["./start.sh"]
