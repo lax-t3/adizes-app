@@ -46,9 +46,10 @@ See `README.md` for the user-facing overview and `docs/superpowers/` for the des
 
 ## ⚠️ Build & Runtime Gotchas (hard-won — read before debugging boot issues)
 
-These were discovered during the first end-to-end boot (it took 13 distinct fixes to get a clean boot). The
-fixes are committed; the reasoning is here so they aren't accidentally reverted. The two that were the real
-demo-blockers: **#9** (Payload admin CSS) and **#13** (Medusa migration SSL hang).
+These were discovered while getting the first end-to-end boot working (18 distinct fixes in total). The
+fixes are committed; the reasoning is here so they aren't accidentally reverted. The biggest time-sinks:
+**#12b** (Payload admin CSS import), **#13** (Medusa migration SSL hang), and **#18** (Medusa admin
+secure-cookie over HTTP).
 
 ### Build / Docker / Node
 
@@ -165,6 +166,24 @@ Even with a built admin, `medusa start` serves the **Vite dev** admin if `NODE_E
 `docker-compose.yml` medusa service sets `NODE_ENV: production` so `medusa start` serves the compiled
 admin from `.medusa/server/public/admin` (HTML references `/app/assets/index-*.js`, no `/@vite/client`).
 
+### 18. Medusa admin login over HTTP needs `cookieOptions: { secure: false }`
+A consequence of #17. With `NODE_ENV=production`, Medusa defaults the admin **session cookie** to
+`{ secure: true, sameSite: 'none' }` (see `@medusajs/framework/dist/http/express-loader.js`). The browser
+**refuses to send a `secure` cookie over plain HTTP `localhost`**, so the admin login *succeeds*
+(`POST /auth/user/emailpass` 200 → `POST /auth/session` 200) but every following `GET /admin/users/me`
+returns **401** — the dashboard appears stuck on the login page / shows `{"message":"Unauthorized"}`.
+Fix in `medusa-backend/medusa-config.ts`:
+```ts
+projectConfig: {
+  // ...
+  cookieOptions: { secure: false, sameSite: 'lax' },  // spread LAST over the session cookie → overrides secure
+}
+```
+Verify: a cookie-only `GET /admin/users/me` (no Bearer) returns 200, and the set cookie's `secure` flag is FALSE.
+Diagnostic tell: the browser flow logs `POST /auth/session 200` then repeated `GET /admin/users/me 401`.
+(Note: API/Bearer auth always worked — `curl` with `Authorization: Bearer <token>` returns 200 — which is
+why this looked like a credentials problem at first. It is NOT; it's the cookie's `secure` flag.)
+
 ---
 
 ## ✅ Full stack working (resolved 2026-06-03)
@@ -220,3 +239,4 @@ docker compose up -d medusa   # migrates (164, ~15s) → creates user → seeds 
 | Browser: `GET localhost:<random>/app/ ERR_CONNECTION_REFUSED` | Medusa admin served via Vite dev (not built) | #16, #17 |
 | `medusa build` fails: `defineRouteConfig not exported` | missing `@medusajs/admin-sdk` dep | #16 |
 | `/app` HTML has `/@vite/client` | `NODE_ENV` not `production` | #17 |
+| Medusa admin login "succeeds" but stays on login / `{"message":"Unauthorized"}`, `/admin/users/me` 401 in browser (but curl+Bearer works) | session cookie `secure:true` not sent over HTTP | **#18** |

@@ -93,6 +93,11 @@ On first boot, the stack automatically:
 | Payload CMS | localhost:3000/admin | `admin@econ-demo.com` | `Admin@1234` |
 | Medusa admin | localhost:9000/app | `admin@econ-demo.com` | `Admin@1234` |
 
+> If the Medusa admin login appears to fail (stays on the login screen, console shows
+> `GET /admin/users/me 401`), it's almost always **browser autofill** putting a stale `localhost:9000`
+> password in the field — clear it and type manually, or use an incognito window. The session-cookie
+> config (`cookieOptions.secure=false`) is already set so cookies work over HTTP localhost.
+
 ---
 
 ## Seeded cameras
@@ -179,9 +184,13 @@ docker compose down -v
 ### Troubleshooting
 This build hit a number of non-obvious issues; every one is documented with its fix in **`CLAUDE.md`**
 (see the "Symptom → Fix Quick Reference" table). The two that matter most:
-- **Admin loads but is completely unstyled (serif font):** `(payload)/layout.tsx` must `import '@payloadcms/next/css'`.
+- **Payload admin loads but is completely unstyled (serif font):** `(payload)/layout.tsx` must `import '@payloadcms/next/css'`.
 - **Medusa migration count stuck at 0 with no error:** the Medusa `DATABASE_URL` must end with `?sslmode=disable`.
 - **`/admin` killed mid-compile (`OOMKilled`):** raise Docker Desktop memory to 6 GB+.
+- **Medusa admin `/app` shows `ERR_CONNECTION_REFUSED` to a random port:** the admin needs a production build —
+  `@medusajs/admin-sdk` dep + `medusa build` (Dockerfile) + `NODE_ENV=production`.
+- **Medusa admin login won't stick (`/admin/users/me` 401):** the session cookie must be non-secure over HTTP —
+  `cookieOptions: { secure: false, sameSite: 'lax' }` in `medusa-config.ts` (already set).
 
 ---
 
