@@ -120,11 +120,35 @@ and `<body>` carry `suppressHydrationWarning` to absorb browser-extension (Gramm
 
 ---
 
-## ✅ Boot is working (resolved 2026-06-03)
+### 13. Medusa DATABASE_URL MUST end with `?sslmode=disable`
+**This was the single hardest bug.** Without it, `medusa db:migrate` creates the `mikro_orm_migrations`
+table then **hangs forever** — Medusa's migration runner opens a connection attempting SSL, and the local
+non-SSL Postgres leaves it stuck on the handshake with no error (Postgres side sits idle on `ClientRead`).
+With `?sslmode=disable`, all **164 migrations apply in ~15s**. The `docker-compose.yml` medusa
+`DATABASE_URL` is `postgresql://econ:econ@postgres:5432/econ_medusa?sslmode=disable`.
+Symptom to recognise: migration count stays at exactly 0, no error, container appears alive but idle.
 
-After resolving gotchas #1–#12, the full app boots: storefront (home, catalog, product, cart), Payload admin
-login, schema push, and seeding of all 8 cameras all work. First `/admin` compile takes ~25s (3611 modules);
-storefront routes compile in 1–3s. Requires Docker Desktop at 6 GB+ RAM.
+### 14. Medusa image uses Node 20 (app uses Node 22)
+Medusa v2 officially targets Node 20, so `medusa-backend/Dockerfile` is `node:20-alpine`. (The app/Payload
+Dockerfile stays `node:22-alpine` for the undici fix — they're separate images.) Note: Node version was NOT
+the migration-hang cause (#13 was), but Node 20 is the supported baseline for Medusa.
+
+### 15. Medusa product options need a `values` array
+In `seed/medusa-seed.ts`, product `options` must be `[{ title: 'Type', values: ['OEM Module',
+'Development Kit'] }]`. Omitting `values` gives `400 Field 'options, 0, values' is required`. The
+medusa seed runs (best-effort, non-fatal) from `medusa-backend/start.sh` after the API is healthy.
+
+---
+
+## ✅ Full stack working (resolved 2026-06-03)
+
+Everything boots and is verified: storefront (home, catalog, product, cart all HTTP 200), Payload admin
+(login + fully styled, 381KB CSS), Medusa (health + admin HTTP 200, **8 products**, **164 migrations**).
+First `/admin` compile ~25s; storefront routes 1–3s. **Requires Docker Desktop at 6 GB+ RAM.**
+
+Boot order matters slightly: postgres → app (Payload pushes schema + seeds 8 cameras via onInit) and
+medusa (migrates → creates admin user → seeds 8 products → starts API). Both app and medusa wait on
+postgres healthcheck. Credentials for both admins: `admin@econ-demo.com` / `Admin@1234`.
 
 ---
 
