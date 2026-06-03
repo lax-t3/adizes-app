@@ -42,7 +42,7 @@ services:
     ports:
       - "9000:9000"
     environment:
-      DATABASE_URL: postgresql://econ:econ@postgres:5432/econ_medusa
+      DATABASE_URL: postgresql://econ:econ@postgres:5432/econ_medusa?sslmode=disable
       JWT_SECRET: econ-demo-jwt-secret
       COOKIE_SECRET: econ-demo-cookie-secret
       MEDUSA_ADMIN_EMAIL: admin@econ-demo.com

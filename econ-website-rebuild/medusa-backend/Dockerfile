@@ -1,5 +1,8 @@
 # syntax=docker/dockerfile:1
-FROM node:22-alpine
+# Node 20 (not 22): Medusa v2 officially targets Node 20. On Node 22 the
+# db:migrate runner hangs after creating the migrations table. The Payload/app
+# container stays on Node 22 (it needs it for undici); these are separate images.
+FROM node:20-alpine
 RUN apk add --no-cache postgresql-client wget
 WORKDIR /app
 COPY medusa-backend/package*.json ./
