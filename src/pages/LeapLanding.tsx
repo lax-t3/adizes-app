@@ -307,15 +307,32 @@ function FinalCTASection() {
         <p className="text-blue-200 mb-10 text-lg">
           Gain insight into the hidden tensions shaping your leadership effectiveness.
         </p>
-        <button
-          onClick={() => navigate("/")}
-          className="inline-flex items-center justify-center gap-2 rounded-xl bg-white text-[#0D1B2A] px-10 py-4 text-base font-bold hover:bg-blue-50 transition-colors shadow-lg"
-        >
-          Begin Your LEAP Assessment <ArrowRight className="h-5 w-5" />
-        </button>
-        <p className="mt-6 text-xs text-blue-300/50">
-          LEAP™ is powered by the Adizes PAEI Framework · Operated by HILeadership in partnership with Turiyaskills
-        </p>
+        <div className="flex flex-col sm:flex-row gap-4 justify-center mb-10">
+          <button
+            onClick={() => navigate("/")}
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-white text-[#0D1B2A] px-10 py-4 text-base font-bold hover:bg-blue-50 transition-colors shadow-lg"
+          >
+            Begin Your LEAP Assessment <ArrowRight className="h-5 w-5" />
+          </button>
+          <a
+            href={SAMPLE_PDF_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/40 text-white px-10 py-4 text-base font-semibold hover:bg-white/10 transition-colors"
+          >
+            Download a Sample Profile
+          </a>
+        </div>
+        <div className="flex flex-col items-center gap-2">
+          <img
+            src="/HIL-Isotope.png"
+            alt="Heartfulness Institute of Leadership"
+            className="h-10 w-auto opacity-70 mb-1"
+          />
+          <p className="text-xs text-blue-300/50">
+            LEAP™ — Leadership Energy Alignment Profile &nbsp;·&nbsp; Developed by Heartfulness Institute of Leadership &nbsp;·&nbsp; Powered by the Adizes PAEI Framework &amp; Turiyaskills
+          </p>
+        </div>
       </div>
     </section>
   );
