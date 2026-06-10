@@ -19,13 +19,13 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: #1D3557;
+  background: linear-gradient(to right, #ffffff 0%, #d6e4f0 40%, #1D3557 100%);
   padding: 8pt 12pt;
   margin-bottom: 18pt;
   border-radius: 4pt;
 }
-.page-header img.logo { height: 26pt; object-fit: contain; filter: brightness(0) invert(1); }
-.header-tagline { font-size: 7.5pt; color: rgba(255,255,255,0.75); text-align: right; }
+.page-header img.logo { height: 26pt; object-fit: contain; }
+.header-tagline { font-size: 7.5pt; color: rgba(255,255,255,0.9); text-align: right; }
 
 /* ── Footer ──────────────────────────────────────────────────── */
 .page-footer {
@@ -551,7 +551,7 @@ p  { font-size: 9pt; color: #374151; line-height: 1.65; }
   width: 18pt;
   font-size: 10pt;
   font-weight: 800;
-  color: #d1d5db;
+  color: #6b7280;
   text-align: center;
   padding-top: 10pt !important;
 }
@@ -646,7 +646,7 @@ p  { font-size: 9pt; color: #374151; line-height: 1.65; }
 .reflection-num {
   font-size: 14pt;
   font-weight: 800;
-  color: #e5e7eb;
+  color: #9ca3af;
   min-width: 16pt;
   line-height: 1;
   padding-top: 1pt;
