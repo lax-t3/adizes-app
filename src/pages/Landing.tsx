@@ -56,8 +56,8 @@ export function Landing() {
       <div className="hidden lg:flex lg:w-[55%] flex-col justify-between bg-gray-950 p-12 text-white relative overflow-hidden">
         <div className="absolute inset-0 z-0 opacity-40">
           <img 
-            src="https://picsum.photos/seed/corporate/1920/1080?blur=2" 
-            alt="Corporate background" 
+            src="https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1920&q=80"
+            alt="Mountain landscape"
             className="h-full w-full object-cover"
             referrerPolicy="no-referrer"
           />
@@ -65,23 +65,14 @@ export function Landing() {
         </div>
         
         <div className="relative z-10">
-          <div className="flex items-center gap-3 mb-16">
-            <img
-              src="/logo.png"
-              alt="Adizes Institute"
-              className="h-14 w-auto brightness-0 invert"
-              referrerPolicy="no-referrer"
-            />
-          </div>
-
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
             className="max-w-xl"
           >
             <h1 className="font-display text-5xl font-medium leading-[1.1] tracking-tight mb-6">
-              {isAdminRoute ? "Manage assessments and cohorts." : "Discover your leadership alignment."}
+              {isAdminRoute ? "Manage assessments and cohorts." : "Leadership Alignment Begins with Honest Reflection"}
             </h1>
             <p className="text-xl text-gray-300 font-light leading-relaxed mb-12">
               {isAdminRoute 
@@ -114,15 +105,8 @@ export function Landing() {
           </motion.div>
         </div>
         
-        <div className="relative z-10 space-y-2">
-          <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500">
-            <Link to="/terms" className="hover:text-gray-300 transition-colors">Terms of Service</Link>
-            <Link to="/privacy" className="hover:text-gray-300 transition-colors">Privacy Policy</Link>
-            <Link to="/refund" className="hover:text-gray-300 transition-colors">Refund Policy</Link>
-          </div>
-          <p className="text-xs text-gray-500">
-            &copy; {new Date().getFullYear()} Adizes Institute &middot; Powered by <span className="text-gray-400 font-medium">Turiyaskills</span>
-          </p>
+        <div className="relative z-10">
+          <p className="text-xs text-gray-500">Powered by the Adizes PAEI Framework</p>
         </div>
       </div>
 
@@ -130,8 +114,7 @@ export function Landing() {
       <div className="flex w-full lg:w-[45%] flex-col items-center justify-center min-h-screen p-6 sm:p-8 lg:p-16 pb-safe">
         <div className="w-full max-w-md">
           <div className="lg:hidden flex flex-col items-center gap-4 mb-12">
-            <img src="/logo.png" alt="Adizes Institute" className="h-16 w-auto" referrerPolicy="no-referrer" />
-            <img src="/hil_blue.png" alt="Heartfulness Institute of Leadership" className="h-10 w-auto opacity-90" referrerPolicy="no-referrer" />
+            <img src="/HIL-Isotope.png" alt="Heartfulness Institute of Leadership" className="h-14 w-auto opacity-90" referrerPolicy="no-referrer" />
           </div>
 
           <motion.div
@@ -233,10 +216,10 @@ export function Landing() {
             <Link to="/refund" className="hover:text-gray-600 transition-colors">Refund Policy</Link>
           </div>
           <p className="text-center text-xs text-gray-400">
-            &copy; {new Date().getFullYear()} Adizes Institute &middot; Powered by <span className="font-medium text-gray-500">Turiyaskills</span>
+            &copy; {new Date().getFullYear()} Heartfulness Institute of Leadership | Powered by <span className="font-medium text-gray-500">Turiyaskills</span>
           </p>
           <div className="mt-5 flex justify-center">
-            <img src="/hil_blue.png" alt="Heartfulness Institute of Leadership" className="h-12 w-auto opacity-90" referrerPolicy="no-referrer" />
+            <img src="/HIL-Isotope.png" alt="Heartfulness Institute of Leadership" className="h-12 w-auto opacity-90" referrerPolicy="no-referrer" />
           </div>
         </div>
       </div>
