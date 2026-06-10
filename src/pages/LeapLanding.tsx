@@ -189,12 +189,12 @@ function WhyDifferentSection() {
         </div>
         <div className="rounded-2xl border border-gray-100 overflow-hidden">
           <div className="grid grid-cols-2 bg-gray-50 border-b border-gray-100">
-            <div className="px-6 py-3 text-xs font-semibold text-gray-400 uppercase tracking-widest">Traditional Assessments</div>
+            <div className="px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-widest">Traditional Assessments</div>
             <div className="px-6 py-3 text-xs font-semibold text-[#1D3557] uppercase tracking-widest">LEAP™</div>
           </div>
           {rows.map(([left, right], i) => (
             <div key={i} className={`grid grid-cols-2 ${i % 2 === 0 ? "bg-white" : "bg-gray-50/50"}`}>
-              <div className="px-6 py-4 text-sm text-gray-500 border-r border-gray-100">{left}</div>
+              <div className="px-6 py-4 text-sm text-gray-600 border-r border-gray-100">{left}</div>
               <div className="px-6 py-4 text-sm text-gray-900 font-medium">{right}</div>
             </div>
           ))}
