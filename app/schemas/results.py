@@ -52,6 +52,9 @@ class Interpretation(BaseModel):
     at_your_best: str
     friction_shows_up: str
     early_warnings: List[str]
+    executive_summary: Optional[str] = None
+    daily_feel: Optional[Dict] = None
+    reflection_questions: Optional[List[str]] = None
 
 
 class ResultResponse(BaseModel):
