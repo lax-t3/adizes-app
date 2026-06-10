@@ -9,7 +9,7 @@ class SmtpConfig(BaseModel):
     username: str = ""
     password: str = ""
     from_email: str
-    from_name: str = "Adizes Platform"
+    from_name: str = "Leap Invitation"
     use_ssl: bool = False
 
 

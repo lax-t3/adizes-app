@@ -285,7 +285,7 @@ def send_email(
         return False
 
     msg = MIMEMultipart("mixed")
-    msg["From"] = f"{cfg.get('from_name', 'Adizes')} <{cfg['from_email']}>"
+    msg["From"] = f"{cfg.get('from_name', 'Leap Invitation')} <{cfg['from_email']}>"
     msg["To"] = to_email
     msg["Subject"] = subject
     msg.attach(MIMEText(html_body, "html", "utf-8"))

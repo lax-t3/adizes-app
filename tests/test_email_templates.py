@@ -36,3 +36,104 @@ class TestOrgWelcomeTemplate:
         assert "reset your password" in html.lower()
         # Confirm not a placeholder
         assert "{24 hours}" not in html
+
+
+class TestLeapBranding:
+    def test_email_header_has_no_logo_images(self):
+        from app.services.email_service import _EMAIL_WRAPPER_OPEN
+        assert "logo.png" not in _EMAIL_WRAPPER_OPEN
+        assert "hil_blue.png" not in _EMAIL_WRAPPER_OPEN
+
+    def test_email_header_has_leap_identity(self):
+        from app.services.email_service import _EMAIL_WRAPPER_OPEN
+        assert "LEAP" in _EMAIL_WRAPPER_OPEN
+        assert "Leadership Energy Alignment Profile" in _EMAIL_WRAPPER_OPEN
+        assert "How you lead today" in _EMAIL_WRAPPER_OPEN
+
+    def test_email_footer_has_no_logo_images(self):
+        from app.services.email_service import _EMAIL_WRAPPER_CLOSE
+        assert "hil_blue.png" not in _EMAIL_WRAPPER_CLOSE
+
+    def test_email_footer_has_hil_attribution(self):
+        from app.services.email_service import _EMAIL_WRAPPER_CLOSE
+        assert "Heartfulness Institute of Leadership" in _EMAIL_WRAPPER_CLOSE
+
+    def test_enrolled_html_uses_leap_branding(self):
+        from app.services.email_service import _enrolled_html
+        html = _enrolled_html()
+        assert "LEAP" in html
+        assert "Leadership Energy Alignment Profile" in html
+        assert "Adizes Management Style Assessment" not in html
+        assert "AMSI" not in html
+
+    def test_enrolled_html_has_dimension_pills(self):
+        from app.services.email_service import _enrolled_html
+        html = _enrolled_html()
+        assert "Current State (IS)" in html
+        assert "Role Expectations (SHOULD)" in html
+        assert "Intrinsic Preference (WANT)" in html
+
+    def test_enrolled_html_cta_label_unchanged(self):
+        from app.services.email_service import _enrolled_html
+        html = _enrolled_html()
+        assert "Accept Invitation" in html
+
+    def test_cohort_enrollment_existing_cta_is_begin_leap(self):
+        from app.services.email_service import _cohort_enrollment_existing_html
+        html = _cohort_enrollment_existing_html()
+        assert "Begin My LEAP" in html
+        assert "Go to Dashboard" not in html
+
+    def test_cohort_enrollment_existing_has_dimension_pills(self):
+        from app.services.email_service import _cohort_enrollment_existing_html
+        html = _cohort_enrollment_existing_html()
+        assert "Current State (IS)" in html
+        assert "Role Expectations (SHOULD)" in html
+        assert "Intrinsic Preference (WANT)" in html
+
+    def test_cohort_enrollment_existing_uses_leap_branding(self):
+        from app.services.email_service import _cohort_enrollment_existing_html
+        html = _cohort_enrollment_existing_html()
+        assert "LEAP" in html
+        assert "Adizes Management Style Assessment" not in html
+
+    def test_org_welcome_uses_leap_platform_name(self):
+        from app.services.email_service import _org_welcome_html
+        html = _org_welcome_html()
+        assert "LEAP" in html
+        assert "Adizes PAEI Assessment Platform" not in html
+
+    def test_assessment_complete_uses_leap_branding(self):
+        from app.services.email_service import _assessment_complete_html
+        html = _assessment_complete_html()
+        assert "LEAP" in html
+        assert "Adizes Management Style Assessment" not in html
+
+    def test_enrolled_subject_is_leap_branded(self):
+        from app.services.email_service import DEFAULT_TEMPLATES
+        assert "LEAP" in DEFAULT_TEMPLATES["user_enrolled"]["subject"]
+        assert "Ready for your LEAP" in DEFAULT_TEMPLATES["user_enrolled"]["subject"]
+
+    def test_cohort_enrollment_existing_subject_is_leap_branded(self):
+        from app.services.email_service import DEFAULT_TEMPLATES
+        assert "Ready for your LEAP" in DEFAULT_TEMPLATES["cohort_enrollment_existing"]["subject"]
+
+    def test_assessment_complete_subject_is_leap_branded(self):
+        from app.services.email_service import DEFAULT_TEMPLATES
+        assert "LEAP" in DEFAULT_TEMPLATES["assessment_complete"]["subject"]
+        assert "AMSI" not in DEFAULT_TEMPLATES["assessment_complete"]["subject"]
+
+    def test_org_welcome_subject_is_leap_branded(self):
+        from app.services.email_service import DEFAULT_TEMPLATES
+        assert "LEAP" in DEFAULT_TEMPLATES["org_welcome"]["subject"]
+        assert "Adizes PAEI Platform" not in DEFAULT_TEMPLATES["org_welcome"]["subject"]
+
+    def test_smtp_config_default_from_name(self):
+        from app.schemas.settings import SmtpConfig
+        cfg = SmtpConfig(from_name="Leap Invitation", from_email="x@x.com", host="smtp.example.com")
+        assert cfg.from_name == "Leap Invitation"
+
+    def test_smtp_config_schema_default_is_leap_invitation(self):
+        from app.schemas.settings import SmtpConfig
+        cfg = SmtpConfig(from_email="x@x.com", host="smtp.example.com")
+        assert cfg.from_name == "Leap Invitation"

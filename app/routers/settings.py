@@ -43,7 +43,7 @@ def get_smtp(admin: dict = Depends(require_admin)):
         username=cfg.get("username", ""),
         password_set=bool(cfg.get("password")),
         from_email=cfg.get("from_email", ""),
-        from_name=cfg.get("from_name", "Adizes Platform"),
+        from_name=cfg.get("from_name", "Leap Invitation"),
         use_ssl=bool(cfg.get("use_ssl", False)),
     )
 
