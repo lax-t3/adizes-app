@@ -15,12 +15,12 @@ IMAGE_URI="${ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com/${ECR_REPO}:latest"
 
 # ── Copy logo from frontend repo ───────────────────────────────────────────────
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-LOGO_SRC="${SCRIPT_DIR}/../../../adizes-frontend/public/logo.png"
+LOGO_SRC="${SCRIPT_DIR}/../../../adizes-frontend/public/HIL-Isotope.png"
 if [ -f "$LOGO_SRC" ]; then
-  cp "$LOGO_SRC" "${SCRIPT_DIR}/template/assets/logo.png"
-  echo "✓ Copied logo from $LOGO_SRC"
+  cp "$LOGO_SRC" "${SCRIPT_DIR}/template/assets/HIL-Isotope.png"
+  echo "✓ Copied HIL-Isotope.png from $LOGO_SRC"
 else
-  echo "⚠ Logo not found at $LOGO_SRC — using existing asset if present"
+  echo "⚠ HIL-Isotope.png not found at $LOGO_SRC — using existing asset if present"
 fi
 
 # ── Authenticate Docker to ECR ─────────────────────────────────────────────────
