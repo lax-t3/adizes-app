@@ -234,6 +234,25 @@ function WhatYouReceiveSection() {
   );
 }
 
+function RealLeadershipSection() {
+  return (
+    <section className="py-20 px-6 bg-white">
+      <div className="mx-auto max-w-2xl text-center">
+        <h2 className="font-display text-3xl sm:text-4xl font-bold text-gray-900 mb-5">
+          Built for the complexity of real leadership.
+        </h2>
+        <p className="text-gray-600 text-lg mb-4 leading-relaxed">
+          Leadership is rarely static. Roles evolve. Organizations change. People adapt.
+        </p>
+        <p className="text-gray-500 leading-relaxed">
+          LEAP is designed to help leaders understand where adaptation is healthy, where tension
+          is becoming costly, and where alignment can improve sustainability and effectiveness.
+        </p>
+      </div>
+    </section>
+  );
+}
+
 function NoIdealProfilesSection() {
   return (
     <section className="py-20 px-6 bg-white">
@@ -310,6 +329,7 @@ export function LeapLanding() {
       <SampleInsightsSection />
       <WhyDifferentSection />
       <WhatYouReceiveSection />
+      <RealLeadershipSection />
       <NoIdealProfilesSection />
       <OrgApplicationsSection />
       <FinalCTASection />
