@@ -25,33 +25,91 @@
   const dominantRole  = (interpretation.dominant_roles || ['A'])[0];
   const heroColor     = ROLE_COLORS[dominantRole] || '#1a1a1a';
 
-  const LENS_META = {
-    is:     { short: 'IS',  label: 'Current State'        },
-    should: { short: 'SHD', label: 'Role Expectations'    },
-    want:   { short: 'WNT', label: 'Intrinsic Preference' },
+  const ROLE_FULL_NAMES = {
+    P: 'Producer', A: 'Administrator', E: 'Entrepreneur', I: 'Integrator'
   };
 %>
 
 <!-- ═══════════════════════════════════════════════════════════
-     PAGE 1 — Energy Alignment Snapshot
+     PAGE 1 — Personal Snapshot
      ═══════════════════════════════════════════════════════════ -->
 <div class="page page-break">
   <div class="page-header">
-    <img class="logo" src="./assets/logo.png" alt="HILeadership">
+    <img class="logo" src="./assets/HIL-Isotope.png" alt="Heartfulness Institute of Leadership">
     <span class="header-tagline">LEAP™ — Leadership Energy Alignment Profile</span>
   </div>
 
-  <!-- Hero -->
+  <!-- Name + date + identity badge -->
   <div class="snapshot-hero">
     <div class="snapshot-name"><%= user_name %></div>
     <div class="snapshot-date"><%= dateStr %></div>
     <div class="identity-badge" style="background:<%- heroColor %>;"><%= interpretation.identity_line %></div>
   </div>
 
-  <!-- Energy Alignment Matrix — lens-rows layout -->
+  <!-- Executive summary prose -->
+  <% if (interpretation.executive_summary) { %>
+  <div class="exec-summary"><%= interpretation.executive_summary %></div>
+  <% } %>
+
+  <!-- At-your-best / friction two-column -->
+  <div class="meaning-grid" style="margin-bottom:14pt;">
+    <div class="meaning-card best">
+      <h3>✓ When you are at your best</h3>
+      <p><%= interpretation.at_your_best %></p>
+    </div>
+    <div class="meaning-card friction">
+      <h3>⚠ Where friction shows up</h3>
+      <p><%= interpretation.friction_shows_up %></p>
+    </div>
+  </div>
+
+  <!-- Biggest gap highlight card -->
+  <% if (topGap) {
+       const nb    = severityBadge(topGap.severity);
+       const color = ROLE_COLORS[topGap.role];
+  %>
+  <div class="section-label">Your Biggest Energy Tension</div>
+  <div class="gap-card" style="border-color:<%- color %>44;border-left:3.5pt solid <%- color %>;">
+    <div class="gap-card-header" style="background:linear-gradient(90deg,<%- color %>0f 0%,white 100%);">
+      <div class="gap-card-title-row">
+        <div class="role-circle" style="background:<%- color %>;"><%= topGap.role %></div>
+        <div class="gap-card-type-info">
+          <div class="gap-card-type"><%= topGap.meta.label %></div>
+          <div class="gap-card-formula"><%= topGap.meta.formula %></div>
+        </div>
+      </div>
+      <div class="gap-sev-pill" style="color:<%- nb.color %>;background:<%- nb.bg %>;border-color:<%- nb.border %>;">
+        <%- nb.label %> &nbsp;<%- signed(topGap.gap_signed) %> pts
+      </div>
+    </div>
+    <div class="gap-card-narrative"><%= topGap.narrative %></div>
+  </div>
+  <% } %>
+
+  <div class="page-footer">
+    <span>HILeadership | LEAP™</span>
+    <span>Confidential — Page 1</span>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     PAGE 2 — Energy Alignment Matrix
+     ═══════════════════════════════════════════════════════════ -->
+<div class="page page-break">
+  <div class="page-header">
+    <img class="logo" src="./assets/HIL-Isotope.png" alt="Heartfulness Institute of Leadership">
+    <span class="header-tagline">LEAP™ — Energy Alignment Matrix</span>
+  </div>
+
   <div class="section-label">Energy Alignment Matrix</div>
+  <p style="font-size:8.5pt;color:#6b7280;margin-bottom:14pt;line-height:1.6;">
+    Three lenses on the same person — <strong>Current State</strong> shows how you operate today,
+    <strong>Role Expectations</strong> shows what your role demands,
+    <strong>Intrinsic Preference</strong> shows what naturally energises you.
+  </p>
+
+  <!-- 3×4 matrix -->
   <div class="matrix-table">
-    <!-- Column header row: empty corner + 4 role headers -->
     <div class="matrix-col-headers">
       <div class="matrix-corner"></div>
       <% ROLES.forEach(function(role) {
@@ -64,14 +122,12 @@
       <% }); %>
     </div>
 
-    <!-- Lens rows: IS, SHOULD, WANT -->
-    <% [['is','IS','Current State'], ['should','SHD','Role Expectations'], ['want','WNT','Intrinsic Preference']].forEach(function(triplet) {
-         const lens = triplet[0], lensShort = triplet[1], lensLabel = triplet[2];
+    <% [['is','Current State'], ['should','Role Expectations'], ['want','Intrinsic Preference']].forEach(function(pair) {
+         const lens = pair[0], lensLabel = pair[1];
          const rowOpacity = lens === 'want' ? '0.55' : '1';
     %>
     <div class="matrix-lens-row" style="opacity:<%- rowOpacity %>;">
       <div class="matrix-lens-label">
-        <div class="matrix-lens-short"><%= lensShort %></div>
         <div class="matrix-lens-name"><%= lensLabel %></div>
       </div>
       <% ROLES.forEach(function(role) {
@@ -89,23 +145,8 @@
     <% }); %>
   </div>
 
-  <!-- Core Insight -->
-  <div class="section-label">Core Insight</div>
-  <% if (topGap) { %>
-  <div class="core-insight-block" style="border-left-color:<%- ROLE_COLORS[topGap.role] %>;">
-    <div class="core-insight-text">
-      <strong><%= ROLE_NAMES[topGap.role] %> (<%= topGap.role %>) — <%= topGap.meta.label %>:</strong>
-      <%= topGap.narrative %>
-    </div>
-  </div>
-  <% } else { %>
-  <div class="core-insight-block" style="border-left-color:#22c55e;">
-    <div class="core-insight-text"><%= interpretation.style_tagline %></div>
-  </div>
-  <% } %>
-
-  <!-- Top Energy Misalignments -->
-  <div class="section-label">Top Energy Misalignments</div>
+  <!-- Misalignment pills -->
+  <div class="section-label" style="margin-top:18pt;">Top Energy Misalignments</div>
   <div class="top-gaps-row">
     <% topGaps.forEach(function(tg) {
          if (tg.severity === 'low') return;
@@ -124,23 +165,23 @@
 
   <div class="page-footer">
     <span>HILeadership | LEAP™</span>
-    <span>Confidential — Page 1</span>
+    <span>Confidential — Page 2</span>
   </div>
 </div>
 
 <!-- ═══════════════════════════════════════════════════════════
-     PAGE 2 — Gap Map
+     PAGE 3 — Your Three Gaps
      ═══════════════════════════════════════════════════════════ -->
 <div class="page page-break">
   <div class="page-header">
-    <img class="logo" src="./assets/logo.png" alt="HILeadership">
-    <span class="header-tagline">LEAP™ — Gap Map</span>
+    <img class="logo" src="./assets/HIL-Isotope.png" alt="Heartfulness Institute of Leadership">
+    <span class="header-tagline">LEAP™ — Your Three Gaps</span>
   </div>
 
-  <h2 style="margin-bottom:5pt;">Gap Map</h2>
+  <h2 style="margin-bottom:5pt;">Your Three Gaps</h2>
   <p style="font-size:8.5pt;color:#6b7280;margin-bottom:18pt;line-height:1.6;">
-    The 3 largest energy misalignments across your PAEI profile. Each gap reflects where your
-    perceptions of current behaviour, role expectations, and intrinsic preferences diverge most.
+    The 3 largest energy misalignments across your PAEI profile — where Current State,
+    Role Expectations, and Intrinsic Preference diverge most.
   </p>
 
   <% topGaps.forEach(function(tg) {
@@ -149,9 +190,11 @@
        const color = ROLE_COLORS[tg.role];
        const valA  = pct(scaled_scores[meta.lensA][tg.role]);
        const valB  = pct(scaled_scores[meta.lensB][tg.role]);
+       const dailyFeel = interpretation.daily_feel &&
+                         interpretation.daily_feel[tg.role] &&
+                         interpretation.daily_feel[tg.role][tg.gap_type];
   %>
   <div class="gap-card" style="border-color:<%- color %>44;border-left:3.5pt solid <%- color %>;">
-    <!-- Header -->
     <div class="gap-card-header" style="background:linear-gradient(90deg,<%- color %>0f 0%,white 100%);">
       <div class="gap-card-title-row">
         <div class="role-circle" style="background:<%- color %>;"><%= tg.role %></div>
@@ -164,8 +207,6 @@
         <%- nb.label %> &nbsp;<%- signed(tg.gap_signed) %> pts
       </div>
     </div>
-
-    <!-- Comparison bars -->
     <div class="gap-bars">
       <div class="gap-bar-row">
         <span class="gap-bar-label"><%= meta.lensALabel %></span>
@@ -182,9 +223,13 @@
         <span class="gap-bar-val"><%= valB %>%</span>
       </div>
     </div>
-
-    <!-- Narrative -->
     <div class="gap-card-narrative"><%= tg.narrative %></div>
+    <% if (dailyFeel) { %>
+    <div class="daily-feel-callout" style="border-left-color:<%- color %>;">
+      <div class="daily-feel-label">What this feels like day-to-day</div>
+      <%= dailyFeel %>
+    </div>
+    <% } %>
   </div>
   <% }); %>
 
@@ -194,174 +239,113 @@
 
   <div class="page-footer">
     <span>HILeadership | LEAP™</span>
-    <span>Confidential — Page 2</span>
-  </div>
-</div>
-
-<!-- ═══════════════════════════════════════════════════════════
-     PAGE 3 — What This Means
-     ═══════════════════════════════════════════════════════════ -->
-<div class="page page-break">
-  <div class="page-header">
-    <img class="logo" src="./assets/logo.png" alt="HILeadership">
-    <span class="header-tagline">LEAP™ — What This Means</span>
-  </div>
-
-  <h2 style="margin-bottom:14pt;">What This Means</h2>
-
-  <div class="meaning-grid">
-    <div class="meaning-card best">
-      <h3>✓ When you are at your best</h3>
-      <p><%= interpretation.at_your_best %></p>
-    </div>
-    <div class="meaning-card friction">
-      <h3>⚠ Where friction shows up</h3>
-      <p><%= interpretation.friction_shows_up %></p>
-    </div>
-  </div>
-
-  <div class="section-label">Early Warning Signs</div>
-  <% (interpretation.early_warnings || []).forEach(function(w) { %>
-  <div class="warning-card"><%= w %></div>
-  <% }); %>
-  <% if (!interpretation.early_warnings || interpretation.early_warnings.length === 0) { %>
-  <div class="well-aligned-box">No significant early warning signs — your energy profile is well-aligned.</div>
-  <% } %>
-
-  <div class="page-footer">
-    <span>HILeadership | LEAP™</span>
     <span>Confidential — Page 3</span>
   </div>
 </div>
 
 <!-- ═══════════════════════════════════════════════════════════
-     PAGE 4 — Style Summary
+     PAGE 4 — Your Action Path
      ═══════════════════════════════════════════════════════════ -->
 <div class="page page-break">
   <div class="page-header">
-    <img class="logo" src="./assets/logo.png" alt="HILeadership">
-    <span class="header-tagline">LEAP™ — Style Summary</span>
-  </div>
-
-  <h2 style="margin-bottom:12pt;">Style Summary</h2>
-
-  <div class="style-hero" style="background:<%- heroColor %>;">
-    <div class="style-hero-label"><%= interpretation.style_label %></div>
-    <div class="style-hero-tagline"><%= interpretation.style_tagline %></div>
-    <% if (interpretation.combined_description) { %>
-    <div class="style-hero-desc"><%= interpretation.combined_description %></div>
-    <% } %>
-  </div>
-
-  <div class="summary-grid">
-    <div class="summary-card strengths">
-      <h3>Strengths</h3>
-      <p><%= interpretation.strengths %></p>
-    </div>
-    <div class="summary-card watchouts">
-      <h3>Watchouts</h3>
-      <p><%= interpretation.watchouts %></p>
-    </div>
-    <div class="summary-card stress">
-      <h3>Under Stress</h3>
-      <% (interpretation.mismanagement_risks || []).forEach(function(risk) { %>
-      <p><%= risk %></p>
-      <% }); %>
-    </div>
-  </div>
-
-  <div class="page-footer">
-    <span>HILeadership | LEAP™</span>
-    <span>Confidential — Page 4</span>
-  </div>
-</div>
-
-<!-- ═══════════════════════════════════════════════════════════
-     PAGE 5 — Action Path
-     ═══════════════════════════════════════════════════════════ -->
-<div class="page">
-  <div class="page-header">
-    <img class="logo" src="./assets/logo.png" alt="HILeadership">
-    <span class="header-tagline">LEAP™ — Action Path</span>
+    <img class="logo" src="./assets/HIL-Isotope.png" alt="Heartfulness Institute of Leadership">
+    <span class="header-tagline">LEAP™ — Your Action Path</span>
   </div>
 
   <h2 style="margin-bottom:4pt;">Your Action Path</h2>
-  <p style="font-size:8.5pt;color:#6b7280;margin-bottom:16pt;">
-    Four directions drawn from your energy alignment data. Internal shifts require personal
-    adjustment; external shifts involve your role, environment, or relationships.
+  <p style="font-size:8.5pt;color:#6b7280;margin-bottom:14pt;">
+    Sequenced by urgency — start at the top.
   </p>
 
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12pt;">
-    <div>
-      <div class="action-path-section-label">Internal Shifts</div>
-      <!-- Stretch -->
-      <div class="action-card" style="border-left:3pt solid <%- actionPath.stretch.roleColor %>;">
-        <div class="action-card-left">
-          <div class="action-icon" style="background:<%- actionPath.stretch.roleColor %>;"><%= actionPath.stretch.role %></div>
-          <div class="action-type-label stretch">Stretch</div>
-        </div>
-        <div class="action-card-right">
-          <h3><%= actionPath.stretch.roleName %></h3>
-          <p><%= actionPath.stretch.description %></p>
-          <div class="action-prompt"><%= actionPath.stretch.action %></div>
-        </div>
-      </div>
-      <!-- Balance -->
-      <div class="action-card" style="border-left:3pt solid <%- actionPath.balance.roleColor %>;">
-        <div class="action-card-left">
-          <div class="action-icon" style="background:<%- actionPath.balance.roleColor %>;"><%= actionPath.balance.role %></div>
-          <div class="action-type-label balance">Balance</div>
-        </div>
-        <div class="action-card-right">
-          <h3><%= actionPath.balance.roleName %></h3>
-          <p><%= actionPath.balance.description %></p>
-          <div class="action-prompt"><%= actionPath.balance.action %></div>
-        </div>
-      </div>
-      <!-- Protect -->
-      <div class="action-card" style="border-left:3pt solid <%- actionPath.protect.roleColor %>;">
-        <div class="action-card-left">
-          <div class="action-icon" style="background:<%- actionPath.protect.roleColor %>;"><%= actionPath.protect.role %></div>
-          <div class="action-type-label protect">Protect</div>
-        </div>
-        <div class="action-card-right">
-          <h3><%= actionPath.protect.roleName %></h3>
-          <p><%= actionPath.protect.description %></p>
-          <div class="action-prompt"><%= actionPath.protect.action %></div>
-        </div>
-      </div>
-    </div>
-
-    <div>
-      <div class="action-path-section-label">External Shifts</div>
-      <!-- Complement -->
-      <div class="action-card" style="border-left:3pt solid <%- actionPath.complement.roleColor %>;">
-        <div class="action-card-left">
-          <div class="action-icon" style="background:<%- actionPath.complement.roleColor %>;"><%= actionPath.complement.role %></div>
-          <div class="action-type-label complement">Complement</div>
-        </div>
-        <div class="action-card-right">
-          <h3><%= actionPath.complement.roleName %></h3>
-          <p><%= actionPath.complement.description %></p>
-          <div class="action-prompt"><%= actionPath.complement.action %></div>
-        </div>
-      </div>
-      <!-- Role Design -->
-      <div class="action-card" style="border-left:3pt solid #6b7280;">
-        <div class="action-card-left">
-          <div class="action-icon" style="background:#6b7280;">R</div>
-          <div class="action-type-label" style="color:#6b7280;">Role Design</div>
-        </div>
-        <div class="action-card-right">
-          <h3>Reshaping your role</h3>
-          <p>Your Intrinsic Preference reveals the energy you find most natural. Look for ways
-          to redesign tasks, delegate, or negotiate responsibilities so your role draws more on
-          what energises you.</p>
-          <div class="action-prompt">Identify one responsibility that drains you and explore who could own it instead.</div>
-        </div>
-      </div>
-    </div>
-  </div>
+  <table class="priority-table">
+    <!-- Stretch — This Week -->
+    <tr class="priority-row">
+      <td class="priority-num">1</td>
+      <td class="priority-stripe" style="background:<%- actionPath.stretch.roleColor %>;"></td>
+      <td class="priority-label">
+        <div class="priority-role-circle" style="background:<%- actionPath.stretch.roleColor %>;"><%= actionPath.stretch.role %></div>
+        Stretch
+      </td>
+      <td class="priority-content">
+        <strong><%= actionPath.stretch.roleName %></strong>
+        <%= actionPath.stretch.description %>
+        <div class="priority-action"><%= actionPath.stretch.action %></div>
+      </td>
+      <td style="width:52pt;text-align:right;vertical-align:top;padding-top:10pt;">
+        <span class="timeline-chip chip-week">This Week</span>
+      </td>
+    </tr>
+    <!-- Balance — This Month -->
+    <tr class="priority-row">
+      <td class="priority-num">2</td>
+      <td class="priority-stripe" style="background:<%- actionPath.balance.roleColor %>;"></td>
+      <td class="priority-label">
+        <div class="priority-role-circle" style="background:<%- actionPath.balance.roleColor %>;"><%= actionPath.balance.role %></div>
+        Balance
+      </td>
+      <td class="priority-content">
+        <strong><%= actionPath.balance.roleName %></strong>
+        <%= actionPath.balance.description %>
+        <div class="priority-action"><%= actionPath.balance.action %></div>
+      </td>
+      <td style="width:52pt;text-align:right;vertical-align:top;padding-top:10pt;">
+        <span class="timeline-chip chip-month">This Month</span>
+      </td>
+    </tr>
+    <!-- Protect — This Quarter -->
+    <tr class="priority-row">
+      <td class="priority-num">3</td>
+      <td class="priority-stripe" style="background:<%- actionPath.protect.roleColor %>;"></td>
+      <td class="priority-label">
+        <div class="priority-role-circle" style="background:<%- actionPath.protect.roleColor %>;"><%= actionPath.protect.role %></div>
+        Protect
+      </td>
+      <td class="priority-content">
+        <strong><%= actionPath.protect.roleName %></strong>
+        <%= actionPath.protect.description %>
+        <div class="priority-action"><%= actionPath.protect.action %></div>
+      </td>
+      <td style="width:52pt;text-align:right;vertical-align:top;padding-top:10pt;">
+        <span class="timeline-chip chip-quarter">This Quarter</span>
+      </td>
+    </tr>
+    <!-- Complement — This Quarter -->
+    <tr class="priority-row">
+      <td class="priority-num">4</td>
+      <td class="priority-stripe" style="background:<%- actionPath.complement.roleColor %>;"></td>
+      <td class="priority-label">
+        <div class="priority-role-circle" style="background:<%- actionPath.complement.roleColor %>;"><%= actionPath.complement.role %></div>
+        Complement
+      </td>
+      <td class="priority-content">
+        <strong><%= actionPath.complement.roleName %></strong>
+        <%= actionPath.complement.description %>
+        <div class="priority-action"><%= actionPath.complement.action %></div>
+      </td>
+      <td style="width:52pt;text-align:right;vertical-align:top;padding-top:10pt;">
+        <span class="timeline-chip chip-quarter">This Quarter</span>
+      </td>
+    </tr>
+    <!-- Role Design — Ongoing -->
+    <tr class="priority-row">
+      <td class="priority-num">5</td>
+      <td class="priority-stripe" style="background:#6b7280;"></td>
+      <td class="priority-label">
+        <div class="priority-role-circle" style="background:#6b7280;">R</div>
+        Role Design
+      </td>
+      <td class="priority-content">
+        <strong>Reshaping your role</strong>
+        Your Intrinsic Preference reveals the energy you find most natural. Look for ways to
+        redesign tasks, delegate, or negotiate responsibilities so your role draws more on what
+        energises you.
+        <div class="priority-action">Identify one responsibility that drains you and explore who could own it instead.</div>
+      </td>
+      <td style="width:52pt;text-align:right;vertical-align:top;padding-top:10pt;">
+        <span class="timeline-chip chip-ongoing">Ongoing</span>
+      </td>
+    </tr>
+  </table>
 
   <div style="margin-top:14pt;padding:10pt 13pt;background:#f9fafb;border-radius:6pt;border:1pt solid #e5e7eb;">
     <p style="font-size:8pt;color:#6b7280;line-height:1.7;">
@@ -371,6 +355,53 @@
       and managers.
     </p>
   </div>
+
+  <div class="page-footer">
+    <span>HILeadership | LEAP™</span>
+    <span>Confidential — Page 4</span>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     PAGE 5 — Stress Signature + Reflection Prompts
+     ═══════════════════════════════════════════════════════════ -->
+<div class="page">
+  <div class="page-header">
+    <img class="logo" src="./assets/HIL-Isotope.png" alt="Heartfulness Institute of Leadership">
+    <span class="header-tagline">LEAP™ — Stress Signature & Reflection</span>
+  </div>
+
+  <!-- Stress Signature -->
+  <div class="stress-signature">
+    <h3>Your Stress Signature</h3>
+    <% (interpretation.mismanagement_risks || []).forEach(function(risk) { %>
+    <p><%= risk %></p>
+    <% }); %>
+    <% if (topGap) { %>
+    <div class="stress-connection">
+      Under sustained pressure, this <%= ROLE_FULL_NAMES[dominantRole] || dominantRole %>-dominant profile
+      tends toward the pattern above — a direct expression of the tension identified on Page 3.
+    </div>
+    <% } %>
+  </div>
+
+  <!-- Early Warning Signs -->
+  <% if (interpretation.early_warnings && interpretation.early_warnings.length > 0) { %>
+  <div class="section-label">Early Warning Signs</div>
+  <% interpretation.early_warnings.forEach(function(w) { %>
+  <div class="warning-card"><%= w %></div>
+  <% }); %>
+  <% } %>
+
+  <!-- Guided Reflection -->
+  <div class="section-label" style="margin-top:18pt;">Guided Reflection</div>
+  <p class="reflection-intro">Set aside 10 minutes to write honest answers to these questions.</p>
+  <% (interpretation.reflection_questions || []).forEach(function(q, i) { %>
+  <div class="reflection-card" style="border-left-color:<%- heroColor %>;">
+    <div class="reflection-num"><%= i + 1 %></div>
+    <div class="reflection-q"><%= q %></div>
+  </div>
+  <% }); %>
 
   <div class="page-footer">
     <span>HILeadership | LEAP™</span>
