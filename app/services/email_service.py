@@ -161,7 +161,7 @@ def _assessment_complete_html() -> str:
   <tr>
     <td style="padding:40px 48px 36px;" bgcolor="#ffffff">
       <p style="margin:0 0 20px;font-family:Georgia,'Times New Roman',serif;font-size:22px;color:#1a1a1a;font-weight:400;line-height:1.35;">Congratulations, {{{{user_name}}}}.</p>
-      <p style="margin:0 0 16px;font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#444444;line-height:1.75;">You have successfully completed the <strong style="color:#1a1a1a;">Adizes Management Style Assessment (AMSI)</strong> for the <strong style="color:#1a1a1a;">{{{{cohort_name}}}}</strong> cohort.</p>
+      <p style="margin:0 0 16px;font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#444444;line-height:1.75;">You have successfully completed the <strong style="color:#1a1a1a;">LEAP&#8482; &#8212; Leadership Energy Alignment Profile</strong> for the <strong style="color:#1a1a1a;">{{{{cohort_name}}}}</strong> cohort.</p>
       <!-- Result highlight box -->
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:24px 0;">
         <tr>
@@ -174,7 +174,7 @@ def _assessment_complete_html() -> str:
       <p style="margin:0 0 32px;font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#444444;line-height:1.75;">Your full personalised PDF report is being generated and will be available on your results page within a few minutes. Click the button below to view your interactive dashboard and download your report.</p>
       {cta}
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:32px 0 24px;"><tr><td style="border-top:1px solid #e8e8e8;font-size:1px;line-height:1px;">&nbsp;</td></tr></table>
-      <p style="margin:0;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#666666;line-height:1.75;">Thank you for your participation. Your results contribute to a richer collective picture of your team's management style.</p>
+      <p style="margin:0;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#666666;line-height:1.75;">Your LEAP™ profile is a practical tool for understanding your leadership alignment and development priorities.</p>
     </td>
   </tr>"""
     return _build_template("user_email", body)
@@ -205,7 +205,7 @@ def _org_welcome_html() -> str:
   <tr>
     <td style="padding:40px 48px 36px;" bgcolor="#ffffff">
       <p style="margin:0 0 20px;font-family:Georgia,'Times New Roman',serif;font-size:22px;color:#1a1a1a;font-weight:400;line-height:1.35;">Welcome, {{{{user_name}}}}.</p>
-      <p style="margin:0 0 16px;font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#444444;line-height:1.75;"><strong style="color:#1a1a1a;">{{{{org_name}}}}</strong> has registered you on the <strong style="color:#1a1a1a;">Adizes PAEI Assessment Platform</strong>.</p>
+      <p style="margin:0 0 16px;font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#444444;line-height:1.75;"><strong style="color:#1a1a1a;">{{{{org_name}}}}</strong> has registered you on the <strong style="color:#1a1a1a;">LEAP&#8482; Platform</strong>.</p>
       <p style="margin:0 0 32px;font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#444444;line-height:1.75;">Click the button below to activate your account and set your password. Your administrator will invite you to an assessment cohort separately.</p>
       {cta}
       <p style="margin:32px 0 0;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#666666;line-height:1.75;">This activation link expires in <strong>24 hours</strong>. If it has expired, please contact your administrator and ask them to resend your welcome email from the platform. Once your account is activated, you can reset your password at any time from the login page.</p>
