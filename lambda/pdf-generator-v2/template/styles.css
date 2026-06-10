@@ -19,13 +19,23 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: linear-gradient(to right, #ffffff 0%, #d6e4f0 40%, #1D3557 100%);
-  padding: 8pt 12pt;
+  background: #1D3557;
+  padding: 7pt 14pt;
   margin-bottom: 18pt;
   border-radius: 4pt;
+  border-bottom: 3pt solid #C8102E;
 }
-.page-header img.logo { height: 26pt; object-fit: contain; }
-.header-tagline { font-size: 7.5pt; color: rgba(255,255,255,0.9); text-align: right; }
+.page-header-left { display: flex; align-items: center; gap: 9pt; }
+.logo-circle {
+  width: 28pt; height: 28pt;
+  background: rgba(255,255,255,0.15);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.page-header img.logo { height: 17pt; object-fit: contain; filter: brightness(0) invert(1); }
+.header-brand { font-size: 11pt; font-weight: 700; color: #ffffff; letter-spacing: 0.4pt; }
+.header-tagline { font-size: 7.5pt; color: rgba(255,255,255,0.65); text-align: right; }
 
 /* ── Footer ──────────────────────────────────────────────────── */
 .page-footer {
