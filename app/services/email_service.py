@@ -29,11 +29,20 @@ _EMAIL_WRAPPER_OPEN = """\
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;background:#ffffff;">
   <!-- Red accent bar -->
   <tr><td style="background-color:#C8102E;height:5px;font-size:1px;line-height:1px;" bgcolor="#C8102E">&nbsp;</td></tr>
-  <!-- Logo header -->
+  <!-- LEAP identity header — text only, works in all email clients -->
   <tr>
-    <td align="center" style="padding:32px 48px 28px;border-bottom:1px solid #e8e8e8;" bgcolor="#ffffff">
-      <img src="{{platform_url}}/logo.png" alt="Adizes Institute" width="150" height="auto" style="display:block;margin:0 auto 14px;border:0;max-width:150px;" />
-      <img src="{{platform_url}}/hil_blue.png" alt="Heartfulness Institute of Leadership" width="110" height="auto" style="display:block;margin:0 auto;border:0;max-width:110px;" />
+    <td align="center" style="padding:32px 48px 28px;border-bottom:1px solid #e8e8e8;background-color:#ffffff;" bgcolor="#ffffff">
+      <p style="margin:0 0 4px;font-family:Georgia,'Times New Roman',serif;font-size:26px;font-weight:700;color:#C8102E;letter-spacing:1px;">LEAP&#8482;</p>
+      <p style="margin:0 0 16px;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#1D3557;letter-spacing:1px;text-transform:uppercase;">Leadership Energy Alignment Profile</p>
+      <table role="presentation" width="260" cellpadding="0" cellspacing="0" border="0" align="center" style="margin:0 auto 12px;border-top:1px solid #e8e8e8;">
+        <tr><td style="padding:12px 0 0;">
+          <p style="margin:0 0 5px;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#555555;">Understand the gap between:</p>
+          <p style="margin:0 0 3px;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#333333;">&#10003; How you lead today</p>
+          <p style="margin:0 0 3px;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#333333;">&#10003; What your role requires</p>
+          <p style="margin:0 0 10px;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#333333;">&#10003; What naturally energizes you</p>
+          <p style="margin:0;font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#999999;">15 minutes &nbsp;&middot;&nbsp; Personalized report &nbsp;&middot;&nbsp; Immediate insights</p>
+        </td></tr>
+      </table>
     </td>
   </tr>"""
 
