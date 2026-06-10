@@ -55,3 +55,46 @@ class TestInterpret:
         # Just ensure it's either None or a non-empty string
         assert result["combined_description"] is None or \
                len(result["combined_description"]) > 0
+
+
+class TestInterpretNewFields:
+    def test_executive_summary_present(self):
+        result = interpret(_scaled({"E": 40}), {}, user_name="Alice Johnson")
+        assert "executive_summary" in result
+        assert isinstance(result["executive_summary"], str)
+        assert len(result["executive_summary"]) > 20
+
+    def test_executive_summary_contains_first_name(self):
+        result = interpret(_scaled({"P": 45}), {}, user_name="Alice Johnson")
+        assert "Alice" in result["executive_summary"]
+
+    def test_executive_summary_fallback_when_no_name(self):
+        result = interpret(_scaled({"A": 40}), {}, user_name="")
+        assert "Your profile" in result["executive_summary"]
+
+    def test_daily_feel_present_and_complete(self):
+        result = interpret(_scaled({"I": 40}), {})
+        assert "daily_feel" in result
+        for role in ["P", "A", "E", "I"]:
+            for gap_type in ["execution", "engagement", "authenticity"]:
+                assert role in result["daily_feel"]
+                assert gap_type in result["daily_feel"][role]
+                assert len(result["daily_feel"][role][gap_type]) > 20
+
+    def test_reflection_questions_present(self):
+        result = interpret(_scaled({"E": 40}), {}, user_name="Bob")
+        assert "reflection_questions" in result
+        assert isinstance(result["reflection_questions"], list)
+        assert len(result["reflection_questions"]) == 3
+
+    def test_reflection_questions_e_content(self):
+        result = interpret(_scaled({"E": 40}), {}, user_name="Bob")
+        joined = " ".join(result["reflection_questions"])
+        assert len(joined) > 50
+
+    def test_backward_compat_existing_keys_still_present(self):
+        result = interpret(_scaled({"A": 40}), {}, user_name="Test")
+        for key in ["dominant_roles", "identity_line", "style_label", "style_tagline",
+                    "strengths", "watchouts", "mismanagement_risks",
+                    "at_your_best", "friction_shows_up", "early_warnings"]:
+            assert key in result

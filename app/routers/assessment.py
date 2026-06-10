@@ -189,7 +189,7 @@ def submit_assessment(body: SubmitRequest, background_tasks: BackgroundTasks, us
     # Score
     scores = score_answers(answers_dicts, section_map)
     gaps = compute_gaps(scores["raw"])
-    interp = interpret(scores["raw"], scores["profile"], gaps=gaps)
+    interp = interpret(scores["raw"], scores["profile"], gaps=gaps, user_name=user_name)
 
     result_id = str(uuid.uuid4())
     now = datetime.now(timezone.utc).isoformat()
