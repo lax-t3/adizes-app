@@ -214,13 +214,13 @@ p  { font-size: 9pt; color: #374151; line-height: 1.65; }
   border: 1pt solid #e5e7eb;
   border-radius: 8pt;
   overflow: hidden;
-  margin-bottom: 12pt;
+  margin-bottom: 9pt;
 }
 .gap-card-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10pt 13pt;
+  padding: 8pt 13pt;
 }
 .gap-card-title-row {
   display: flex;
@@ -240,7 +240,7 @@ p  { font-size: 9pt; color: #374151; line-height: 1.65; }
   white-space: nowrap;
 }
 .gap-bars {
-  padding: 10pt 13pt;
+  padding: 8pt 13pt;
   background: #fafafa;
   border-top: 1pt solid #f3f4f6;
 }
@@ -248,7 +248,7 @@ p  { font-size: 9pt; color: #374151; line-height: 1.65; }
   display: flex;
   align-items: center;
   gap: 8pt;
-  margin-bottom: 7pt;
+  margin-bottom: 5pt;
 }
 .gap-bar-row:last-child { margin-bottom: 0; }
 .gap-bar-label {
@@ -275,10 +275,10 @@ p  { font-size: 9pt; color: #374151; line-height: 1.65; }
   flex-shrink: 0;
 }
 .gap-card-narrative {
-  padding: 9pt 13pt;
+  padding: 7pt 13pt;
   font-size: 8.5pt;
   color: #374151;
-  line-height: 1.65;
+  line-height: 1.6;
   border-top: 1pt solid #f3f4f6;
 }
 .well-aligned-box {
@@ -523,15 +523,15 @@ p  { font-size: 9pt; color: #374151; line-height: 1.65; }
 
 /* ── Daily-feel callout (per gap card) ───────────────────────── */
 .daily-feel-callout {
-  margin-top: 10pt;
-  padding: 8pt 10pt;
+  margin-top: 6pt;
+  padding: 6pt 10pt;
   background: #f0f4f8;
   border-radius: 4pt;
   border-left: 3pt solid currentColor;
   font-size: 8pt;
   font-style: italic;
   color: #374151;
-  line-height: 1.6;
+  line-height: 1.5;
 }
 .daily-feel-label {
   font-style: normal;
