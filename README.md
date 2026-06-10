@@ -263,7 +263,9 @@ adizes-backend/
     services/
       scoring.py               # PAEI scoring engine (36-question key); SECTION_MAP holds correct interleaved indices; score_answers() accepts optional section_map from DB
       gap_analysis.py          # Gap calculator + severity classification
-      interpretation.py        # Dominant style + narrative text
+      interpretation.py        # Dominant style + narrative + executive_summary (str),
+                               #   daily_feel (dict: {role: {gap_type: str}}),
+                               #   reflection_questions (list[str] — 3 prompts)
       pdf_service.py           # WeasyPrint HTML→PDF
       export_service.py        # CSV generation for admin
       email_service.py         # smtplib SMTP sending; template rendering;
@@ -475,11 +477,13 @@ from the returned `pdf_url` (redundant fallback). Both must use the **production
 | | v2 (LEAP™ — Leadership Energy Alignment Profile) | v1 (AMSI) |
 |---|---|---|
 | Pages | 5 | 9 |
-| Primary visual | Lens-rows matrix (IS/SHD/WNT × P/A/E/I) + tension bars | Radar chart |
+| Structure | Personal Snapshot · Energy Alignment Matrix · Your Three Gaps · Your Action Path · Stress Signature & Reflection | Cover + 8 content pages |
+| Primary visual | Lens-rows matrix (IS/SHD/WNT × P/A/E/I) + gap cards + daily-feel callouts | Radar chart |
 | Chart.js | No — pure HTML div bars | Yes |
-| Key concept | Role Pressure / Energy Tension / Identity Drift | External Gap / Internal Gap |
+| New fields | `executive_summary`, `daily_feel`, `reflection_questions` from `interpretation.py` | — |
+| Header | Solid navy `#1D3557` band, knockout HIL-Isotope logo, red accent stripe | — |
 | Lambda name | `adizes-pdf-generator-v2` | `adizes-pdf-generator` |
-| Rebranded | 2026-05-27 (was "PAEI Energy Alignment Profile" with 2×2 role-card grid) | — |
+| Last deployed | 2026-06-10 | — |
 
 ### Deploy Lambda v2
 
