@@ -16,6 +16,9 @@ import { motion } from "motion/react";
 import { getResult, getMyAssessments } from "@/api/results";
 import type { ResultResponse, CohortAssessmentHistory, TopGap } from "@/types/api";
 
+const SAMPLE_PDF_URL =
+  "https://adizes-pdf-reports.s3.ap-south-1.amazonaws.com/reports/00000000-0000-0000-0000-000000000001.pdf";
+
 function getTopGaps(result: ResultResponse): TopGap[] {
   const all: TopGap[] = [];
   for (const g of result.gaps) {
@@ -360,14 +363,24 @@ function NoAssessmentCTA({ hasEnrollments, cohortId }: { hasEnrollments: boolean
               </span>
             ))}
           </div>
-          <Button
-            variant="leap"
-            size="lg"
-            onClick={() => navigate(cohortId ? `/assessment?cohort_id=${cohortId}` : "/dashboard")}
-            className="w-full sm:w-auto self-start"
-          >
-            Begin LEAP Assessment <ArrowRight className="ml-2 h-5 w-5" />
-          </Button>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+            <Button
+              variant="leap"
+              size="lg"
+              onClick={() => navigate(cohortId ? `/assessment?cohort_id=${cohortId}` : "/dashboard")}
+              className="w-full sm:w-auto"
+            >
+              Begin LEAP Assessment <ArrowRight className="ml-2 h-5 w-5" />
+            </Button>
+            <a
+              href={SAMPLE_PDF_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm font-medium text-[#1D3557] hover:text-[#C8102E] transition-colors underline-offset-2 hover:underline"
+            >
+              View a Sample Profile →
+            </a>
+          </div>
 
           {/* 3 value cards */}
           <div className="grid grid-cols-3 gap-3 mt-8">

@@ -2,7 +2,7 @@ import { ArrowRight, Zap, Target, Compass, TrendingUp, BarChart3, Shield } from 
 import { useNavigate } from "react-router-dom";
 
 const SAMPLE_PDF_URL =
-  "https://swiznkamzxyfzgckebqi.supabase.co/storage/v1/object/public/samples/AMSI%20for%20Jack%20Allen.pdf";
+  "https://adizes-pdf-reports.s3.ap-south-1.amazonaws.com/reports/00000000-0000-0000-0000-000000000001.pdf";
 
 function HeroSection() {
   const navigate = useNavigate();
