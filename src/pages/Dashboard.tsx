@@ -333,7 +333,7 @@ function NoAssessmentCTA({ hasEnrollments, cohortId }: { hasEnrollments: boolean
 
       <div className="relative grid grid-cols-1 lg:grid-cols-2">
         {/* LEFT: messaging + CTA */}
-        <div className="flex flex-col justify-center px-8 sm:px-12 py-12">
+        <div className="flex flex-col px-8 sm:px-12 py-12">
           <p className="text-xs font-semibold text-[#1D3557] uppercase tracking-widest mb-4">
             LEAP™ — Leadership Energy Alignment Profile
           </p>
@@ -363,15 +363,16 @@ function NoAssessmentCTA({ hasEnrollments, cohortId }: { hasEnrollments: boolean
               </span>
             ))}
           </div>
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-            <Button
-              variant="leap"
-              size="lg"
-              onClick={() => navigate(cohortId ? `/assessment?cohort_id=${cohortId}` : "/dashboard")}
-              className="w-full sm:w-auto"
-            >
-              Begin LEAP Assessment <ArrowRight className="ml-2 h-5 w-5" />
-            </Button>
+          <Button
+            variant="leap"
+            size="lg"
+            onClick={() => navigate(cohortId ? `/assessment?cohort_id=${cohortId}` : "/dashboard")}
+            className="w-full sm:w-auto self-start"
+          >
+            Begin LEAP Assessment <ArrowRight className="ml-2 h-5 w-5" />
+          </Button>
+
+          <div className="mt-auto pt-10">
             <a
               href={SAMPLE_PDF_URL}
               target="_blank"
@@ -380,20 +381,6 @@ function NoAssessmentCTA({ hasEnrollments, cohortId }: { hasEnrollments: boolean
             >
               View a Sample Profile →
             </a>
-          </div>
-
-          {/* 3 value cards */}
-          <div className="grid grid-cols-3 gap-3 mt-8">
-            {[
-              { title: "Alignment Matrix", desc: "Visualize role, behavior & preference alignment" },
-              { title: "Gap Map", desc: "Identify execution, engagement & authenticity tensions" },
-              { title: "Action Path", desc: "Practical developmental guidance" },
-            ].map((card) => (
-              <div key={card.title} className="rounded-xl border border-gray-200 bg-white/80 p-3">
-                <p className="text-xs font-semibold text-gray-800 mb-1">{card.title}</p>
-                <p className="text-xs text-gray-500 leading-relaxed">{card.desc}</p>
-              </div>
-            ))}
           </div>
         </div>
 
@@ -446,7 +433,7 @@ function NoAssessmentCTA({ hasEnrollments, cohortId }: { hasEnrollments: boolean
             </div>
 
             {/* Sample insight card */}
-            <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
+            <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 mb-4">
               <p className="text-[10px] font-semibold text-amber-600 uppercase tracking-wide mb-1">
                 Sample Insight
               </p>
@@ -456,6 +443,20 @@ function NoAssessmentCTA({ hasEnrollments, cohortId }: { hasEnrollments: boolean
               <p className="text-xs text-gray-700 leading-relaxed">
                 Your role currently demands more entrepreneurial energy than you are naturally expressing.
               </p>
+            </div>
+
+            {/* 3 value cards */}
+            <div className="grid grid-cols-3 gap-2">
+              {[
+                { title: "Alignment Matrix", desc: "Visualize role, behavior & preference alignment" },
+                { title: "Gap Map", desc: "Identify execution, engagement & authenticity tensions" },
+                { title: "Action Path", desc: "Practical developmental guidance" },
+              ].map((card) => (
+                <div key={card.title} className="rounded-xl border border-gray-200 bg-white/80 p-3">
+                  <p className="text-xs font-semibold text-gray-800 mb-1">{card.title}</p>
+                  <p className="text-xs text-gray-500 leading-relaxed">{card.desc}</p>
+                </div>
+              ))}
             </div>
           </div>
         </div>
