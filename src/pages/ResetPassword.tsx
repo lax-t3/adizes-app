@@ -33,8 +33,7 @@ export function ResetPassword() {
           className="w-full max-w-md"
         >
           <div className="flex justify-center gap-4 mb-8">
-            <img src="/logo.png" alt="Adizes Institute" className="h-12 w-auto" referrerPolicy="no-referrer" />
-            <img src="/hil_blue.png" alt="HIL" className="h-12 w-auto" referrerPolicy="no-referrer" />
+            <img src="/HIL-Isotope.png" alt="Heartfulness Institute of Leadership" className="h-12 w-auto opacity-90" referrerPolicy="no-referrer" />
           </div>
           <Card className="shadow-lg border-t-4 border-t-primary">
             <CardHeader>
@@ -90,8 +89,7 @@ export function ResetPassword() {
         className="w-full max-w-md"
       >
         <div className="flex justify-center gap-4 mb-8">
-          <img src="/logo.png" alt="Adizes Institute" className="h-12 w-auto" referrerPolicy="no-referrer" />
-          <img src="/hil_blue.png" alt="HIL" className="h-12 w-auto" referrerPolicy="no-referrer" />
+          <img src="/HIL-Isotope.png" alt="Heartfulness Institute of Leadership" className="h-12 w-auto opacity-90" referrerPolicy="no-referrer" />
         </div>
 
         <Card className="shadow-lg border-t-4 border-t-primary">

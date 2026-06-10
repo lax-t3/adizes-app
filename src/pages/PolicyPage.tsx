@@ -148,7 +148,7 @@ export function PolicyPage({ slug: propSlug }: PolicyPageProps) {
       <header className="bg-white border-b border-gray-200">
         <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <Link to="/">
-            <img src="/logo.png" alt="Adizes Institute" className="h-10 w-auto" />
+            <img src="/HIL-Isotope.png" alt="Heartfulness Institute of Leadership" className="h-10 w-auto" />
           </Link>
           <Link
             to="/"

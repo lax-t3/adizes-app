@@ -28,8 +28,8 @@ export function AdminSidebar() {
       <div className="flex h-20 items-center border-b border-gray-200 px-6">
         <div className="flex items-center gap-2">
           <img
-            src="/logo.png"
-            alt="Adizes Admin"
+            src="/HIL-Isotope.png"
+            alt="Heartfulness Institute of Leadership"
             className="h-16 w-auto"
             referrerPolicy="no-referrer"
           />
@@ -78,7 +78,7 @@ export function AdminSidebar() {
           Log out
         </button>
         <div className="px-3 pt-3 pb-2 space-y-2">
-          <img src="/hil_blue.png" alt="Heartfulness Institute of Leadership" className="h-10 w-auto opacity-85" referrerPolicy="no-referrer" />
+          <img src="/HIL-Isotope.png" alt="Heartfulness Institute of Leadership" className="h-10 w-auto opacity-85" referrerPolicy="no-referrer" />
           <p className="text-[10px] text-gray-400 leading-snug">&copy; {new Date().getFullYear()} Adizes Institute</p>
           <p className="text-[10px] text-gray-400 leading-snug">Powered by <span className="font-medium text-gray-500">Turiyaskills</span></p>
         </div>

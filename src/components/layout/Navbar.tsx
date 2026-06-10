@@ -36,8 +36,8 @@ export function Navbar() {
         <div className="flex items-center gap-2">
           <Link to="/dashboard" className="flex items-center gap-2">
             <img
-              src="/logo.png"
-              alt="Adizes Institute"
+              src="/HIL-Isotope.png"
+              alt="Heartfulness Institute of Leadership"
               className="h-14 w-auto"
               referrerPolicy="no-referrer"
             />
