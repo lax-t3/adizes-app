@@ -201,7 +201,7 @@ DEFAULT_TEMPLATES = {
     "user_enrolled": {
         "id": "user_enrolled",
         "name": "User Enrollment Confirmation",
-        "subject": "You've been enrolled in {{cohort_name}} — {{platform_name}}",
+        "subject": "Ready for your LEAP™ Assessment? — {{cohort_name}}",
         "html_body": _enrolled_html(),
     },
     "admin_invite": {
@@ -213,19 +213,19 @@ DEFAULT_TEMPLATES = {
     "assessment_complete": {
         "id": "assessment_complete",
         "name": "Assessment Completion — Thank You",
-        "subject": "Your AMSI results are ready — {{platform_name}}",
+        "subject": "Your LEAP™ results are ready — {{platform_name}}",
         "html_body": _assessment_complete_html(),
     },
     "cohort_enrollment_existing": {
         "id": "cohort_enrollment_existing",
         "name": "Cohort Enrollment — Existing User",
-        "subject": "You've been enrolled in {{cohort_name}} — {{platform_name}}",
+        "subject": "Ready for your LEAP™ Assessment? — {{cohort_name}}",
         "html_body": _cohort_enrollment_existing_html(),
     },
     "org_welcome": {
         "id": "org_welcome",
         "name": "Org Employee Welcome",
-        "subject": "You've been added to {{org_name}} on the Adizes PAEI Platform",
+        "subject": "You've been added to {{org_name}} on the LEAP™ Platform",
         "html_body": _org_welcome_html(),
     },
     "password_reset": {
