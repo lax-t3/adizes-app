@@ -53,7 +53,7 @@ class Interpretation(BaseModel):
     friction_shows_up: str
     early_warnings: List[str]
     executive_summary: Optional[str] = None
-    daily_feel: Optional[Dict] = None
+    daily_feel: Optional[Dict[str, Dict[str, str]]] = None
     reflection_questions: Optional[List[str]] = None
 
 
