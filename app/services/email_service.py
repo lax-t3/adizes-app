@@ -81,6 +81,31 @@ _CTA_BUTTON = """\
 </table>"""
 
 
+_DIMENSION_PILLS = """\
+  <!-- Three-dimension pills -->
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:28px 0 8px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+          <tr>
+            <td align="center" style="padding:8px 10px;background-color:#C8102E;border-radius:4px;">
+              <span style="font-family:Arial,Helvetica,sans-serif;font-size:11px;font-weight:600;color:#ffffff;white-space:nowrap;">Current State (IS)</span>
+            </td>
+            <td style="width:8px;"></td>
+            <td align="center" style="padding:8px 10px;background-color:#1D3557;border-radius:4px;">
+              <span style="font-family:Arial,Helvetica,sans-serif;font-size:11px;font-weight:600;color:#ffffff;white-space:nowrap;">Role Expectations (SHOULD)</span>
+            </td>
+            <td style="width:8px;"></td>
+            <td align="center" style="padding:8px 10px;background-color:#2A9D8F;border-radius:4px;">
+              <span style="font-family:Arial,Helvetica,sans-serif;font-size:11px;font-weight:600;color:#ffffff;white-space:nowrap;">Intrinsic Preference (WANT)</span>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>"""
+
+
 def _cta(url_var: str, label: str) -> str:
     return _CTA_BUTTON.format(url=url_var, label=label)
 
@@ -98,9 +123,10 @@ def _enrolled_html() -> str:
   <tr>
     <td style="padding:40px 48px 36px;" bgcolor="#ffffff">
       <p style="margin:0 0 20px;font-family:Georgia,'Times New Roman',serif;font-size:22px;color:#1a1a1a;font-weight:400;line-height:1.35;">Hello {{{{user_name}}}},</p>
-      <p style="margin:0 0 16px;font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#444444;line-height:1.75;">You have been enrolled in the <strong style="color:#1a1a1a;">{{{{cohort_name}}}}</strong> cohort for the <strong style="color:#1a1a1a;">Adizes Management Style Assessment (AMSI)</strong>.</p>
+      <p style="margin:0 0 16px;font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#444444;line-height:1.75;">You have been enrolled in the <strong style="color:#1a1a1a;">{{{{cohort_name}}}}</strong> cohort for <strong style="color:#1a1a1a;">LEAP&#8482; &#8212; Leadership Energy Alignment Profile</strong>.</p>
       <p style="margin:0 0 32px;font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#444444;line-height:1.75;">Please click the button below to activate your account and set your password. This link is valid for <strong>1 hour</strong>.</p>
       {cta}
+      {_DIMENSION_PILLS}
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:32px 0 24px;"><tr><td style="border-top:1px solid #e8e8e8;font-size:1px;line-height:1px;">&nbsp;</td></tr></table>
       <p style="margin:0 0 12px;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#666666;line-height:1.7;">Already have an account? Sign in at <a href="{{{{platform_url}}}}" style="color:#C8102E;text-decoration:none;">{{{{platform_url}}}}</a></p>
       <p style="margin:0 0 6px;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#999999;line-height:1.6;">If the button above does not work, copy and paste this link into your browser:</p>
@@ -155,15 +181,16 @@ def _assessment_complete_html() -> str:
 
 
 def _cohort_enrollment_existing_html() -> str:
-    cta = _cta("{{platform_url}}", "Go to Dashboard &amp; Begin Assessment")
+    cta = _cta("{{platform_url}}", "Begin My LEAP&#8482; Assessment")
     body = f"""
   <!-- Body -->
   <tr>
     <td style="padding:40px 48px 36px;" bgcolor="#ffffff">
       <p style="margin:0 0 20px;font-family:Georgia,'Times New Roman',serif;font-size:22px;color:#1a1a1a;font-weight:400;line-height:1.35;">Hello {{{{user_name}}}},</p>
-      <p style="margin:0 0 16px;font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#444444;line-height:1.75;">You have been enrolled in the <strong style="color:#1a1a1a;">{{{{cohort_name}}}}</strong> cohort for the <strong style="color:#1a1a1a;">Adizes Management Style Assessment (AMSI)</strong>.</p>
-      <p style="margin:0 0 32px;font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#444444;line-height:1.75;">Log in to your dashboard to begin the assessment for this cohort.</p>
+      <p style="margin:0 0 16px;font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#444444;line-height:1.75;">You have been enrolled in the <strong style="color:#1a1a1a;">{{{{cohort_name}}}}</strong> cohort for <strong style="color:#1a1a1a;">LEAP&#8482; &#8212; Leadership Energy Alignment Profile</strong>.</p>
+      <p style="margin:0 0 32px;font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#444444;line-height:1.75;">Log in to your dashboard to begin the assessment for this cohort. It takes approximately 15 minutes to complete.</p>
       {cta}
+      {_DIMENSION_PILLS}
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:32px 0 24px;"><tr><td style="border-top:1px solid #e8e8e8;font-size:1px;line-height:1px;">&nbsp;</td></tr></table>
       <p style="margin:0;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#666666;line-height:1.75;">Sign in at <a href="{{{{platform_url}}}}" style="color:#C8102E;text-decoration:none;">{{{{platform_url}}}}</a></p>
     </td>
