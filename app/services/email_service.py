@@ -51,8 +51,8 @@ _EMAIL_WRAPPER_CLOSE = """\
   <tr>
     <td style="padding:0;background-color:#f8f8f8;border-top:1px solid #e8e8e8;" bgcolor="#f8f8f8">
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-        <tr><td align="center" style="padding:20px 48px 12px;">
-          <img src="{{platform_url}}/hil_blue.png" alt="Heartfulness Institute of Leadership" width="80" height="auto" style="display:block;margin:0 auto;border:0;max-width:80px;" />
+        <tr><td align="center" style="padding:20px 48px 4px;">
+          <p style="margin:0;font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#888888;">Developed by Heartfulness Institute of Leadership</p>
         </td></tr>
         <tr><td align="center" style="padding:0 48px 24px;">
           <p style="margin:8px 0 0;font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#aaaaaa;line-height:1.6;">This email was sent to {{recipient_email}}</p>
