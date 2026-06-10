@@ -1,26 +1,38 @@
 import { ArrowRight, Zap, Target, Compass, TrendingUp, BarChart3, Shield } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
+const SAMPLE_PDF_URL =
+  "https://swiznkamzxyfzgckebqi.supabase.co/storage/v1/object/public/samples/AMSI%20for%20Jack%20Allen.pdf";
+
 function HeroSection() {
   const navigate = useNavigate();
   return (
-    <section className="relative overflow-hidden bg-[#0D1B2A] text-white py-24 px-6">
+    <section className="relative overflow-hidden text-white py-24 px-6">
+      {/* Background photo */}
+      <img
+        src="https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1920&q=80"
+        alt=""
+        aria-hidden="true"
+        className="absolute inset-0 h-full w-full object-cover"
+      />
+      {/* Dark overlay */}
+      <div className="absolute inset-0 bg-black/65" />
       {/* Background dot grid */}
       <div
-        className="absolute inset-0 pointer-events-none opacity-[0.07]"
+        className="absolute inset-0 pointer-events-none opacity-[0.04]"
         style={{ backgroundImage: "radial-gradient(circle, white 1px, transparent 1px)", backgroundSize: "32px 32px" }}
       />
       <div className="relative mx-auto max-w-5xl text-center">
-        <p className="text-xs font-semibold text-blue-300 uppercase tracking-widest mb-6">
+        <p className="text-xs font-semibold text-white/70 uppercase tracking-widest mb-6">
           LEAP™ — Leadership Energy Alignment Profile &nbsp;·&nbsp; Powered by the Adizes PAEI Framework
         </p>
         <h1 className="font-display text-4xl sm:text-5xl md:text-6xl font-bold leading-tight mb-6">
           Discover the hidden tensions<br className="hidden sm:block" /> shaping how you lead.
         </h1>
-        <p className="text-lg text-blue-100 max-w-2xl mx-auto mb-4">
+        <p className="text-lg text-white/90 max-w-2xl mx-auto mb-4">
           LEAP™ helps leaders understand the alignment between how they currently operate, what their role demands, and what naturally energizes them.
         </p>
-        <p className="text-sm text-blue-200/70 max-w-xl mx-auto mb-10">
+        <p className="text-sm text-white/60 max-w-xl mx-auto mb-10">
           The result is a practical view into execution pressure, engagement strain, authenticity tension, and sustainable leadership effectiveness.
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -30,11 +42,19 @@ function HeroSection() {
           >
             Begin Your LEAP Assessment <ArrowRight className="h-5 w-5" />
           </button>
+          <a
+            href={SAMPLE_PDF_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/60 text-white px-8 py-4 text-base font-semibold hover:bg-white/10 transition-colors"
+          >
+            View a Sample LEAP Profile
+          </a>
         </div>
         <div className="flex justify-center gap-8 mt-8 flex-wrap">
           {["~15 minutes", "Personalized leadership insights", "Immediate alignment profile", "Action-oriented guidance"].map((item) => (
-            <span key={item} className="text-xs text-blue-200/60 flex items-center gap-1.5">
-              <span className="h-1 w-1 rounded-full bg-blue-300" />{item}
+            <span key={item} className="text-xs text-white/60 flex items-center gap-1.5">
+              <span className="h-1 w-1 rounded-full bg-white/40" />{item}
             </span>
           ))}
         </div>
