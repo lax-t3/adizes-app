@@ -244,12 +244,18 @@ export S3_BUCKET_NAME=adizes-pdf-reports
 - **PDF Lambda v2 is active** (`adizes-pdf-generator-v2`). Cutover/rollback is one App Runner env var:
   `PDF_LAMBDA_FUNCTION_NAME=adizes-pdf-generator-v2` (v2) or `=adizes-pdf-generator` (v1 rollback).
   V1 (`lambda/pdf-generator/`) is preserved deployed and untouched.
-- **PDF Lambda v2 report identity:** "LEAP™ — Leadership Energy Alignment Profile" — 5 pages, no Chart.js,
+- **PDF Lambda v2 report identity:** "LEAP™ — Leadership Energy Alignment Profile" — **5 pages**, no Chart.js,
   HTML div bars only. Three gap types (132-scale): Execution (`abs(should−is)`), Engagement (`abs(should−want)`),
   Authenticity (`abs(is−want)`). Severity thresholds: <6 low, 6–15 medium, >15 high.
-  Page 1 matrix: **3-row (IS/SHD/WNT) × 4-col (P/A/E/I) lens-rows table** — each cell shows a role-colored
-  progress bar and percentage; WNT row dimmed at 0.55 opacity. Gap pills, colored gap cards page 2, style hero
-  page 4 in dominant role color. Rebranded 2026-05-27 (was "PAEI Energy Alignment Profile" with 2×2 role-card grid).
+  **Page structure (redesigned 2026-06-10):**
+  - Page 1 — Personal Snapshot: executive summary prose, dominant role identity badge (role-colored), at-your-best / friction callouts, top gap highlight card.
+  - Page 2 — Energy Alignment Matrix: 3-row (IS/SHD/WNT) × 4-col (P/A/E/I) lens-rows table; each cell has role-colored progress bar + percentage; WNT row dimmed at 0.55 opacity.
+  - Page 3 — Your Three Gaps: one gap card per gap type (Execution / Engagement / Authenticity) with colored bars, severity badge, narrative, and a `daily_feel` callout ("What this feels like day-to-day").
+  - Page 4 — Your Action Path: priority table (1–5 rows) derived from gap severity; each row has a rank number, role color chip, action label, and focus description.
+  - Page 5 — Stress Signature & Reflection: stress-under-pressure narrative + 3 numbered reflection questions.
+  **Header band (all pages):** solid navy `#1D3557` band, `rgba(255,255,255,0.15)` circle containing HIL-Isotope logo (`filter: brightness(0) invert(1)` knockout), "LEAP™" bold white left, page name right, `border-bottom: 3pt solid #C8102E` red accent stripe.
+  **Sample PDF URL:** `https://adizes-pdf-reports.s3.ap-south-1.amazonaws.com/reports/f17b1f2c-0273-4b5d-88d2-e27b826d1738.pdf`
+  (used on Dashboard "View Sample Report" button and `/leap` landing page CTA).
 - **Lambda invocation is synchronous (`RequestResponse`)**: backend calls Lambda and waits for the
   response. Lambda generates PDF → uploads to S3 → patches Supabase directly. Backend also patches
   Supabase from the returned `pdf_url` as a redundant safety net. Previously was fire-and-forget
@@ -380,14 +386,20 @@ export S3_BUCKET_NAME=adizes-pdf-reports
   LEAP prose card replaces YouTube embed; LEAP™ replaces AMSI in sticky assessment header; ranking instruction
   callout updated to "most/least applicable" framing; "Begin Section" → "Begin Questions".
   Backend: `SECTION_META` labels "Is"→"Current State", "Should"→"Role Expectations", "Want"→"Intrinsic Preference".
-  PDF Lambda v2: all 5 page headers/footers rebranded to LEAP™; page 1 matrix redesigned to lens-rows layout.
+  PDF Lambda v2: all 5 page headers rebranded to LEAP™; page 1 matrix redesigned to lens-rows layout;
+  full 5-page report redesigned 2026-06-10 (see "PDF Lambda v2 report identity" key decision above).
   New public `/leap` landing page (no auth) with hero, tension cards, sample insights, comparison table, and CTA.
-  Lambda ECR redeployed with updated template (2026-05-27, SHA `e5a5875`).
+  Lambda ECR redeployed with redesigned template (2026-06-10).
   Remaining AMSI strings cleaned up (2026-05-27, commit `b4de9c1`): Landing.tsx h1 "management style" → "leadership
   alignment" + LEAP™ tagline description; UserHelp.tsx subtitle → "LEAP™ Assessment", results description uses
   "Current State / Role Expectations / Intrinsic Preference", footer attribution → LEAP™; AdminHelp.tsx subtitle +
   footer attribution → LEAP™; PolicyPage.tsx Terms §1 + Refund §1 "AMSI platform" → "LEAP™ platform".
-  Note: backend `adizes-backend` section label change is committed to git but requires ECR redeploy to go live on App Runner.
+- **PDF interpretation fields** (added 2026-06-10): `interpretation.py` now returns three additional fields used
+  by the Lambda template: `executive_summary` (str — 2-sentence narrative about the person's PAEI profile);
+  `daily_feel` (dict — keyed `{role: {gap_type: str}}` e.g. `{"P": {"execution": "You push hard but..."}}`,
+  used in gap card callouts on page 3); `reflection_questions` (list of 3 strings — introspective prompts on page 5).
+  These fields are absent from assessments submitted before the 2026-06-10 backend redeploy; the Lambda template
+  guards against missing keys and falls back to empty strings / hides the callout.
 
 ## Known Gotchas (Local Dev)
 
