@@ -330,7 +330,7 @@ function FinalCTASection() {
             className="h-10 w-auto opacity-70 mb-1"
           />
           <p className="text-xs text-blue-300/50">
-            LEAP™ — Leadership Energy Alignment Profile &nbsp;·&nbsp; Developed by Heartfulness Institute of Leadership &nbsp;·&nbsp; Powered by the Adizes PAEI Framework &amp; Turiyaskills
+            LEAP™ — Leadership Energy Alignment Profile &nbsp;·&nbsp; Developed by Heartfulness Institute of Leadership &nbsp;·&nbsp; Powered by the Adizes PAEI Framework
           </p>
         </div>
       </div>

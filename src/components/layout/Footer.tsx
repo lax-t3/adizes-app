@@ -26,9 +26,11 @@ export function Footer() {
           <div className="flex flex-col items-center sm:items-end gap-2 text-xs text-gray-400">
             <img src="/HIL-Isotope.png" alt="Heartfulness Institute of Leadership" className="h-9 w-auto opacity-85" referrerPolicy="no-referrer" />
             <div className="flex flex-col sm:flex-row items-center gap-2">
-              <span>&copy; {year} Adizes Institute. All rights reserved.</span>
+              <span>&copy; {year} Heartfulness Institute of Leadership</span>
               <span className="hidden sm:inline text-gray-200">·</span>
-              <span>App powered by <span className="font-semibold text-gray-500">Turiyaskills</span></span>
+              <span>Powered by the Adizes PAEI Framework</span>
+              <span className="hidden sm:inline text-gray-200">·</span>
+              <span>Technical platform: <span className="font-medium text-gray-500">Turiyaskills</span></span>
             </div>
           </div>
         </div>

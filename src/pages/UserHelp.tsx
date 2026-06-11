@@ -253,8 +253,8 @@ export function UserHelp() {
           <AlertTriangle className="h-4 w-4 text-amber-500 flex-shrink-0 mt-0.5" />
           <p className="text-xs text-gray-500 leading-relaxed">
             <span className="font-medium text-gray-700">About this platform — </span>
-            LEAP™ — Leadership Energy Alignment Profile — is powered by the Adizes PAEI framework, developed by the Adizes Institute.
-            This platform is operated by HILeadership in partnership with Turiyaskills.
+            LEAP™ — Leadership Energy Alignment Profile — is developed by the Heartfulness Institute of Leadership,
+            powered by the Adizes PAEI Framework.
             For programme questions contact{" "}
             <a href="mailto:support@hileadership.com" className="text-primary hover:underline">support@hileadership.com</a>.
             For technical issues contact{" "}

@@ -216,7 +216,7 @@ export function Landing() {
             <Link to="/refund" className="hover:text-gray-600 transition-colors">Refund Policy</Link>
           </div>
           <p className="text-center text-xs text-gray-400">
-            &copy; {new Date().getFullYear()} Heartfulness Institute of Leadership | Powered by <span className="font-medium text-gray-500">Turiyaskills</span>
+            &copy; {new Date().getFullYear()} Heartfulness Institute of Leadership &nbsp;·&nbsp; Powered by the Adizes PAEI Framework &nbsp;·&nbsp; Technical platform: <span className="font-medium text-gray-500">Turiyaskills</span>
           </p>
           <div className="mt-5 flex justify-center">
             <img src="/HIL-Isotope.png" alt="Heartfulness Institute of Leadership" className="h-12 w-auto opacity-90" referrerPolicy="no-referrer" />

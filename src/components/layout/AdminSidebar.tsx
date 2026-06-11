@@ -79,8 +79,9 @@ export function AdminSidebar() {
         </button>
         <div className="px-3 pt-3 pb-2 space-y-2">
           <img src="/HIL-Isotope.png" alt="Heartfulness Institute of Leadership" className="h-10 w-auto opacity-85" referrerPolicy="no-referrer" />
-          <p className="text-[10px] text-gray-400 leading-snug">&copy; {new Date().getFullYear()} Adizes Institute</p>
-          <p className="text-[10px] text-gray-400 leading-snug">Powered by <span className="font-medium text-gray-500">Turiyaskills</span></p>
+          <p className="text-[10px] text-gray-400 leading-snug">&copy; {new Date().getFullYear()} Heartfulness Institute of Leadership</p>
+          <p className="text-[10px] text-gray-400 leading-snug">Powered by the Adizes PAEI Framework</p>
+          <p className="text-[10px] text-gray-400 leading-snug">Technical platform: <span className="font-medium">Turiyaskills</span></p>
         </div>
       </div>
     </div>
