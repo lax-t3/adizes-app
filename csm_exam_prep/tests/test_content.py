@@ -27,3 +27,39 @@ def test_each_section_has_required_keys():
         for s in d["sections"]:
             assert "heading" in s, f"Day {d['day']} section missing 'heading'"
             assert "body" in s, f"Day {d['day']} section missing 'body'"
+
+
+from content.questions import QUESTIONS
+
+def test_questions_covers_days_2_to_48():
+    days_covered = {q["day"] for q in QUESTIONS}
+    for d in range(2, 49):
+        assert d in days_covered, f"Day {d} has no questions in questions.py"
+
+def test_each_question_has_required_keys():
+    required = {"id", "day", "topic", "difficulty", "question", "options", "answer", "explanation"}
+    for q in QUESTIONS:
+        missing = required - q.keys()
+        assert not missing, f"Question {q.get('id')} missing: {missing}"
+
+def test_each_question_has_four_options():
+    for q in QUESTIONS:
+        assert set(q["options"].keys()) == {"A", "B", "C", "D"}, f"{q['id']} bad options"
+
+def test_answer_is_valid_option():
+    for q in QUESTIONS:
+        assert q["answer"] in {"A", "B", "C", "D"}, f"{q['id']} invalid answer: {q['answer']}"
+
+def test_difficulty_values():
+    valid = {"basic", "intermediate", "advanced"}
+    for q in QUESTIONS:
+        assert q["difficulty"] in valid, f"{q['id']} bad difficulty: {q['difficulty']}"
+
+def test_topic_matches_days_topic():
+    from content.days import DAYS
+    day_topics = {d["day"]: d["topic"] for d in DAYS}
+    for q in QUESTIONS:
+        expected = day_topics.get(q["day"])
+        assert q["topic"] == expected, (
+            f"Question {q['id']} topic '{q['topic']}' != day {q['day']} topic '{expected}'"
+        )
