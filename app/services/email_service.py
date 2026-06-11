@@ -27,24 +27,40 @@ _EMAIL_WRAPPER_OPEN = """\
 <tr><td align="center" style="padding:40px 16px 40px;">
 <!--[if mso]><table role="presentation" width="600" align="center" cellpadding="0" cellspacing="0"><tr><td><![endif]-->
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;background:#ffffff;">
-  <!-- Red accent bar -->
-  <tr><td style="background-color:#C8102E;height:5px;font-size:1px;line-height:1px;" bgcolor="#C8102E">&nbsp;</td></tr>
-  <!-- LEAP identity header — text only, works in all email clients -->
+  <!-- Header band: navy + HIL isotope + LEAP(tm) — matches PDF/app header identity -->
   <tr>
-    <td align="center" style="padding:32px 48px 28px;border-bottom:1px solid #e8e8e8;background-color:#ffffff;" bgcolor="#ffffff">
-      <p style="margin:0 0 4px;font-family:Georgia,'Times New Roman',serif;font-size:26px;font-weight:700;color:#C8102E;letter-spacing:1px;">LEAP&#8482;</p>
-      <p style="margin:0 0 16px;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#1D3557;letter-spacing:1px;text-transform:uppercase;">Leadership Energy Alignment Profile</p>
-      <table role="presentation" width="260" cellpadding="0" cellspacing="0" border="0" align="center" style="margin:0 auto 12px;border-top:1px solid #e8e8e8;">
-        <tr><td style="padding:12px 0 0;">
-          <p style="margin:0 0 5px;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#555555;">Understand the gap between:</p>
-          <p style="margin:0 0 3px;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#333333;">&#10003; How you lead today</p>
-          <p style="margin:0 0 3px;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#333333;">&#10003; What your role requires</p>
-          <p style="margin:0 0 10px;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#333333;">&#10003; What naturally energizes you</p>
-          <p style="margin:0;font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#999999;">15 minutes &nbsp;&middot;&nbsp; Personalized report &nbsp;&middot;&nbsp; Immediate insights</p>
-        </td></tr>
+    <td bgcolor="#1D3557" style="background-color:#1D3557;padding:0;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <!-- HIL isotope in semi-transparent circle -->
+          <td width="72" bgcolor="#1D3557" style="background-color:#1D3557;padding:14px 0 14px 18px;vertical-align:middle;" valign="middle">
+            <!--[if !mso]><!-->
+            <div style="width:44px;height:44px;border-radius:22px;background-color:#2A4A6B;display:inline-block;text-align:center;line-height:0;vertical-align:middle;mso-hide:all;">
+              <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 40 40" style="display:block;margin:8px auto 0;">
+                <g fill="none" stroke="white" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M20,24 C14,20 13,12 20,7 C27,12 26,20 20,24Z"/>
+                  <path d="M20,24 C14,20 13,12 20,7 C27,12 26,20 20,24Z" transform="rotate(120 20 24)"/>
+                  <path d="M20,24 C14,20 13,12 20,7 C27,12 26,20 20,24Z" transform="rotate(240 20 24)"/>
+                </g>
+              </svg>
+            </div>
+            <!--<![endif]-->
+            <!--[if mso]><table cellpadding="0" cellspacing="0" border="0"><tr><td width="44" height="44" bgcolor="#2A4A6B" style="background-color:#2A4A6B;">&nbsp;</td></tr></table><![endif]-->
+          </td>
+          <!-- LEAP name -->
+          <td bgcolor="#1D3557" style="background-color:#1D3557;padding:14px 0 14px 12px;vertical-align:middle;" valign="middle">
+            <p style="margin:0;font-family:Arial,Helvetica,sans-serif;font-size:22px;font-weight:700;color:#ffffff;letter-spacing:0.5px;">LEAP&#8482;</p>
+          </td>
+          <!-- Descriptor right-aligned -->
+          <td bgcolor="#1D3557" style="background-color:#1D3557;padding:14px 20px 14px 0;vertical-align:middle;text-align:right;" valign="middle" align="right">
+            <p style="margin:0;font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#a0b4c8;letter-spacing:0.3px;">Leadership Energy Alignment Profile</p>
+          </td>
+        </tr>
       </table>
     </td>
-  </tr>"""
+  </tr>
+  <!-- Red accent stripe -->
+  <tr><td style="background-color:#C8102E;height:3px;font-size:1px;line-height:1px;" bgcolor="#C8102E">&nbsp;</td></tr>"""
 
 _EMAIL_WRAPPER_CLOSE = """\
   <!-- Footer -->
@@ -56,7 +72,7 @@ _EMAIL_WRAPPER_CLOSE = """\
         </td></tr>
         <tr><td align="center" style="padding:0 48px 24px;">
           <p style="margin:8px 0 0;font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#aaaaaa;line-height:1.6;">This email was sent to {{recipient_email}}</p>
-          <p style="margin:4px 0 0;font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#aaaaaa;">&copy; {{platform_name}} &middot; Powered by Turiyaskills</p>
+          <p style="margin:4px 0 0;font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#aaaaaa;">&copy; {{platform_name}} &middot; Powered by the Adizes PAEI Framework</p>
         </td></tr>
       </table>
     </td>
