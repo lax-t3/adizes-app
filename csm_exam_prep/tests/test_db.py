@@ -5,7 +5,8 @@ from db.queries import (
     get_setting, set_setting, get_day_progress, mark_study_done,
     mark_quiz_done, save_quiz_attempts, refresh_topic_mastery,
     get_topic_mastery, get_weak_spots, get_streak, get_all_progress,
-    get_exam_readiness, reset_progress, get_current_day_number, log_streak_day
+    get_exam_readiness, reset_progress, get_current_day_number, log_streak_day,
+    get_days_left
 )
 from datetime import date, timedelta
 
@@ -192,3 +193,15 @@ def test_reset_progress_clears_all():
     assert not get_day_progress(1)["study_done"]
     assert get_topic_mastery() == []
     assert get_streak() == 0
+
+# ── get_days_left ─────────────────────────────────────────────────────────────
+
+def test_get_days_left_defaults_to_48():
+    init_db()
+    assert get_days_left() == 48
+
+def test_get_days_left_uses_exam_date():
+    init_db()
+    exam = (date.today() + timedelta(days=10)).isoformat()
+    set_setting("exam_date", exam)
+    assert get_days_left() == 10
