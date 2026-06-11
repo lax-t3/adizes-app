@@ -50,7 +50,7 @@ with col_l:
             return "color: #ef4444"
 
         st.dataframe(
-            df_m.style.applymap(colour_mastery, subset=["Mastery %"]),
+            df_m.style.map(colour_mastery, subset=["Mastery %"]),
             use_container_width=True,
             hide_index=True,
         )
