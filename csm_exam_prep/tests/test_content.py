@@ -63,3 +63,30 @@ def test_topic_matches_days_topic():
         assert q["topic"] == expected, (
             f"Question {q['id']} topic '{q['topic']}' != day {q['day']} topic '{expected}'"
         )
+
+
+from content.loader import get_day_content, get_day_questions
+
+def test_get_day_content_returns_dict_for_all_days():
+    for day_num in range(1, 49):
+        content = get_day_content(day_num)
+        assert isinstance(content, dict), f"Day {day_num} content not a dict"
+        assert "sections" in content
+
+def test_get_day_questions_returns_list_for_all_days():
+    for day_num in range(1, 49):
+        qs = get_day_questions(day_num)
+        assert isinstance(qs, list), f"Day {day_num} questions not a list"
+        assert len(qs) > 0, f"Day {day_num} has no questions"
+
+def test_get_day_content_day1_uses_docx_when_present():
+    content = get_day_content(1)
+    assert len(content["sections"]) > 0
+
+def test_get_day_questions_day1_returns_questions():
+    qs = get_day_questions(1)
+    assert len(qs) >= 10
+    for q in qs:
+        assert "question" in q
+        assert "answer" in q
+        assert "options" in q
