@@ -18,6 +18,35 @@ view a PAEI alignment dashboard, and download a full PDF report.
 
 All branches live at: **https://github.com/lax-t3/adizes-app**
 
+## Brand Identity (canonical — 2026-06-11)
+
+```
+LEAP™                                          ← primary brand name
+Leadership Energy Alignment Profile            ← descriptor
+Developed by the Heartfulness Institute of Leadership  ← owner/developer
+Powered by the Adizes PAEI Framework          ← methodology
+```
+
+**Rules:**
+- The HIL isotype (three-petal loop symbol, `/public/HIL-Isotope.png`) is the **primary visual anchor** on all surfaces.
+- Adizes is referenced only as "Powered by the Adizes PAEI Framework" — never as a logo or primary visual identifier.
+- "Turiyaskills" appears only as a small technical note in footer/admin sidebar — not in emails.
+- Email templates use a uniform navy header band: `#1D3557` background, HIL isotope circle (inline SVG), "LEAP™" bold white, "Leadership Energy Alignment Profile" right-aligned.
+
+**Email header band spec:**
+- Background: `#1D3557` (navy), red stripe `#C8102E` 3px at bottom
+- Circle: 44×44px, `#2A4A6B` fill, HIL trefoil SVG (white stroke, `stroke-width: 2.4`)
+- LEAP™: Arial bold 22px white; descriptor: Arial 11px `#a0b4c8`
+- Implemented in `adizes-backend/app/services/email_service.py` → `_EMAIL_WRAPPER_OPEN`
+
+**Brand assets in adizes-frontend/public:**
+| Asset | File | Usage |
+|-------|------|-------|
+| HIL isotype (colour) | `HIL-Isotope.png` | Navbar, sidebar, footer, apple-touch-icon, OG image |
+| HIL isotype (blue wordmark) | `hil_blue.png` | Available for full wordmark use |
+| Favicon SVG | `icon.svg` | Browser tab (HIL trefoil on navy) |
+| Favicon PNG fallback | `icon.png` | Legacy fallback (still the old "A" placeholder — replace with HIL PNG when available) |
+
 ## Design Spec
 Full approved design: `docs/plans/2026-03-10-adizes-paei-app-design.md`
 Implementation plan: `docs/plans/2026-03-10-adizes-backend-implementation.md`
