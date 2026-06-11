@@ -1,6 +1,6 @@
 import sqlite3
 import pytest
-from db.schema import init_db, get_conn, DB_PATH
+from db.schema import init_db, get_conn
 
 def test_init_db_creates_all_tables():
     init_db()
