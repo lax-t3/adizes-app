@@ -2,6 +2,10 @@ import sqlite3
 from datetime import date, timedelta
 from db.schema import get_conn, init_db
 
+# ── constants ─────────────────────────────────────────────────────────────────
+
+PLAN_DAYS = 48
+
 # ── settings ──────────────────────────────────────────────────────────────────
 
 def get_setting(key: str):
@@ -102,12 +106,12 @@ def save_quiz_attempts(day_number: int, attempts: list):
 def refresh_topic_mastery(topic: str):
     init_db()
     with get_conn() as conn:
-        total = conn.execute(
-            "SELECT COUNT(*) as c FROM quiz_attempts WHERE topic = ?", (topic,)
-        ).fetchone()["c"]
-        correct = conn.execute(
-            "SELECT COUNT(*) as c FROM quiz_attempts WHERE topic = ? AND correct = 1", (topic,)
-        ).fetchone()["c"]
+        row = conn.execute(
+            "SELECT COUNT(*) as total, SUM(correct) as correct FROM quiz_attempts WHERE topic = ?",
+            (topic,)
+        ).fetchone()
+        total = row["total"]
+        correct = row["correct"] or 0
         mastery = (correct / total * 100) if total > 0 else 0.0
         conn.execute("""
             INSERT INTO topic_mastery (topic, total_attempts, correct_count, mastery_pct, last_attempted)
@@ -146,7 +150,6 @@ def log_streak_day(today_str: str):
         ).fetchone()
         if existing:
             return  # already logged today
-        total = conn.execute("SELECT COUNT(*) as c FROM streak_log").fetchone()["c"] + 1
         # Compute streak length ending today
         rows = conn.execute(
             "SELECT study_date FROM streak_log ORDER BY study_date DESC"
@@ -163,7 +166,7 @@ def log_streak_day(today_str: str):
         conn.execute("""
             INSERT OR IGNORE INTO streak_log (study_date, days_studied, streak_at_date)
             VALUES (?, ?, ?)
-        """, (today_str, total, streak))
+        """, (today_str, 0, streak))
 
 def get_streak() -> int:
     init_db()
@@ -201,7 +204,7 @@ def get_exam_readiness() -> float:
             "SELECT AVG(quiz_score) as a FROM daily_progress WHERE quiz_score IS NOT NULL"
         ).fetchone()
         avg_score = avg_row["a"] if avg_row["a"] is not None else 0.0
-    return (days_done / 48 * 0.4) + (avg_score * 0.6)
+    return (days_done / PLAN_DAYS * 0.4) + (avg_score * 0.6)
 
 # ── settings helpers ───────────────────────────────────────────────────────────
 
@@ -210,7 +213,7 @@ def get_current_day_number() -> int:
     if not start:
         return 1
     delta = (date.today() - date.fromisoformat(start)).days + 1
-    return max(1, min(delta, 48))
+    return max(1, min(delta, PLAN_DAYS))
 
 def get_days_left() -> int:
     exam = get_setting("exam_date")
@@ -224,9 +227,7 @@ def get_days_left() -> int:
 def reset_progress():
     init_db()
     with get_conn() as conn:
-        conn.executescript("""
-            DELETE FROM daily_progress;
-            DELETE FROM quiz_attempts;
-            DELETE FROM topic_mastery;
-            DELETE FROM streak_log;
-        """)
+        conn.execute("DELETE FROM daily_progress")
+        conn.execute("DELETE FROM quiz_attempts")
+        conn.execute("DELETE FROM topic_mastery")
+        conn.execute("DELETE FROM streak_log")
