@@ -1,9 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from fastapi.responses import StreamingResponse
 from app.auth import get_current_user
 from app.database import supabase_admin
 from app.schemas.results import ResultResponse, GapDetail, Interpretation
 from app.services.pdf_service import generate_pdf
+from app.routers.assessment import _build_pdf_payload, _trigger_pdf_lambda
 import io
 
 router = APIRouter()
@@ -43,6 +44,30 @@ def get_result(result_id: str, user: dict = Depends(get_current_user)):
         interpretation=Interpretation(**data["interpretation"]),
         pdf_url=data.get("pdf_url"),
     )
+
+
+@router.post("/{result_id}/generate-pdf", status_code=202)
+def trigger_generate_pdf(
+    result_id: str,
+    background_tasks: BackgroundTasks,
+    user: dict = Depends(get_current_user),
+):
+    is_admin = user.get("app_metadata", {}).get("role") == "admin"
+    data = _fetch_result(result_id, user["sub"], is_admin)
+
+    if data.get("pdf_url"):
+        return {"status": "ready", "pdf_url": data["pdf_url"]}
+
+    payload = _build_pdf_payload(
+        result_id,
+        data.get("user_name", ""),
+        data["completed_at"],
+        {"profile": data["profile"], "display": data["scaled_scores"]},
+        data["gaps"],
+        data["interpretation"],
+    )
+    background_tasks.add_task(_trigger_pdf_lambda, result_id, payload)
+    return {"status": "generating"}
 
 
 @router.get("/{result_id}/pdf")

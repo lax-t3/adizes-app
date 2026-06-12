@@ -115,10 +115,11 @@ exports.handler = async (event) => {
   const key = `reports/${assessment_id}.pdf`;
 
   await s3.send(new PutObjectCommand({
-    Bucket:      process.env.S3_BUCKET_NAME,
-    Key:         key,
-    Body:        pdfBytes,
-    ContentType: 'application/pdf',
+    Bucket:        process.env.S3_BUCKET_NAME,
+    Key:           key,
+    Body:          pdfBytes,
+    ContentType:   'application/pdf',
+    CacheControl:  'no-cache, no-store, must-revalidate',
   }));
 
   const pdfUrl = `https://${process.env.S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`;

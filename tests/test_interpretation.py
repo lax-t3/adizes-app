@@ -43,7 +43,7 @@ class TestInterpret:
 
     def test_mismanagement_risk_for_P(self):
         result = interpret(_scaled({"P": 45}), {})
-        assert any("Lone Ranger" in r for r in result["mismanagement_risks"])
+        assert any("Dictator Trap" in r for r in result["mismanagement_risks"])
 
     def test_combined_description_for_dual_dominant(self):
         result = interpret(_scaled({"E": 40, "I": 38}), {})

@@ -37,7 +37,7 @@ STYLE_DESCRIPTIONS = {
             "The P dimension is under pressure."
         ),
         "under_stress": (
-            "Lone Ranger — under prolonged stress you may become a domineering, go-it-alone "
+            "Dictator Trap — under prolonged stress you may become a domineering, go-it-alone "
             "bulldozer: bypassing others, dismissing input, and over-relying on your own execution."
         ),
     },
@@ -70,7 +70,7 @@ STYLE_DESCRIPTIONS = {
             "between expectation and reality is showing."
         ),
         "under_stress": (
-            "Bureaucrat — under prolonged stress you may become overly rigid, inflexible, "
+            "Perfectionist Trap — under prolonged stress you may become overly rigid, inflexible, "
             "and change-resistant: defending process for its own sake and blocking progress."
         ),
     },
@@ -103,7 +103,7 @@ STYLE_DESCRIPTIONS = {
             "the role needs it. The E dimension is under pressure."
         ),
         "under_stress": (
-            "Arsonist — under prolonged stress you may become impractical, chaotic, and "
+            "Know-It-All Trap — under prolonged stress you may become impractical, chaotic, and "
             "idea-without-delivery: starting fires, abandoning initiatives, and demoralising "
             "those tasked with execution."
         ),
@@ -137,7 +137,7 @@ STYLE_DESCRIPTIONS = {
             "The I dimension is under pressure."
         ),
         "under_stress": (
-            "Super-Follower — under prolonged stress you may become conflict-avoidant and "
+            "Harmony Trap — under prolonged stress you may become conflict-avoidant and "
             "politically spineless: giving vague answers, deferring to the loudest voice, "
             "and sacrificing honesty for the sake of harmony."
         ),

@@ -51,8 +51,8 @@ async function run() {
     working_with_others: 'Producers can seem reckless to you — channel their energy by building systems they can operate within.',
     combined_description: 'The Innovative Organiser — you vision the future and build the systems to get there.',
     mismanagement_risks: [
-      'Bureaucrat — may become overly rigid, inflexible, and change-resistant under stress.',
-      'Arsonist — may become impractical, chaotic, and idea-without-delivery under stress.',
+      'Perfectionist Trap — may become overly rigid, inflexible, and change-resistant under stress.',
+      'Know-It-All Trap — may become impractical, chaotic, and idea-without-delivery under stress.',
     ],
   };
   const gaps = [
