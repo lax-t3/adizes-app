@@ -52,12 +52,12 @@ Full approved design: `docs/plans/2026-03-10-adizes-paei-app-design.md`
 Implementation plan: `docs/plans/2026-03-10-adizes-backend-implementation.md`
 
 ## PAEI Framework Quick Reference
-| Role | Code | Focus | Strength | Mismanagement extreme |
-|------|------|-------|----------|----------------------|
-| Producer | P | Results, short-term | Decisive, action-oriented | Lone Ranger |
-| Administrator | A | Process, systems | Reliable, thorough | Bureaucrat |
-| Entrepreneur | E | Change, vision | Innovative, creative | Arsonist |
-| Integrator | I | People, consensus | Nurturing, team builder | Super-Follower |
+| Role | Code | Focus | Strength | Stress trap (LEAP language) |
+|------|------|-------|----------|-----------------------------|
+| Producer | P | Results, short-term | Decisive, action-oriented | Dictator Trap |
+| Administrator | A | Process, systems | Reliable, thorough | Perfectionist Trap |
+| Entrepreneur | E | Change, vision | Innovative, creative | Know-It-All Trap |
+| Integrator | I | People, consensus | Nurturing, team builder | Harmony Trap |
 
 ## Assessment Structure — Adizes90 / LEAP™ (current tool)
 
@@ -280,7 +280,7 @@ export S3_BUCKET_NAME=adizes-pdf-reports
   - Page 1 — Personal Snapshot: executive summary prose, dominant role identity badge (role-colored), at-your-best / friction callouts, top gap highlight card.
   - Page 2 — Energy Alignment Matrix: 3-row (IS/SHD/WNT) × 4-col (P/A/E/I) lens-rows table; each cell has role-colored progress bar + percentage; WNT row dimmed at 0.55 opacity.
   - Page 3 — Your Three Gaps: one gap card per gap type (Execution / Engagement / Authenticity) with colored bars, severity badge, narrative, and a `daily_feel` callout ("What this feels like day-to-day").
-  - Page 4 — Your Action Path: priority table (1–5 rows) derived from gap severity; each row has a rank number, role color chip, action label, and focus description.
+  - Page 4 — Suggested Focus Areas: priority table (1–5 rows) derived from gap severity; each row has a rank number, role color chip, action label, and focus description. Subheading: "Consider these as starting points for reflection and action."
   - Page 5 — Stress Signature & Reflection: stress-under-pressure narrative + 3 numbered reflection questions.
   **Header band (all pages):** solid navy `#1D3557` band, `rgba(255,255,255,0.15)` circle containing HIL-Isotope logo (`filter: brightness(0) invert(1)` knockout), "LEAP™" bold white left, page name right, `border-bottom: 3pt solid #C8102E` red accent stripe.
   **Sample PDF URL:** `https://adizes-pdf-reports.s3.ap-south-1.amazonaws.com/reports/f17b1f2c-0273-4b5d-88d2-e27b826d1738.pdf`
