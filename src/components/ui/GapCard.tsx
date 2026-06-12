@@ -19,7 +19,7 @@ const GAP_TYPE_META: Record<TopGap["gap_type"], {
   authenticity: { label: "Authenticity Gap", formula: "Current State − Intrinsic Preference",      lensA: "is",     lensALabel: "Current State",        lensB: "want", lensBLabel: "Intrinsic Preference" },
 };
 
-function SeverityPill({ severity, signed }: { severity: TopGap["severity"]; signed: number }) {
+function SeverityPill({ severity }: { severity: TopGap["severity"] }) {
   const isHigh = severity === "high";
   const isMed  = severity === "medium";
   if (!isHigh && !isMed) return null;
@@ -32,7 +32,7 @@ function SeverityPill({ severity, signed }: { severity: TopGap["severity"]; sign
       className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold border"
       style={{ background: bg, borderColor, color: borderColor }}
     >
-      {emoji} {label}&nbsp;{signed > 0 ? "+" : ""}{signed}&nbsp;pts
+      {emoji} {label}
     </span>
   );
 }
@@ -63,7 +63,7 @@ export function GapCard({ gap, display_scores }: Props) {
             <div className="text-xs text-gray-400">{meta.formula}</div>
           </div>
         </div>
-        <SeverityPill severity={gap.severity} signed={gap.gap_signed} />
+        <SeverityPill severity={gap.severity} />
       </div>
 
       {/* Comparison bars */}
