@@ -66,13 +66,18 @@ export function Results() {
       const res = await triggerGeneratePdf(id);
       if (res.pdf_url) {
         setPdfUrl(res.pdf_url);
+        window.open(`${res.pdf_url}?v=${Date.now()}`, "_blank");
         return;
       }
       // Poll up to 12 times (60 s) waiting for Lambda to finish
       for (let i = 0; i < 12; i++) {
         await new Promise((r) => setTimeout(r, 5000));
         const r = await getResult(id);
-        if (r.pdf_url) { setPdfUrl(r.pdf_url); return; }
+        if (r.pdf_url) {
+          setPdfUrl(r.pdf_url);
+          window.open(`${r.pdf_url}?v=${Date.now()}`, "_blank");
+          return;
+        }
       }
       setPdfCheckMessage("Still generating — please check again in a moment.");
     } catch {
@@ -286,7 +291,7 @@ export function Results() {
           </div>
           <div className="flex flex-col items-end gap-1">
             {pdfUrl ? (
-              <Button size="lg" onClick={() => window.open(pdfUrl, "_blank")} className="w-full sm:w-auto shadow-md hover:shadow-lg transition-all">
+              <Button size="lg" onClick={() => window.open(`${pdfUrl}?v=${Date.now()}`, "_blank")} className="w-full sm:w-auto shadow-md hover:shadow-lg transition-all">
                 <Download className="mr-2 h-5 w-5" /> Download Full Report (PDF)
               </Button>
             ) : (

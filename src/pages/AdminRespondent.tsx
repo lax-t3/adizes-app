@@ -82,12 +82,20 @@ export function AdminRespondent() {
     setPdfCheckMessage("");
     try {
       const res = await triggerGeneratePdf(data.result.id);
-      if (res.pdf_url) { setPdfUrl(res.pdf_url); return; }
+      if (res.pdf_url) {
+        setPdfUrl(res.pdf_url);
+        window.open(`${res.pdf_url}?v=${Date.now()}`, "_blank");
+        return;
+      }
       // Poll up to 12 times (60 s)
       for (let i = 0; i < 12; i++) {
         await new Promise((r) => setTimeout(r, 5000));
         const fresh = await getRespondent(id, cohortId);
-        if (fresh.result?.pdf_url) { setPdfUrl(fresh.result.pdf_url); return; }
+        if (fresh.result?.pdf_url) {
+          setPdfUrl(fresh.result.pdf_url);
+          window.open(`${fresh.result.pdf_url}?v=${Date.now()}`, "_blank");
+          return;
+        }
       }
       setPdfCheckMessage("Still generating — please check again in a moment.");
     } catch {
@@ -189,7 +197,7 @@ export function AdminRespondent() {
               </div>
               <div className="flex flex-col items-end gap-1">
                 {pdfUrl ? (
-                  <Button variant="outline" onClick={() => window.open(pdfUrl, "_blank")}>
+                  <Button variant="outline" onClick={() => window.open(`${pdfUrl}?v=${Date.now()}`, "_blank")}>
                     <Download className="mr-2 h-4 w-4" /> PDF Report
                   </Button>
                 ) : (
