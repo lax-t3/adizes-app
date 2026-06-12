@@ -9,7 +9,7 @@ class TestPasswordResetTemplate:
             "user_name": "Jane Smith",
             "reset_link": "https://example.com/reset-password#token=abc",
             "platform_name": "Adizes India",
-            "platform_url": "https://adizes-app.turiyaskills.co",
+            "platform_url": "https://leap.turiyaskills.co",
         })
         # Variable substitution confirmed
         assert "Jane Smith" in result
