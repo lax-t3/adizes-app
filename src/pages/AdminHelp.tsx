@@ -59,7 +59,7 @@ const adminFAQs: FAQItem[] = [
       "Go to Administrators in the left sidebar.",
       "Click Invite Administrator and enter their name and email address.",
       "Click Send Invite — they will receive an email with a link to set their password.",
-      "Once they set their password, they can log in at adizes-app.turiyaskills.co and access the full admin panel.",
+      "Once they set their password, they can log in at leap.turiyaskills.co and access the full admin panel.",
     ],
   },
   {
@@ -190,7 +190,7 @@ const userFAQs: FAQItem[] = [
   {
     q: "How do I take the assessment?",
     a: [
-      "Log in at adizes-app.turiyaskills.co with your email and password.",
+      "Log in at leap.turiyaskills.co with your email and password.",
       "From your dashboard, click Start Assessment.",
       "You will answer 36 questions across three sections — Is (how you currently work), Should (what your role requires), and Want (what you naturally prefer).",
       "For each question, select the one option that best describes you. There are no right or wrong answers.",
