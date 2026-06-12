@@ -6,6 +6,11 @@ export async function getResult(resultId: string): Promise<ResultResponse> {
   return data;
 }
 
+export async function triggerGeneratePdf(resultId: string): Promise<{ status: string; pdf_url?: string }> {
+  const { data } = await apiClient.post(`/results/${resultId}/generate-pdf`);
+  return data;
+}
+
 export async function getMyAssessments(): Promise<CohortAssessmentHistory[]> {
   const { data } = await apiClient.get<CohortAssessmentHistory[]>("/auth/my-assessments");
   return data;

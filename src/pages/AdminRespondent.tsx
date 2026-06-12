@@ -10,6 +10,7 @@ import { motion } from "motion/react";
 import { EnergyMatrix } from "@/components/ui/EnergyMatrix";
 import { GapCard } from "@/components/ui/GapCard";
 import { getRespondent } from "@/api/admin";
+import { triggerGeneratePdf } from "@/api/results";
 import type { GapDetail, Interpretation, ScoreSet, TopGap } from "@/types/api";
 
 interface RespondentData {
@@ -75,20 +76,22 @@ export function AdminRespondent() {
       .finally(() => setLoading(false));
   }, [id, cohortId]);
 
-  const handleCheckAgain = async () => {
-    if (!id || !cohortId) return;
+  const handleGeneratePdf = async () => {
+    if (!id || !cohortId || !data?.result?.id) return;
     setCheckingPdf(true);
     setPdfCheckMessage("");
     try {
-      const fresh = await getRespondent(id, cohortId);
-      if (fresh.result?.pdf_url) {
-        setPdfUrl(fresh.result.pdf_url);
-        setPdfCheckMessage("");
-      } else {
-        setPdfCheckMessage("Still generating, try again shortly.");
+      const res = await triggerGeneratePdf(data.result.id);
+      if (res.pdf_url) { setPdfUrl(res.pdf_url); return; }
+      // Poll up to 12 times (60 s)
+      for (let i = 0; i < 12; i++) {
+        await new Promise((r) => setTimeout(r, 5000));
+        const fresh = await getRespondent(id, cohortId);
+        if (fresh.result?.pdf_url) { setPdfUrl(fresh.result.pdf_url); return; }
       }
+      setPdfCheckMessage("Still generating — please check again in a moment.");
     } catch {
-      setPdfCheckMessage("Could not check status.");
+      setPdfCheckMessage("Could not generate report. Please try again.");
     } finally {
       setCheckingPdf(false);
     }
@@ -196,11 +199,11 @@ export function AdminRespondent() {
                 )}
                 {!pdfUrl && (
                   <button
-                    onClick={handleCheckAgain}
+                    onClick={handleGeneratePdf}
                     disabled={checkingPdf}
                     className="text-xs text-primary hover:underline disabled:opacity-50"
                   >
-                    {checkingPdf ? "Checking…" : "Check again"}
+                    {checkingPdf ? "Generating…" : "Generate PDF"}
                   </button>
                 )}
                 {pdfCheckMessage && (

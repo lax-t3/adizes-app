@@ -13,7 +13,7 @@ import {
   Users, ClipboardList, LayoutDashboard, Clock, PlayCircle,
 } from "lucide-react";
 import { motion } from "motion/react";
-import { getResult, getMyAssessments } from "@/api/results";
+import { getResult, getMyAssessments, triggerGeneratePdf } from "@/api/results";
 import type { ResultResponse, CohortAssessmentHistory, TopGap } from "@/types/api";
 
 const SAMPLE_PDF_URL =
@@ -89,19 +89,24 @@ function ResultsDashboard({ resultId }: { resultId: string }) {
       .finally(() => setLoading(false));
   }, [resultId]);
 
-  const handleCheckAgain = async () => {
+  const handleGeneratePdf = async () => {
     setCheckingPdf(true);
     setPdfCheckMessage("");
     try {
-      const r = await getResult(resultId);
-      if (r.pdf_url) {
-        setPdfUrl(r.pdf_url);
-        setPdfCheckMessage("");
-      } else {
-        setPdfCheckMessage("Still generating, try again shortly.");
+      const res = await triggerGeneratePdf(resultId);
+      if (res.pdf_url) {
+        setPdfUrl(res.pdf_url);
+        return;
       }
+      // Poll up to 12 times (60 s) waiting for Lambda to finish
+      for (let i = 0; i < 12; i++) {
+        await new Promise((r) => setTimeout(r, 5000));
+        const r = await getResult(resultId);
+        if (r.pdf_url) { setPdfUrl(r.pdf_url); return; }
+      }
+      setPdfCheckMessage("Still generating — please check again in a moment.");
     } catch {
-      setPdfCheckMessage("Could not check status. Please try again.");
+      setPdfCheckMessage("Could not generate report. Please try again.");
     } finally {
       setCheckingPdf(false);
     }
@@ -286,11 +291,11 @@ function ResultsDashboard({ resultId }: { resultId: string }) {
         )}
         {!pdfUrl && (
           <button
-            onClick={handleCheckAgain}
+            onClick={handleGeneratePdf}
             disabled={checkingPdf}
             className="text-xs text-primary hover:underline disabled:opacity-50"
           >
-            {checkingPdf ? "Checking…" : "Check again"}
+            {checkingPdf ? "Generating…" : "Generate PDF"}
           </button>
         )}
         {pdfCheckMessage && (

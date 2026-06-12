@@ -10,7 +10,7 @@ import { InfoTooltip } from "@/components/ui/InfoTooltip";
 import { motion } from "motion/react";
 import { EnergyMatrix } from "@/components/ui/EnergyMatrix";
 import { GapCard } from "@/components/ui/GapCard";
-import { getResult } from "@/api/results";
+import { getResult, triggerGeneratePdf } from "@/api/results";
 import type { ResultResponse, TopGap } from "@/types/api";
 
 function getTopGaps(result: ResultResponse): TopGap[] {
@@ -58,16 +58,25 @@ export function Results() {
       .finally(() => setLoading(false));
   }, [id]);
 
-  const handleCheckAgain = async () => {
+  const handleGeneratePdf = async () => {
     if (!id) return;
     setCheckingPdf(true);
     setPdfCheckMessage("");
     try {
-      const r = await getResult(id);
-      if (r.pdf_url) { setPdfUrl(r.pdf_url); setPdfCheckMessage(""); }
-      else setPdfCheckMessage("Still generating, try again shortly.");
+      const res = await triggerGeneratePdf(id);
+      if (res.pdf_url) {
+        setPdfUrl(res.pdf_url);
+        return;
+      }
+      // Poll up to 12 times (60 s) waiting for Lambda to finish
+      for (let i = 0; i < 12; i++) {
+        await new Promise((r) => setTimeout(r, 5000));
+        const r = await getResult(id);
+        if (r.pdf_url) { setPdfUrl(r.pdf_url); return; }
+      }
+      setPdfCheckMessage("Still generating — please check again in a moment.");
     } catch {
-      setPdfCheckMessage("Could not check status. Please try again.");
+      setPdfCheckMessage("Could not generate report. Please try again.");
     } finally {
       setCheckingPdf(false);
     }
@@ -286,8 +295,8 @@ export function Results() {
               </Button>
             )}
             {!pdfUrl && (
-              <button onClick={handleCheckAgain} disabled={checkingPdf} className="text-xs text-primary hover:underline disabled:opacity-50">
-                {checkingPdf ? "Checking…" : "Check again"}
+              <button onClick={handleGeneratePdf} disabled={checkingPdf} className="text-xs text-primary hover:underline disabled:opacity-50">
+                {checkingPdf ? "Generating…" : "Generate PDF"}
               </button>
             )}
             {pdfCheckMessage && <p className="text-xs text-gray-500">{pdfCheckMessage}</p>}
