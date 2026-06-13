@@ -2,7 +2,7 @@
 
 ## What This Is
 Assessment platform for the **LEAP™ — Leadership Energy Alignment Profile**, powered by the Adizes PAEI framework.
-Users take a 36-question assessment across 3 dimensions (Current State / Role Expectations / Intrinsic Preference),
+Users take a 36-question assessment across 3 dimensions (Current State / Role Expectations / My Natural Preference),
 view a PAEI alignment dashboard, and download a full PDF report.
 
 > **Rebrand note (2026-05-27):** The platform was previously branded "Adizes PAEI Management Style Indicator (AMSI)".
@@ -62,7 +62,7 @@ Implementation plan: `docs/plans/2026-03-10-adizes-backend-implementation.md`
 
 The individual PAEI self-assessment — sometimes called "Adizes90" internally, publicly branded as **LEAP™**.
 
-Display labels (frontend + PDF): **Current State** (Is) · **Role Expectations** (Should) · **Intrinsic Preference** (Want).
+Display labels (frontend + PDF): **Current State** (Is) · **Role Expectations** (Should) · **My Natural Preference** (Want).
 Internal/DB keys: `is` / `should` / `want` — unchanged across all scoring, DB, and API code.
 
 - **36 questions** = 12 per section × 3 sections (Is / Should / Want)
@@ -422,14 +422,14 @@ export S3_BUCKET_NAME=adizes-pdf-reports
   two-column LEAP split layout with decorative sample matrix and insight card; Assessment "Before You Begin"
   LEAP prose card replaces YouTube embed; LEAP™ replaces AMSI in sticky assessment header; ranking instruction
   callout updated to "most/least applicable" framing; "Begin Section" → "Begin Questions".
-  Backend: `SECTION_META` labels "Is"→"Current State", "Should"→"Role Expectations", "Want"→"Intrinsic Preference".
+  Backend: `SECTION_META` labels "Is"→"Current State", "Should"→"Role Expectations", "Want"→"My Natural Preference".
   PDF Lambda v2: all 5 page headers rebranded to LEAP™; page 1 matrix redesigned to lens-rows layout;
   full 5-page report redesigned 2026-06-10 (see "PDF Lambda v2 report identity" key decision above).
   New public `/leap` landing page (no auth) with hero, tension cards, sample insights, comparison table, and CTA.
   Lambda ECR redeployed with redesigned template (2026-06-10).
   Remaining AMSI strings cleaned up (2026-05-27, commit `b4de9c1`): Landing.tsx h1 "management style" → "leadership
   alignment" + LEAP™ tagline description; UserHelp.tsx subtitle → "LEAP™ Assessment", results description uses
-  "Current State / Role Expectations / Intrinsic Preference", footer attribution → LEAP™; AdminHelp.tsx subtitle +
+  "Current State / Role Expectations / My Natural Preference", footer attribution → LEAP™; AdminHelp.tsx subtitle +
   footer attribution → LEAP™; PolicyPage.tsx Terms §1 + Refund §1 "AMSI platform" → "LEAP™ platform".
 - **PDF interpretation fields** (added 2026-06-10): `interpretation.py` returns `executive_summary` (str — 2-sentence
   narrative) and `daily_feel` (dict — keyed `{role: {gap_type: str}}`, used in gap-card callouts on page 3).
