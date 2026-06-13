@@ -166,10 +166,10 @@ export function Results() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   Style Comparison
-                  <InfoTooltip text="Each role shows three bars: Current State (how you currently operate), Role Expectations (what your role demands), and Intrinsic Preference (your natural tendency, shown lighter). Bars show the percentage of total energy. Gaps highlight where role demands or natural instincts diverge from current behaviour." />
+                  <InfoTooltip text="Each role shows three bars: Current State (how you currently operate), Role Expectations (what your role demands), and My Natural Preference (your natural tendency, shown lighter). Bars show the percentage of total energy. Gaps highlight where role demands or natural instincts diverge from current behaviour." />
                 </CardTitle>
                 <CardDescription>
-                  How your PAEI energy distributes across Current State, Role Expectations, and Intrinsic Preference.
+                  How your PAEI energy distributes across Current State, Role Expectations, and My Natural Preference.
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -184,7 +184,7 @@ export function Results() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   Top Energy Misalignments
-                  <InfoTooltip text="The 3 largest gaps across your 12 gap values (4 roles × 3 types). Execution Gap = Role Expectations − Current State. Engagement Gap = Role Expectations − Intrinsic Preference. Authenticity Gap = Current State − Intrinsic Preference. Thresholds on the 132-point scale: < 6 aligned, 6–15 moderate, > 15 high." />
+                  <InfoTooltip text="The 3 largest gaps across your 12 gap values (4 roles × 3 types). Execution Gap = Role Expectations VS Current State. Engagement Gap = Role Expectations VS My Natural Preference. Authenticity Gap = Current State VS My Natural Preference. Thresholds on the 132-point scale: < 6 aligned, 6–15 moderate, > 15 high." />
                 </CardTitle>
                 <CardDescription>
                   Where your energy perceptions diverge most.

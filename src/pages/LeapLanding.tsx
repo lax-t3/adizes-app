@@ -162,7 +162,7 @@ function SampleInsightsSection() {
             <h4 className="font-bold text-gray-900 mb-3">Protect — Producer</h4>
             <p className="text-sm text-gray-600 leading-relaxed">
               "Your Producer dimension shows the strongest alignment across Current State,
-              Role Expectations, and Intrinsic Preference."
+              Role Expectations, and My Natural Preference."
             </p>
           </div>
         </div>
@@ -206,7 +206,7 @@ function WhyDifferentSection() {
 
 function WhatYouReceiveSection() {
   const items = [
-    { icon: <BarChart3 className="h-5 w-5" />, title: "Energy Alignment Matrix", desc: "See how Current State, Role Expectations, and Intrinsic Preferences align across P, A, E, and I dimensions." },
+    { icon: <BarChart3 className="h-5 w-5" />, title: "Energy Alignment Matrix", desc: "See how Current State, Role Expectations, and My Natural Preferences align across P, A, E, and I dimensions." },
     { icon: <Target className="h-5 w-5" />, title: "Gap Map", desc: "Identify your largest execution, engagement, and authenticity tensions." },
     { icon: <TrendingUp className="h-5 w-5" />, title: "What This Means", desc: "Translate patterns into practical leadership implications." },
     { icon: <Shield className="h-5 w-5" />, title: "Early Warning Signals", desc: "Surface patterns that may create friction, strain, or leadership drift." },

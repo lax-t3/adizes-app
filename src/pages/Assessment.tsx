@@ -301,7 +301,7 @@ export function Assessment() {
                   The 36 questions are divided into three short sections:{" "}
                   <strong>Current State</strong>,{" "}
                   <strong>Role Expectations</strong>, and{" "}
-                  <strong>Intrinsic Preference</strong>.
+                  <strong>My Natural Preference</strong>.
                 </p>
                 <p className="text-gray-500 italic">
                   There are no ideal profiles. LEAP is designed to help surface patterns of alignment,

@@ -14,9 +14,9 @@ const GAP_TYPE_META: Record<TopGap["gap_type"], {
   lensA: keyof Props["display_scores"]; lensALabel: string;
   lensB: keyof Props["display_scores"]; lensBLabel: string;
 }> = {
-  execution:    { label: "Execution Gap",    formula: "Role Expectations − Current State",        lensA: "should", lensALabel: "Role Expectations",   lensB: "is",   lensBLabel: "Current State"        },
-  engagement:   { label: "Engagement Gap",   formula: "Role Expectations − Intrinsic Preference", lensA: "should", lensALabel: "Role Expectations",   lensB: "want", lensBLabel: "Intrinsic Preference" },
-  authenticity: { label: "Authenticity Gap", formula: "Current State − Intrinsic Preference",      lensA: "is",     lensALabel: "Current State",        lensB: "want", lensBLabel: "Intrinsic Preference" },
+  execution:    { label: "Execution Gap",    formula: "Role Expectations VS Current State",        lensA: "should", lensALabel: "Role Expectations",   lensB: "is",   lensBLabel: "Current State"        },
+  engagement:   { label: "Engagement Gap",   formula: "Role Expectations VS My Natural Preference", lensA: "should", lensALabel: "Role Expectations",   lensB: "want", lensBLabel: "My Natural Preference" },
+  authenticity: { label: "Authenticity Gap", formula: "Current State VS My Natural Preference",      lensA: "is",     lensALabel: "Current State",        lensB: "want", lensBLabel: "My Natural Preference" },
 };
 
 function SeverityPill({ severity }: { severity: TopGap["severity"] }) {

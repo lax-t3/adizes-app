@@ -17,7 +17,7 @@ const ROLE_META: Record<typeof ROLES[number], { label: string; color: string }> 
 const LENSES: { key: keyof Props["display_scores"]; label: string; shortLabel: string; dimmed?: boolean }[] = [
   { key: "is",     label: "Current State",        shortLabel: "Current"   },
   { key: "should", label: "Role Expectations",    shortLabel: "Role"      },
-  { key: "want",   label: "Intrinsic Preference", shortLabel: "Intrinsic", dimmed: true },
+  { key: "want",   label: "My Natural Preference", shortLabel: "Natural", dimmed: true },
 ];
 
 export function EnergyMatrix({ display_scores }: Props) {
@@ -35,7 +35,7 @@ export function EnergyMatrix({ display_scores }: Props) {
             </span>
           ))}
         </div>
-        <InfoTooltip text="Each role section shows three bars: Current State (how you currently operate), Role Expectations (what your role demands), and Intrinsic Preference (your natural tendency, shown lighter). Bars show the percentage of total energy per role. Each set of three sums to 100%." />
+        <InfoTooltip text="Each role section shows three bars: Current State (how you currently operate), Role Expectations (what your role demands), and My Natural Preference (your natural tendency, shown lighter). Bars show the percentage of total energy per role. Each set of three sums to 100%." />
       </div>
 
       {ROLES.map((role) => {

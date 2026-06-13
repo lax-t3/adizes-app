@@ -126,7 +126,7 @@ const assessmentGuide: FAQItem[] = [
     a: [
       "Your results open automatically after you submit the assessment.",
       "You can also return to them any time from your Dashboard — click View Results next to your completed cohort.",
-      "The results include your PAEI profile, a chart comparing Current State / Role Expectations / Intrinsic Preference, a gap analysis, and a personalised style interpretation.",
+      "The results include your PAEI profile, a chart comparing Current State / Role Expectations / My Natural Preference, a gap analysis, and a personalised style interpretation.",
     ],
   },
   {

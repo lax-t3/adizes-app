@@ -236,10 +236,10 @@ export function AdminRespondent() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 Style Comparison
-                <InfoTooltip text="Three rows for three dimensions: 'Current State' = how the respondent currently behaves. 'Role Expectations' = what their role demands. 'Intrinsic Preference' = their natural preference. Gaps between rows reveal where role demands and instincts diverge." />
+                <InfoTooltip text="Three rows for three dimensions: 'Current State' = how the respondent currently behaves. 'Role Expectations' = what their role demands. 'My Natural Preference' = their natural preference. Gaps between rows reveal where role demands and instincts diverge." />
               </CardTitle>
               <CardDescription>
-                Visual representation of Current State, Role Expectations, and Intrinsic Preference.
+                Visual representation of Current State, Role Expectations, and My Natural Preference.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -252,7 +252,7 @@ export function AdminRespondent() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 Gap Analysis
-                <InfoTooltip text="Top misalignments across the three dimensions. Execution Gap = Role Expectations vs Current State. Engagement Gap = Role Expectations vs Intrinsic Preference. Authenticity Gap = Current State vs Intrinsic Preference." />
+                <InfoTooltip text="Top misalignments across the three dimensions. Execution Gap = Role Expectations VS Current State. Engagement Gap = Role Expectations VS My Natural Preference. Authenticity Gap = Current State VS My Natural Preference." />
               </CardTitle>
               <CardDescription>
                 Most significant energy misalignments detected.
