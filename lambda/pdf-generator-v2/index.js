@@ -122,8 +122,13 @@ exports.handler = async (event) => {
     CacheControl:  'no-cache, no-store, must-revalidate',
   }));
 
-  const pdfUrl = `https://${process.env.S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`;
-  console.log(`[pdf-v2] Uploaded to S3: ${pdfUrl}`);
+  // Public URL — defaults to the S3 REST endpoint, overridable to a custom
+  // domain (e.g. the Cloudflare-fronted https://leap-reports.turiyaskills.co)
+  // via PDF_PUBLIC_BASE_URL. The object still lives in S3_BUCKET_NAME.
+  const publicBase = (process.env.PDF_PUBLIC_BASE_URL
+    || `https://${process.env.S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com`).replace(/\/+$/, '');
+  const pdfUrl = `${publicBase}/${key}`;
+  console.log(`[pdf-v2] Uploaded to S3, public URL: ${pdfUrl}`);
 
   // ── PATCH Supabase assessments.pdf_url ─────────────────────────────────────
   for (let attempt = 1; attempt <= 2; attempt++) {

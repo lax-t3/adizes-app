@@ -12,6 +12,9 @@ IMAGE_URI="${ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com/${ECR_REPO}:latest"
 : "${SUPABASE_URL:?Need to set SUPABASE_URL}"
 : "${SUPABASE_SERVICE_ROLE_KEY:?Need to set SUPABASE_SERVICE_ROLE_KEY}"
 : "${S3_BUCKET_NAME:?Need to set S3_BUCKET_NAME}"
+# Public base for report URLs — custom domain (Cloudflare → S3). Falls back to
+# the S3 REST endpoint inside the Lambda if unset.
+: "${PDF_PUBLIC_BASE_URL:=https://leap-reports.turiyaskills.co}"
 
 # ── Copy logo from frontend repo ───────────────────────────────────────────────
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -52,7 +55,7 @@ if aws lambda get-function --function-name "$LAMBDA_NAME" --region "$REGION" 2>/
     --timeout 90 \
     --memory-size 1024 \
     --region "$REGION" \
-    --environment "Variables={SUPABASE_URL=${SUPABASE_URL},SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY},S3_BUCKET_NAME=${S3_BUCKET_NAME}}"
+    --environment "Variables={SUPABASE_URL=${SUPABASE_URL},SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY},S3_BUCKET_NAME=${S3_BUCKET_NAME},PDF_PUBLIC_BASE_URL=${PDF_PUBLIC_BASE_URL}}"
 else
   echo "Creating new Lambda function..."
   aws lambda create-function \
@@ -64,7 +67,7 @@ else
     --memory-size 1024 \
     --architectures x86_64 \
     --region "$REGION" \
-    --environment "Variables={SUPABASE_URL=${SUPABASE_URL},SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY},S3_BUCKET_NAME=${S3_BUCKET_NAME}}"
+    --environment "Variables={SUPABASE_URL=${SUPABASE_URL},SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY},S3_BUCKET_NAME=${S3_BUCKET_NAME},PDF_PUBLIC_BASE_URL=${PDF_PUBLIC_BASE_URL}}"
   aws lambda wait function-active \
     --function-name "$LAMBDA_NAME" \
     --region "$REGION"
