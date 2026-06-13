@@ -18,17 +18,45 @@ view a PAEI alignment dashboard, and download a full PDF report.
 
 All branches live at: **https://github.com/lax-t3/adizes-app**
 
+## Brand Identity (canonical — 2026-06-11)
+
+```
+LEAP™                                          ← primary brand name
+Leadership Energy Alignment Profile            ← descriptor
+Developed by the Heartfulness Institute of Leadership  ← owner/developer
+Powered by the Adizes PAEI Framework          ← methodology
+```
+
+**Rules:**
+- The HIL isotype (three-petal loop symbol, `/public/HIL-Isotope.png`) is the **primary visual anchor** on all surfaces.
+- Adizes is referenced only as "Powered by the Adizes PAEI Framework" — never as a logo or primary visual identifier.
+- "Turiyaskills" appears only as a small technical note in footer/admin sidebar — not in emails.
+- Email templates use a uniform navy header band: `#1D3557` background, HIL isotope circle (inline SVG), "LEAP™" bold white, "Leadership Energy Alignment Profile" right-aligned.
+
+**Email header band spec:**
+- Background: `#1D3557` (navy), red stripe `#C8102E` 3px at bottom
+- Circle: 44×44px, `#2A4A6B` fill, HIL trefoil SVG (white stroke, `stroke-width: 2.4`)
+- LEAP™: Arial bold 22px white; descriptor: Arial 11px `#a0b4c8`
+- Implemented in `adizes-backend/app/services/email_service.py` → `_EMAIL_WRAPPER_OPEN`
+
+**Brand assets in adizes-frontend/public:**
+| Asset | File | Usage |
+|-------|------|-------|
+| HIL isotype (colour) | `HIL-Isotope.png` | Navbar, sidebar, footer, apple-touch-icon, OG image |
+| HIL isotype (blue wordmark) | `hil_blue.png` | Available for full wordmark use |
+| Favicon | `hil-favicon.png` | Browser tab + apple-touch-icon (HIL trefoil) — set in `index.html` (2026-06-13, replaced the old `icon.svg`/`icon.png` "A" placeholder) |
+
 ## Design Spec
 Full approved design: `docs/plans/2026-03-10-adizes-paei-app-design.md`
 Implementation plan: `docs/plans/2026-03-10-adizes-backend-implementation.md`
 
 ## PAEI Framework Quick Reference
-| Role | Code | Focus | Strength | Mismanagement extreme |
-|------|------|-------|----------|----------------------|
-| Producer | P | Results, short-term | Decisive, action-oriented | Lone Ranger |
-| Administrator | A | Process, systems | Reliable, thorough | Bureaucrat |
-| Entrepreneur | E | Change, vision | Innovative, creative | Arsonist |
-| Integrator | I | People, consensus | Nurturing, team builder | Super-Follower |
+| Role | Code | Focus | Strength | Stress trap (LEAP language) |
+|------|------|-------|----------|-----------------------------|
+| Producer | P | Results, short-term | Decisive, action-oriented | Dictator Trap |
+| Administrator | A | Process, systems | Reliable, thorough | Perfectionist Trap |
+| Entrepreneur | E | Change, vision | Innovative, creative | Know-It-All Trap |
+| Integrator | I | People, consensus | Nurturing, team builder | Harmony Trap |
 
 ## Assessment Structure — Adizes90 / LEAP™ (current tool)
 
@@ -244,12 +272,19 @@ export S3_BUCKET_NAME=adizes-pdf-reports
 - **PDF Lambda v2 is active** (`adizes-pdf-generator-v2`). Cutover/rollback is one App Runner env var:
   `PDF_LAMBDA_FUNCTION_NAME=adizes-pdf-generator-v2` (v2) or `=adizes-pdf-generator` (v1 rollback).
   V1 (`lambda/pdf-generator/`) is preserved deployed and untouched.
-- **PDF Lambda v2 report identity:** "LEAP™ — Leadership Energy Alignment Profile" — 5 pages, no Chart.js,
+- **PDF Lambda v2 report identity:** "LEAP™ — Leadership Energy Alignment Profile" — **5 pages**, no Chart.js,
   HTML div bars only. Three gap types (132-scale): Execution (`abs(should−is)`), Engagement (`abs(should−want)`),
   Authenticity (`abs(is−want)`). Severity thresholds: <6 low, 6–15 medium, >15 high.
-  Page 1 matrix: **3-row (IS/SHD/WNT) × 4-col (P/A/E/I) lens-rows table** — each cell shows a role-colored
-  progress bar and percentage; WNT row dimmed at 0.55 opacity. Gap pills, colored gap cards page 2, style hero
-  page 4 in dominant role color. Rebranded 2026-05-27 (was "PAEI Energy Alignment Profile" with 2×2 role-card grid).
+  **Page structure (redesigned 2026-06-10; HIL-review revision 2026-06-13):**
+  - Page 1 — Personal Snapshot: executive summary prose; **PAEI amplitude style code** (all four letters P A E I, font size ∝ Current-State score, role-colored); dominant role identity badge; at-your-best / friction callouts; top gap highlight card; **gap-definitions box** (one-line defs for the three gap types).
+  - Page 2 — Energy Alignment Matrix: 3-row (IS/SHD/WNT) × 4-col (P/A/E/I) lens-rows table; each cell has role-colored progress bar + percentage; WNT row dimmed at 0.55 opacity. Top-misalignment pills always show all three.
+  - Page 3 — Your Three Gaps: one gap card per gap type with **severity-colored** bars/accents (red/orange/yellow — role colors are reserved for the role circle only), severity badge, narrative, and a `daily_feel` callout. Gap formula reads "X **VS** Y" (not "−").
+  - Page 4 — Suggested Focus Areas: priority table (rows 1–4: Stretch / Balance / Protect / Complement), followed by a standalone **"Leveraging Your Strength"** block (Role Design — no longer a numbered table row).
+  - Page 5 — Stress Signature & next steps: **"Your Current Stress Signature"** narrative (stress labels tagged e.g. "Dictator Trap (P - Stressor)") + plain-English Early Warning Signs; **"Key Insights & Commitments"** write-in (My Top 3 Insights + My Next 3 Actions, blank lines — replaces the old guided-reflection questions); **"Continue the Conversation"** block linking to the `/leap-coaching` landing page.
+  - **Pagination:** the report is **exactly 5 A4 pages** — Page 3/5 spacing is tuned so content never overflows into header-less pages (verified via local Chrome render at the Lambda's margins).
+  **Header band (all pages):** solid navy `#1D3557` band, `rgba(255,255,255,0.15)` circle containing HIL-Isotope logo (`filter: brightness(0) invert(1)` knockout), "LEAP™" bold white left, page name right, `border-bottom: 3pt solid #C8102E` red accent stripe.
+  **Sample PDF URL:** `https://adizes-pdf-reports.s3.ap-south-1.amazonaws.com/reports/f17b1f2c-0273-4b5d-88d2-e27b826d1738.pdf`
+  (used on Dashboard "View Sample Report" button and `/leap` landing page CTA).
 - **Lambda invocation is synchronous (`RequestResponse`)**: backend calls Lambda and waits for the
   response. Lambda generates PDF → uploads to S3 → patches Supabase directly. Backend also patches
   Supabase from the returned `pdf_url` as a redundant safety net. Previously was fire-and-forget
@@ -380,14 +415,44 @@ export S3_BUCKET_NAME=adizes-pdf-reports
   LEAP prose card replaces YouTube embed; LEAP™ replaces AMSI in sticky assessment header; ranking instruction
   callout updated to "most/least applicable" framing; "Begin Section" → "Begin Questions".
   Backend: `SECTION_META` labels "Is"→"Current State", "Should"→"Role Expectations", "Want"→"Intrinsic Preference".
-  PDF Lambda v2: all 5 page headers/footers rebranded to LEAP™; page 1 matrix redesigned to lens-rows layout.
+  PDF Lambda v2: all 5 page headers rebranded to LEAP™; page 1 matrix redesigned to lens-rows layout;
+  full 5-page report redesigned 2026-06-10 (see "PDF Lambda v2 report identity" key decision above).
   New public `/leap` landing page (no auth) with hero, tension cards, sample insights, comparison table, and CTA.
-  Lambda ECR redeployed with updated template (2026-05-27, SHA `e5a5875`).
+  Lambda ECR redeployed with redesigned template (2026-06-10).
   Remaining AMSI strings cleaned up (2026-05-27, commit `b4de9c1`): Landing.tsx h1 "management style" → "leadership
   alignment" + LEAP™ tagline description; UserHelp.tsx subtitle → "LEAP™ Assessment", results description uses
   "Current State / Role Expectations / Intrinsic Preference", footer attribution → LEAP™; AdminHelp.tsx subtitle +
   footer attribution → LEAP™; PolicyPage.tsx Terms §1 + Refund §1 "AMSI platform" → "LEAP™ platform".
-  Note: backend `adizes-backend` section label change is committed to git but requires ECR redeploy to go live on App Runner.
+- **PDF interpretation fields** (added 2026-06-10): `interpretation.py` returns `executive_summary` (str — 2-sentence
+  narrative) and `daily_feel` (dict — keyed `{role: {gap_type: str}}`, used in gap-card callouts on page 3).
+  These are absent from assessments submitted before the 2026-06-10 backend redeploy; the Lambda template guards
+  missing keys. **Note (2026-06-13):** `reflection_questions` was **removed** — page 5 now uses a static
+  "Key Insights & Commitments" write-in instead of generated questions.
+- **Dominant PAEI code is derived from Current State (`is`), not Want** (changed 2026-06-13). `interpret()` computes
+  `dominant` from `is_scores[r] > 33`. This drives the identity line, executive summary, stress-trap list, and the
+  Page-1 amplitude style-code sizing. The frontend profile badges + tooltips (Results / Dashboard / AdminRespondent)
+  read `profile.is` to match. New stress labels are tagged "(P - Stressor)" etc.; early-warning copy is plain English.
+- **LEAP report revision per HIL Zoom review** (2026-06-13, see `HIL_Adizes_India/docs/HIL's Zoom Meeting.md`):
+  is-based dominance; severity red/orange/yellow bands; "VS" gap formula; "Leveraging Your Strength" block;
+  Page-1 gap-definitions box + 4-letter amplitude style code; Page-5 write-in + "Continue the Conversation"
+  (→ `/leap-coaching`); "Current Stress Signature" header. Backend, Lambda, and frontend deployed 2026-06-13.
+  **Historical data fix:** 5 assessments submitted 2026-05-26/27 (before the section-fix migrations 012–014) had
+  wrong stored scores; all 12 completed assessments were recomputed from their stored `answers` rows and PDFs
+  regenerated. Recompute recipe = `score_answers(answers, db_section_map)` → `compute_gaps` → `interpret`, then
+  invoke `adizes-pdf-generator-v2` per assessment.
+- **Supabase Auth SMTP → SES** (fixed 2026-06-13): Supabase Auth had **no custom SMTP** (`smtp_host=null`), so its
+  own emails (self-registration confirmation) used the built-in mailer capped at `rate_limit_email_sent=2`/hr →
+  silent drops → "confirmation email not coming" + "password not recognized". Fixed via Management API
+  `PATCH /config/auth`: SMTP→SES (same creds as `app_settings`, sender `noreply@turiyaskills.co`),
+  `mailer_otp_exp` 3600→86400 (24h link life), `rate_limit_email_sent` 2→100. App templated emails (enrol/reset)
+  already went through SES directly and were unaffected — two separate mail systems. Managing Auth config needs a
+  Supabase **Personal Access Token** (`sbp_…`); the Management API is behind Cloudflare which blocks the Python
+  `urllib` user-agent (error 1010) — use `curl`.
+- **Auth reliability fixes** (2026-06-13): `email_service.send_email()` logs SMTP failures and returns a reliable
+  bool (never raises); admin invite/resend endpoints report the true send status. `_action_link()` in `admin.py`
+  returns None on `generate_link` failure and the email is skipped — no more tokenless homepage "invite" links that
+  left users unable to set a password. `list_all_auth_users()` in `database.py` paginates past GoTrue's first-page
+  limit; all six `auth.admin.list_users()` enumeration sites now use it.
 
 ## Known Gotchas (Local Dev)
 
