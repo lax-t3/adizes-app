@@ -7,8 +7,10 @@ class CoachingLeadRequest(BaseModel):
     """Public lead-capture submission from the /leap-coaching form."""
     name: str
     email: EmailStr
-    phone: Optional[str] = None
     organization: Optional[str] = None
+    designation: Optional[str] = None
+    country: Optional[str] = None
+    phone: Optional[str] = None
     message: Optional[str] = None
     source: Optional[str] = "leap-coaching"
 
@@ -17,8 +19,10 @@ class CoachingLead(BaseModel):
     id: str
     name: str
     email: str
-    phone: Optional[str] = None
     organization: Optional[str] = None
+    designation: Optional[str] = None
+    country: Optional[str] = None
+    phone: Optional[str] = None
     message: Optional[str] = None
     source: str
     actioned: bool

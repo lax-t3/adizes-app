@@ -37,8 +37,10 @@ def submit_coaching_lead(body: CoachingLeadRequest):
     row = {
         "name": body.name.strip(),
         "email": str(body.email),
-        "phone": (body.phone or "").strip() or None,
         "organization": (body.organization or "").strip() or None,
+        "designation": (body.designation or "").strip() or None,
+        "country": (body.country or "").strip() or None,
+        "phone": (body.phone or "").strip() or None,
         "message": (body.message or "").strip() or None,
         "source": body.source or "leap-coaching",
     }
@@ -55,8 +57,10 @@ def submit_coaching_lead(body: CoachingLeadRequest):
             "recipient_email": LEAD_NOTIFY_EMAIL,
             "lead_name": row["name"],
             "lead_email": row["email"],
-            "lead_phone": row["phone"] or "—",
             "lead_organization": row["organization"] or "—",
+            "lead_designation": row["designation"] or "—",
+            "lead_country": row["country"] or "—",
+            "lead_phone": row["phone"] or "—",
             "lead_message": row["message"] or "—",
             "captured_at": lead.get("created_at", ""),
             "platform_name": "LEAP™ Platform",
@@ -108,6 +112,18 @@ def export_coaching_leads(admin: dict = Depends(require_admin)):
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={"Content-Disposition": 'attachment; filename="coaching_leads.xlsx"'},
     )
+
+
+@admin_router.get("/count")
+def coaching_leads_count(admin: dict = Depends(require_admin)):
+    """Pending (not-yet-actioned) lead count — used for the sidebar badge."""
+    rows = (
+        supabase_admin.table("coaching_leads")
+        .select("id", count="exact")
+        .eq("actioned", False)
+        .execute()
+    )
+    return {"pending": rows.count or 0}
 
 
 @admin_router.get("/{lead_id}")

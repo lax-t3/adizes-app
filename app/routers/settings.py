@@ -17,7 +17,7 @@ TEMPLATE_VARIABLES = {
     "user_enrolled": ["user_name", "user_email", "cohort_name", "invite_link", "platform_name", "platform_url"],
     "admin_invite": ["admin_name", "admin_email", "invite_link", "platform_name", "platform_url"],
     "assessment_complete": ["user_name", "user_email", "cohort_name", "dominant_style", "platform_name", "platform_url"],
-    "coaching_lead": ["lead_name", "lead_email", "lead_phone", "lead_organization", "lead_message", "captured_at", "platform_name"],
+    "coaching_lead": ["lead_name", "lead_email", "lead_organization", "lead_designation", "lead_country", "lead_phone", "lead_message", "captured_at", "platform_name"],
 }
 
 

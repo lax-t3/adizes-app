@@ -16,7 +16,7 @@ def generate_coaching_leads_xlsx(leads: List[Dict]) -> bytes:
     ws = wb.active
     ws.title = "Coaching Leads"
 
-    headers = ["Captured At", "Name", "Email", "Phone", "Organization", "Message", "Source", "Actioned"]
+    headers = ["Captured At", "Name", "Email", "Organization", "Designation", "Country", "Phone", "Message", "Source", "Actioned"]
     ws.append(headers)
     header_fill = PatternFill("solid", fgColor="1D3557")
     for cell in ws[1]:
@@ -28,14 +28,16 @@ def generate_coaching_leads_xlsx(leads: List[Dict]) -> bytes:
             str(lead.get("created_at", "") or ""),
             lead.get("name", "") or "",
             lead.get("email", "") or "",
-            lead.get("phone", "") or "",
             lead.get("organization", "") or "",
+            lead.get("designation", "") or "",
+            lead.get("country", "") or "",
+            lead.get("phone", "") or "",
             lead.get("message", "") or "",
             lead.get("source", "") or "",
             "Yes" if lead.get("actioned") else "No",
         ])
 
-    widths = [22, 22, 28, 16, 24, 50, 16, 10]
+    widths = [22, 22, 28, 24, 20, 16, 16, 50, 16, 10]
     for i, w in enumerate(widths, start=1):
         ws.column_dimensions[ws.cell(row=1, column=i).column_letter].width = w
 
