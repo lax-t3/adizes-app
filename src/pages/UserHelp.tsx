@@ -177,7 +177,7 @@ const contactCards = [
     icon: "🏢",
     label: "Programme & Cohort Queries",
     description: "Questions about your cohort, invitation, or programme logistics",
-    email: "support@hileadership.com",
+    email: "hello@hileadership.org",
   },
   {
     icon: "⚙️",
@@ -256,7 +256,7 @@ export function UserHelp() {
             LEAP™ — Leadership Energy Alignment Profile — is developed by the Heartfulness Institute of Leadership,
             powered by the Adizes PAEI Framework.
             For programme questions contact{" "}
-            <a href="mailto:support@hileadership.com" className="text-primary hover:underline">support@hileadership.com</a>.
+            <a href="mailto:hello@hileadership.org" className="text-primary hover:underline">hello@hileadership.org</a>.
             For technical issues contact{" "}
             <a href="mailto:team@turiyaskills.co" className="text-primary hover:underline">team@turiyaskills.co</a>.
           </p>

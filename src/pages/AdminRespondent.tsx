@@ -154,7 +154,7 @@ export function AdminRespondent() {
   const result = data.result;
   const { scaled_scores, gaps, profile, interpretation } = result;
 
-  const profileBadges = (profile.want ?? "paei").split("").map((char) => {
+  const profileBadges = (profile.is ?? "paei").split("").map((char) => {
     const role = char.toUpperCase() as "P" | "A" | "E" | "I";
     const isDominant = char === char.toUpperCase();
     return { role, char, isDominant };
@@ -193,7 +193,7 @@ export function AdminRespondent() {
                     )
                   )}
                 </div>
-                <InfoTooltip text="PAEI profile from the 'Want' dimension. CAPITAL = dominant role (above 33 out of 132 — its proportional share — is considered dominant). Lowercase = non-dominant. Role colours: P = red, A = navy, E = amber, I = teal." />
+                <InfoTooltip text="PAEI profile from the 'Current State' dimension — how the respondent behaves today. CAPITAL = dominant role (above 33 out of 132 — its proportional share — is considered dominant). Lowercase = non-dominant. Role colours: P = red, A = navy, E = amber, I = teal." />
               </div>
               <div className="flex flex-col items-end gap-1">
                 {pdfUrl ? (
@@ -290,7 +290,7 @@ export function AdminRespondent() {
                 </div>
                 <CardTitle className="text-2xl font-display flex items-center gap-2">
                   Style Interpretation
-                  <InfoTooltip text="Derived from the dominant 'Want' role. Describes natural leadership and collaboration tendencies. Strengths = core assets. Watchouts = areas for development. Working with Others = how to adapt to colleagues with different styles." />
+                  <InfoTooltip text="Derived from the dominant 'Current State' role. Describes current leadership and collaboration tendencies. Strengths = core assets. Watchouts = areas for development. Working with Others = how to adapt to colleagues with different styles." />
                 </CardTitle>
                 {interpretation.combined_description && (
                   <CardDescription className="text-base">{interpretation.combined_description}</CardDescription>

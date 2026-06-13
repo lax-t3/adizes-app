@@ -113,7 +113,7 @@ export function Results() {
   const { profile, scaled_scores, interpretation } = result;
   const topGaps = getTopGaps(result);
 
-  const profileBadges = (profile.want ?? "paei").split("").map((char) => {
+  const profileBadges = (profile.is ?? "paei").split("").map((char) => {
     const role = char.toUpperCase() as "P" | "A" | "E" | "I";
     const isDominant = char === char.toUpperCase();
     return { role, char, isDominant };
@@ -141,7 +141,7 @@ export function Results() {
             <div className="flex items-center gap-4 bg-gray-800/50 p-4 rounded-xl border border-gray-700 backdrop-blur-sm">
               <div className="flex items-center gap-1.5">
                 <span className="text-sm text-gray-400 font-medium uppercase tracking-wider">Dominant Style</span>
-                <InfoTooltip text="Your PAEI profile based on the 'Want' (Intrinsic Preference) dimension. A CAPITAL letter means that role's raw score exceeded 33 out of 132 (its proportional share). A lowercase letter means it scored 33 or below." />
+                <InfoTooltip text="Your PAEI profile based on the 'Current State' (Is) dimension — how you behave today. A CAPITAL letter means that role's raw score exceeded 33 out of 132 (its proportional share). A lowercase letter means it scored 33 or below." />
               </div>
               <div className="flex gap-1.5">
                 {profileBadges.map(({ role, char, isDominant }) =>
@@ -218,7 +218,7 @@ export function Results() {
                 </div>
                 <CardTitle className="text-2xl font-display flex items-center gap-2">
                   Style Interpretation
-                  <InfoTooltip text="Based on your dominant Intrinsic Preference roles. Describes how you naturally lead and collaborate. Strengths are your assets; Watchouts are where growth lies; Working with Others shows how to bridge style differences." />
+                  <InfoTooltip text="Based on your dominant Current State roles. Describes how you currently lead and collaborate. Strengths are your assets; Watchouts are where growth lies; Working with Others shows how to bridge style differences." />
                 </CardTitle>
                 {interpretation.combined_description && (
                   <CardDescription className="text-base">{interpretation.combined_description}</CardDescription>

@@ -26,6 +26,7 @@ import { ForgotPassword } from "./pages/ForgotPassword";
 import { ResetPassword } from "./pages/ResetPassword";
 import { PolicyPage } from "./pages/PolicyPage";
 import { LeapLanding } from "./pages/LeapLanding";
+import { LeapCoaching } from "./pages/LeapCoaching";
 import { Navbar } from "./components/layout/Navbar";
 import { Footer } from "./components/layout/Footer";
 import { AdminSidebar } from "./components/layout/AdminSidebar";
@@ -84,6 +85,7 @@ export default function App() {
         <Route path="/privacy" element={<PolicyPage slug="privacy" />} />
         <Route path="/refund" element={<PolicyPage slug="refund" />} />
         <Route path="/leap" element={<LeapLanding />} />
+        <Route path="/leap-coaching" element={<LeapCoaching />} />
         <Route path="/admin" element={<Landing />} />
         
         <Route element={<AuthGuard allowedRole="user" />}>

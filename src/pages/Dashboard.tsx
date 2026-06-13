@@ -138,7 +138,7 @@ function ResultsDashboard({ resultId }: { resultId: string }) {
   const { profile, scaled_scores, interpretation } = result;
   const topGaps = getTopGaps(result);
 
-  const profileBadges = (profile.want ?? "paei").split("").map((char) => {
+  const profileBadges = (profile.is ?? "paei").split("").map((char) => {
     const role = char.toUpperCase() as "P" | "A" | "E" | "I";
     const isDominant = char === char.toUpperCase();
     return { role, char, isDominant };
