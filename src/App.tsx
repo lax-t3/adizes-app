@@ -15,6 +15,7 @@ import { AdminCohorts } from "./pages/AdminCohorts";
 import { AdminCohortDetail } from "./pages/AdminCohortDetail";
 import { AdminRespondent } from "./pages/AdminRespondent";
 import { AdminUsers } from "./pages/AdminUsers";
+import { AdminCoachingLeads } from "./pages/AdminCoachingLeads";
 import { AdminSettings } from "./pages/AdminSettings";
 import { AdminHelp } from "./pages/AdminHelp";
 import { AdminOrganizations } from "./pages/AdminOrganizations";
@@ -64,6 +65,7 @@ function AdminLayout() {
           <Route path="/organizations/:orgId" element={<AdminOrgDetail />} />
           <Route path="/organizations/:orgId/reporting" element={<AdminOrgReportingTree />} />
           <Route path="/users" element={<AdminUsers />} />
+          <Route path="/coaching-leads" element={<AdminCoachingLeads />} />
           <Route path="/settings" element={<AdminSettings />} />
           <Route path="/help" element={<AdminHelp />} />
         </Routes>
