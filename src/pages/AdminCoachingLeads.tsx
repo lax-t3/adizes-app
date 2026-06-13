@@ -2,11 +2,12 @@ import { useEffect, useState, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
-import { Search, Download, Loader2, X, Mail, Phone, Building2, MessageSquare, Clock } from "lucide-react";
+import { Search, Download, Loader2, X, Mail, Phone, Building2, MessageSquare, Clock, Briefcase, Globe } from "lucide-react";
 import {
   listCoachingLeads, updateLeadActioned, downloadCoachingLeadsExport,
   type CoachingLead,
 } from "@/api/coaching";
+import { useCoachingLeadsStore } from "@/store/coachingLeadsStore";
 
 function fmt(ts?: string | null): string {
   if (!ts) return "—";
@@ -46,8 +47,10 @@ function LeadDetailModal({ lead, onClose }: { lead: CoachingLead; onClose: () =>
           </div>
           <div className="mt-4">
             <Row icon={<Mail className="h-4 w-4" />} label="Email" value={lead.email} href={`mailto:${lead.email}`} />
-            <Row icon={<Phone className="h-4 w-4" />} label="Phone" value={lead.phone} href={lead.phone ? `tel:${lead.phone}` : undefined} />
             <Row icon={<Building2 className="h-4 w-4" />} label="Organization" value={lead.organization} />
+            <Row icon={<Briefcase className="h-4 w-4" />} label="Designation" value={lead.designation} />
+            <Row icon={<Globe className="h-4 w-4" />} label="Country" value={lead.country} />
+            <Row icon={<Phone className="h-4 w-4" />} label="Phone" value={lead.phone} href={lead.phone ? `tel:${lead.phone}` : undefined} />
             <Row icon={<MessageSquare className="h-4 w-4" />} label="Message" value={lead.message} />
             <Row icon={<Clock className="h-4 w-4" />} label="Captured" value={fmt(lead.created_at)} />
           </div>
@@ -63,15 +66,19 @@ export function AdminCoachingLeads() {
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<CoachingLead | null>(null);
   const [exporting, setExporting] = useState(false);
+  const setPendingBadge = useCoachingLeadsStore((s) => s.setPending);
 
   const load = useCallback(async (q: string) => {
     setLoading(true);
     try {
-      setLeads(await listCoachingLeads(q));
+      const data = await listCoachingLeads(q);
+      setLeads(data);
+      // keep the sidebar badge in sync (only meaningful for the unfiltered list)
+      if (!q) setPendingBadge(data.filter((l) => !l.actioned).length);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [setPendingBadge]);
 
   useEffect(() => { load(""); }, [load]);
 
@@ -82,12 +89,16 @@ export function AdminCoachingLeads() {
   }, [query, load]);
 
   const toggleActioned = async (lead: CoachingLead, next: boolean) => {
-    // optimistic
-    setLeads((prev) => prev.map((l) => (l.id === lead.id ? { ...l, actioned: next } : l)));
+    // optimistic update of the list + the sidebar badge
+    const updated = leads.map((l) => (l.id === lead.id ? { ...l, actioned: next } : l));
+    setLeads(updated);
+    setPendingBadge(updated.filter((l) => !l.actioned).length);
     try {
       await updateLeadActioned(lead.id, next);
     } catch {
-      setLeads((prev) => prev.map((l) => (l.id === lead.id ? { ...l, actioned: !next } : l)));
+      const reverted = leads.map((l) => (l.id === lead.id ? { ...l, actioned: !next } : l));
+      setLeads(reverted);
+      setPendingBadge(reverted.filter((l) => !l.actioned).length);
     }
   };
 
@@ -99,7 +110,7 @@ export function AdminCoachingLeads() {
   const pending = leads.filter((l) => !l.actioned).length;
 
   return (
-    <div className="space-y-6">
+    <div className="p-4 sm:p-8 space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Coaching Leads</h1>

@@ -148,7 +148,8 @@ function FinalCTASection({ onSchedule }: { onSchedule: () => void }) {
 }
 
 function LeadFormModal({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const [form, setForm] = useState({ name: "", email: "", phone: "", organization: "", message: "" });
+  const EMPTY = { name: "", email: "", organization: "", designation: "", country: "", phone: "", message: "" };
+  const [form, setForm] = useState(EMPTY);
   const [status, setStatus] = useState<"idle" | "submitting" | "done" | "error">("idle");
   const [error, setError] = useState("");
 
@@ -160,7 +161,7 @@ function LeadFormModal({ open, onClose }: { open: boolean; onClose: () => void }
   const close = () => {
     onClose();
     // reset shortly after closing so the success state isn't visible while it fades
-    setTimeout(() => { setStatus("idle"); setForm({ name: "", email: "", phone: "", organization: "", message: "" }); setError(""); }, 200);
+    setTimeout(() => { setStatus("idle"); setForm(EMPTY); setError(""); }, 200);
   };
 
   const submit = async (e: React.FormEvent) => {
@@ -171,8 +172,10 @@ function LeadFormModal({ open, onClose }: { open: boolean; onClose: () => void }
       await submitCoachingLead({
         name: form.name.trim(),
         email: form.email.trim(),
-        phone: form.phone.trim() || undefined,
         organization: form.organization.trim() || undefined,
+        designation: form.designation.trim() || undefined,
+        country: form.country.trim() || undefined,
+        phone: form.phone.trim() || undefined,
         message: form.message.trim() || undefined,
       });
       setStatus("done");
@@ -214,14 +217,22 @@ function LeadFormModal({ open, onClose }: { open: boolean; onClose: () => void }
                 <label className="block text-xs font-semibold text-gray-700 mb-1">Email <span className="text-[#C8102E]">*</span></label>
                 <input type="email" value={form.email} onChange={set("email")} required className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1D3557]/30 focus:border-[#1D3557]" />
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-gray-700 mb-1">Phone</label>
-                  <input value={form.phone} onChange={set("phone")} className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1D3557]/30 focus:border-[#1D3557]" />
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">Organization</label>
+                <input value={form.organization} onChange={set("organization")} className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1D3557]/30 focus:border-[#1D3557]" />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">Designation</label>
+                <input value={form.designation} onChange={set("designation")} className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1D3557]/30 focus:border-[#1D3557]" />
+              </div>
+              <div className="grid grid-cols-3 gap-4">
+                <div className="col-span-1">
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">Country</label>
+                  <input value={form.country} onChange={set("country")} placeholder="e.g. India" className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1D3557]/30 focus:border-[#1D3557]" />
                 </div>
-                <div>
-                  <label className="block text-xs font-semibold text-gray-700 mb-1">Organization</label>
-                  <input value={form.organization} onChange={set("organization")} className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1D3557]/30 focus:border-[#1D3557]" />
+                <div className="col-span-2">
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">Phone</label>
+                  <input value={form.phone} onChange={set("phone")} placeholder="+91 …" className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1D3557]/30 focus:border-[#1D3557]" />
                 </div>
               </div>
               <div>

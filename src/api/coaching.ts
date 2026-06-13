@@ -3,8 +3,10 @@ import { apiClient } from "./client";
 export interface CoachingLeadInput {
   name: string;
   email: string;
-  phone?: string;
   organization?: string;
+  designation?: string;
+  country?: string;
+  phone?: string;
   message?: string;
 }
 
@@ -12,8 +14,10 @@ export interface CoachingLead {
   id: string;
   name: string;
   email: string;
-  phone?: string | null;
   organization?: string | null;
+  designation?: string | null;
+  country?: string | null;
+  phone?: string | null;
   message?: string | null;
   source: string;
   actioned: boolean;
@@ -24,6 +28,12 @@ export interface CoachingLead {
 /** Public — submit the "Schedule a Conversation" lead form (no auth). */
 export async function submitCoachingLead(input: CoachingLeadInput): Promise<void> {
   await apiClient.post("/coaching/leads", input);
+}
+
+/** Admin — count of pending (not-yet-actioned) leads, for the sidebar badge. */
+export async function getCoachingLeadsPendingCount(): Promise<number> {
+  const { data } = await apiClient.get<{ pending: number }>("/admin/coaching-leads/count");
+  return data.pending;
 }
 
 /** Admin — list leads, optionally filtered by search query. */

@@ -1,13 +1,20 @@
-import { useState } from "react";
-import { NavLink, useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import { useAuthStore } from "@/store/authStore";
+import { useCoachingLeadsStore } from "@/store/coachingLeadsStore";
 import { LayoutDashboard, Users, LogOut, ShieldCheck, Settings, HelpCircle, Menu, Building2, MessageCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export function AdminSidebar() {
   const { logout } = useAuthStore();
   const navigate = useNavigate();
+  const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  const pendingLeads = useCoachingLeadsStore((s) => s.pending);
+  const refreshLeads = useCoachingLeadsStore((s) => s.refresh);
+  // Refresh the pending-lead count on mount and whenever the admin navigates.
+  useEffect(() => { refreshLeads(); }, [location.pathname, refreshLeads]);
 
   const handleLogout = () => {
     logout();
@@ -62,7 +69,15 @@ export function AdminSidebar() {
                     )}
                     aria-hidden="true"
                   />
-                  {item.name}
+                  <span className="flex-1">{item.name}</span>
+                  {item.to === "/admin/coaching-leads" && pendingLeads > 0 && (
+                    <span
+                      title={`${pendingLeads} new lead${pendingLeads === 1 ? "" : "s"} to action`}
+                      className="ml-2 inline-flex min-w-[20px] items-center justify-center rounded-full bg-[#C8102E] px-1.5 py-0.5 text-[11px] font-bold leading-none text-white"
+                    >
+                      {pendingLeads}
+                    </span>
+                  )}
                 </>
               )}
             </NavLink>
