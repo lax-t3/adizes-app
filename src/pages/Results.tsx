@@ -173,7 +173,7 @@ export function Results() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <EnergyMatrix display_scores={scaled_scores} />
+                <EnergyMatrix display_scores={scaled_scores} gaps={result.gaps} />
               </CardContent>
             </Card>
           </motion.div>

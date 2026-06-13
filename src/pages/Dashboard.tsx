@@ -188,7 +188,7 @@ function ResultsDashboard({ resultId }: { resultId: string }) {
             <CardDescription>How your PAEI energy distributes across Current State, Role Expectations, and My Natural Preference.</CardDescription>
           </CardHeader>
           <CardContent>
-            <EnergyMatrix display_scores={scaled_scores} />
+            <EnergyMatrix display_scores={scaled_scores} gaps={result.gaps} />
           </CardContent>
         </Card>
 

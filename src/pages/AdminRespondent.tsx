@@ -243,7 +243,7 @@ export function AdminRespondent() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <EnergyMatrix display_scores={scaled_scores} />
+              <EnergyMatrix display_scores={scaled_scores} gaps={gaps} />
             </CardContent>
           </Card>
 
