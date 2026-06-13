@@ -7,6 +7,43 @@ import csv
 from typing import List, Dict
 
 
+def generate_coaching_leads_xlsx(leads: List[Dict]) -> bytes:
+    """Generate an .xlsx export of coaching leads for the admin panel."""
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Coaching Leads"
+
+    headers = ["Captured At", "Name", "Email", "Phone", "Organization", "Message", "Source", "Actioned"]
+    ws.append(headers)
+    header_fill = PatternFill("solid", fgColor="1D3557")
+    for cell in ws[1]:
+        cell.font = Font(bold=True, color="FFFFFF")
+        cell.fill = header_fill
+
+    for lead in leads:
+        ws.append([
+            str(lead.get("created_at", "") or ""),
+            lead.get("name", "") or "",
+            lead.get("email", "") or "",
+            lead.get("phone", "") or "",
+            lead.get("organization", "") or "",
+            lead.get("message", "") or "",
+            lead.get("source", "") or "",
+            "Yes" if lead.get("actioned") else "No",
+        ])
+
+    widths = [22, 22, 28, 16, 24, 50, 16, 10]
+    for i, w in enumerate(widths, start=1):
+        ws.column_dimensions[ws.cell(row=1, column=i).column_letter].width = w
+
+    buf = io.BytesIO()
+    wb.save(buf)
+    return buf.getvalue()
+
+
 def generate_cohort_csv(respondents: List[Dict]) -> bytes:
     """
     Generate CSV export for a cohort.

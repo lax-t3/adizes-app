@@ -251,7 +251,35 @@ def _password_reset_html() -> str:
     return _build_template("user_email", body)
 
 
+def _coaching_lead_html() -> str:
+    """Internal notification to hello@hileadership.org when a coaching lead is captured."""
+    body = f"""
+  <!-- Body -->
+  <tr>
+    <td style="padding:40px 48px 36px;" bgcolor="#ffffff">
+      <p style="margin:0 0 20px;font-family:Georgia,'Times New Roman',serif;font-size:22px;color:#1a1a1a;font-weight:400;line-height:1.35;">New LEAP&#8482; Coaching Lead</p>
+      <p style="margin:0 0 24px;font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#444444;line-height:1.75;">A visitor requested a coaching conversation via the LEAP&#8482; Coaching page. Details below.</p>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 24px;border:1px solid #e8e8e8;border-radius:6px;">
+        <tr><td style="padding:12px 16px;background-color:#f8fafc;border-bottom:1px solid #e8e8e8;font-family:Arial,Helvetica,sans-serif;font-size:12px;font-weight:700;color:#1D3557;width:140px;">Name</td><td style="padding:12px 16px;background-color:#ffffff;border-bottom:1px solid #e8e8e8;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#1a1a1a;">{{{{lead_name}}}}</td></tr>
+        <tr><td style="padding:12px 16px;background-color:#f8fafc;border-bottom:1px solid #e8e8e8;font-family:Arial,Helvetica,sans-serif;font-size:12px;font-weight:700;color:#1D3557;">Email</td><td style="padding:12px 16px;background-color:#ffffff;border-bottom:1px solid #e8e8e8;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#1a1a1a;"><a href="mailto:{{{{lead_email}}}}" style="color:#C8102E;text-decoration:none;">{{{{lead_email}}}}</a></td></tr>
+        <tr><td style="padding:12px 16px;background-color:#f8fafc;border-bottom:1px solid #e8e8e8;font-family:Arial,Helvetica,sans-serif;font-size:12px;font-weight:700;color:#1D3557;">Phone</td><td style="padding:12px 16px;background-color:#ffffff;border-bottom:1px solid #e8e8e8;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#1a1a1a;">{{{{lead_phone}}}}</td></tr>
+        <tr><td style="padding:12px 16px;background-color:#f8fafc;border-bottom:1px solid #e8e8e8;font-family:Arial,Helvetica,sans-serif;font-size:12px;font-weight:700;color:#1D3557;">Organization</td><td style="padding:12px 16px;background-color:#ffffff;border-bottom:1px solid #e8e8e8;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#1a1a1a;">{{{{lead_organization}}}}</td></tr>
+        <tr><td style="padding:12px 16px;background-color:#f8fafc;border-bottom:1px solid #e8e8e8;font-family:Arial,Helvetica,sans-serif;font-size:12px;font-weight:700;color:#1D3557;vertical-align:top;">Message</td><td style="padding:12px 16px;background-color:#ffffff;border-bottom:1px solid #e8e8e8;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#1a1a1a;line-height:1.6;">{{{{lead_message}}}}</td></tr>
+        <tr><td style="padding:12px 16px;background-color:#f8fafc;font-family:Arial,Helvetica,sans-serif;font-size:12px;font-weight:700;color:#1D3557;">Captured</td><td style="padding:12px 16px;background-color:#ffffff;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#1a1a1a;">{{{{captured_at}}}}</td></tr>
+      </table>
+      <p style="margin:0;font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#666666;line-height:1.7;">This lead has been saved to the LEAP&#8482; admin panel under <strong>Coaching Leads</strong>.</p>
+    </td>
+  </tr>"""
+    return _build_template("recipient_email", body)
+
+
 DEFAULT_TEMPLATES = {
+    "coaching_lead": {
+        "id": "coaching_lead",
+        "name": "Coaching Lead Notification",
+        "subject": "New LEAP™ Coaching Lead — {{lead_name}}",
+        "html_body": _coaching_lead_html(),
+    },
     "user_enrolled": {
         "id": "user_enrolled",
         "name": "User Enrollment Confirmation",

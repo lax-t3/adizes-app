@@ -4,7 +4,7 @@ from fastapi.responses import JSONResponse
 from postgrest.exceptions import APIError
 
 from app.config import settings
-from app.routers import auth, assessment, results, admin
+from app.routers import auth, assessment, results, admin, coaching
 from app.routers import settings as settings_router
 
 app = FastAPI(
@@ -26,6 +26,8 @@ app.include_router(assessment.router, prefix="/assessment", tags=["assessment"])
 app.include_router(results.router, prefix="/results", tags=["results"])
 app.include_router(admin.router, prefix="/admin", tags=["admin"])
 app.include_router(settings_router.router, prefix="/admin/settings", tags=["settings"])
+app.include_router(coaching.public_router, prefix="/coaching", tags=["coaching"])
+app.include_router(coaching.admin_router, prefix="/admin/coaching-leads", tags=["coaching-admin"])
 
 
 @app.exception_handler(APIError)
