@@ -283,8 +283,16 @@ export S3_BUCKET_NAME=adizes-pdf-reports
   - Page 5 — Stress Signature & next steps: **"Your Current Stress Signature"** narrative (stress labels tagged e.g. "Dictator Trap (P - Stressor)") + plain-English Early Warning Signs; **"Key Insights & Commitments"** write-in (My Top 3 Insights + My Next 3 Actions, blank lines — replaces the old guided-reflection questions); **"Continue the Conversation"** block linking to the `/leap-coaching` landing page.
   - **Pagination:** the report is **exactly 5 A4 pages** — Page 3/5 spacing is tuned so content never overflows into header-less pages (verified via local Chrome render at the Lambda's margins).
   **Header band (all pages):** solid navy `#1D3557` band, `rgba(255,255,255,0.15)` circle containing HIL-Isotope logo (`filter: brightness(0) invert(1)` knockout), "LEAP™" bold white left, page name right, `border-bottom: 3pt solid #C8102E` red accent stripe.
-  **Sample PDF URL:** `https://adizes-pdf-reports.s3.ap-south-1.amazonaws.com/reports/f17b1f2c-0273-4b5d-88d2-e27b826d1738.pdf`
+  **Sample PDF URL:** `https://leap-reports.turiyaskills.co/reports/f17b1f2c-0273-4b5d-88d2-e27b826d1738.pdf`
   (used on Dashboard "View Sample Report" button and `/leap` landing page CTA).
+- **Report URLs use the custom domain `leap-reports.turiyaskills.co`** (2026-06-13). PDFs still live in the
+  `adizes-pdf-reports` S3 bucket; the domain is a **Cloudflare-proxied CNAME** → a tiny **Cloudflare Worker**
+  (`leap-reports.turiyaskills.co/*`) that re-fetches from `adizes-pdf-reports.s3.ap-south-1.amazonaws.com`
+  (the Worker is needed because Cloudflare Pro can't override the origin Host header, and S3 selects the bucket
+  by Host). The Lambda builds the URL from env `PDF_PUBLIC_BASE_URL=https://leap-reports.turiyaskills.co`
+  (falls back to the raw S3 URL if unset — `index.js`). Existing rows were repointed by migration
+  `017_pdf_url_custom_domain.sql` (string-replace of the host). To revert: clear `PDF_PUBLIC_BASE_URL` on the
+  Lambda + reverse-replace the host in `assessments.pdf_url`.
 - **Lambda invocation is synchronous (`RequestResponse`)**: backend calls Lambda and waits for the
   response. Lambda generates PDF → uploads to S3 → patches Supabase directly. Backend also patches
   Supabase from the returned `pdf_url` as a redundant safety net. Previously was fire-and-forget
