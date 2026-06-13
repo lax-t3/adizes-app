@@ -31,7 +31,7 @@ const PROVIDER_HINTS: Record<string, string> = {
 function SmtpTab() {
   const [cfg, setCfg] = useState<SmtpConfig>({
     provider: "custom", host: "", port: 587, username: "",
-    password: "", from_email: "", from_name: "Adizes Platform", use_ssl: false,
+    password: "", from_email: "", from_name: "LEAP", use_ssl: false,
   });
   const [passwordSet, setPasswordSet] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -209,7 +209,7 @@ function SmtpTab() {
             value={cfg.from_name}
             onChange={e => setCfg(p => ({ ...p, from_name: e.target.value }))}
             className="w-full h-10 rounded-md border border-gray-300 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-            placeholder="Adizes Platform"
+            placeholder="LEAP"
           />
         </div>
 
