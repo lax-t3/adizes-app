@@ -7,6 +7,7 @@ class Settings(BaseSettings):
     supabase_service_role_key: str
     supabase_jwt_secret: str
     frontend_url: str = "http://localhost:5173"
+    platform_name: str = "LEAP Platform"  # display name in emails/subjects (was "Adizes India")
     # AWS Lambda PDF trigger
     aws_region: str = "ap-south-1"
     aws_access_key_id: str = ""

@@ -70,11 +70,11 @@ _EMAIL_WRAPPER_CLOSE = """\
     <td style="padding:0;background-color:#f8f8f8;border-top:1px solid #e8e8e8;" bgcolor="#f8f8f8">
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
         <tr><td align="center" style="padding:20px 48px 4px;">
-          <p style="margin:0;font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#888888;">Developed by Heartfulness Institute of Leadership</p>
+          <p style="margin:0;font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#888888;">&copy; 2026 Heartfulness Institute of Leadership</p>
         </td></tr>
         <tr><td align="center" style="padding:0 48px 24px;">
           <p style="margin:8px 0 0;font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#aaaaaa;line-height:1.6;">This email was sent to {{recipient_email}}</p>
-          <p style="margin:4px 0 0;font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#aaaaaa;">&copy; {{platform_name}} &middot; Powered by the Adizes PAEI Framework</p>
+          <p style="margin:4px 0 0;font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#aaaaaa;">Powered by the Adizes PAEI Framework &amp; Turiyaskills</p>
         </td></tr>
       </table>
     </td>

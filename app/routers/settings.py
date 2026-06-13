@@ -11,12 +11,13 @@ from app.services.email_service import (
 
 router = APIRouter()
 
-TEMPLATE_IDS = ["user_enrolled", "admin_invite", "assessment_complete", "coaching_lead"]
+TEMPLATE_IDS = ["user_enrolled", "admin_invite", "assessment_complete", "password_reset", "coaching_lead"]
 
 TEMPLATE_VARIABLES = {
     "user_enrolled": ["user_name", "user_email", "cohort_name", "invite_link", "platform_name", "platform_url"],
     "admin_invite": ["admin_name", "admin_email", "invite_link", "platform_name", "platform_url"],
     "assessment_complete": ["user_name", "user_email", "cohort_name", "dominant_style", "platform_name", "platform_url"],
+    "password_reset": ["user_name", "user_email", "reset_link", "platform_name", "platform_url"],
     "coaching_lead": ["lead_name", "lead_email", "lead_organization", "lead_designation", "lead_country", "lead_phone", "lead_message", "captured_at", "platform_name"],
 }
 
@@ -88,9 +89,9 @@ def test_smtp(body: TestEmailRequest, admin: dict = Depends(require_admin)):
     try:
         send_email(
             to_email=str(body.to_email),
-            subject="Test email from Adizes India",
+            subject="Test email from LEAP Platform",
             html_body=(
-                "<p>This is a test email from Adizes India.</p>"
+                "<p>This is a test email from the LEAP Platform.</p>"
                 "<p>If you received this, your SMTP settings are working correctly.</p>"
             ),
         )

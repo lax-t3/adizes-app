@@ -311,13 +311,13 @@ def _enroll_single_user(cohort_id: str, user_id: str, email: str,
             return
         send_template_email("user_enrolled", email, {
             "user_name": display_name, "cohort_name": cohort_name,
-            "platform_name": "Adizes India", "platform_url": settings.frontend_url,
+            "platform_name": settings.platform_name, "platform_url": settings.frontend_url,
             "invite_link": invite_link,
         })
     else:
         send_template_email("cohort_enrollment_existing", email, {
             "user_name": display_name, "cohort_name": cohort_name,
-            "platform_name": "Adizes India", "platform_url": settings.frontend_url,
+            "platform_name": settings.platform_name, "platform_url": settings.frontend_url,
         })
 
 
@@ -493,7 +493,7 @@ def bulk_enroll(cohort_id: str, body: BulkEnrollRequest, admin: dict = Depends(r
                         "user_name": user_name_val,
                         "user_email": email,
                         "cohort_name": cohort_name_for_bulk,
-                        "platform_name": "Adizes India",
+                        "platform_name": settings.platform_name,
                         "platform_url": settings.frontend_url,
                     })
                 elif invite_link_val:
@@ -502,7 +502,7 @@ def bulk_enroll(cohort_id: str, body: BulkEnrollRequest, admin: dict = Depends(r
                         "user_email": email,
                         "cohort_name": cohort_name_for_bulk,
                         "invite_link": invite_link_val,
-                        "platform_name": "Adizes India",
+                        "platform_name": settings.platform_name,
                         "platform_url": settings.frontend_url,
                     })
                 else:
@@ -565,7 +565,7 @@ def resend_enrollment_invite(cohort_id: str, user_id: str, admin: dict = Depends
             "user_name": user_name_val,
             "user_email": email,
             "cohort_name": cohort_name_val,
-            "platform_name": "Adizes India",
+            "platform_name": settings.platform_name,
             "platform_url": settings.frontend_url,
         })
     else:
@@ -579,7 +579,7 @@ def resend_enrollment_invite(cohort_id: str, user_id: str, admin: dict = Depends
             "user_email": email,
             "cohort_name": cohort_name_val,
             "invite_link": invite_link_val,
-            "platform_name": "Adizes India",
+            "platform_name": settings.platform_name,
             "platform_url": settings.frontend_url,
         })
 
@@ -650,7 +650,7 @@ def invite_admin(body: InviteAdminRequest, admin: dict = Depends(require_admin))
         "admin_name": body.name or body.email,
         "admin_email": body.email,
         "invite_link": invite_link_val,
-        "platform_name": "Adizes India",
+        "platform_name": settings.platform_name,
         "platform_url": settings.frontend_url,
     })
 
@@ -695,7 +695,7 @@ def resend_invite(user_id: str, admin: dict = Depends(require_admin)):
         "admin_name": admin_name,
         "admin_email": email,
         "invite_link": invite_link_val,
-        "platform_name": "Adizes India",
+        "platform_name": settings.platform_name,
         "platform_url": settings.frontend_url,
     })
     if not sent:
@@ -1210,7 +1210,7 @@ def _add_employee_to_node(
             emailed = send_template_email("org_welcome", email, {
                 "user_name": name,
                 "org_name": org_name,
-                "platform_name": "Adizes India",
+                "platform_name": settings.platform_name,
                 "platform_url": settings.frontend_url,
                 "activation_url": activation_url,
             })

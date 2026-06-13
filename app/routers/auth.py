@@ -202,8 +202,9 @@ def forgot_password(body: ForgotPasswordRequest):
         user_name = (getattr(target, "user_metadata", None) or {}).get("name") or body.email
         sent = send_template_email("password_reset", body.email, {
             "user_name": user_name,
+            "user_email": body.email,
             "reset_link": lr.properties.action_link,
-            "platform_name": "Adizes India",
+            "platform_name": settings.platform_name,
             "platform_url": settings.frontend_url,
         })
         if not sent:

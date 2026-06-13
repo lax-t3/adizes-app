@@ -252,7 +252,7 @@ def submit_assessment(body: SubmitRequest, background_tasks: BackgroundTasks, us
                 "user_email": user_email,
                 "cohort_name": cohort_name_for_email or "your cohort",
                 "dominant_style": dominant,
-                "platform_name": "Adizes India",
+                "platform_name": settings.platform_name,
                 "platform_url": settings.frontend_url,
                 "results_url": results_url,
             })
