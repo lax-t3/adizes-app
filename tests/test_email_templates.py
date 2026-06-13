@@ -45,10 +45,11 @@ class TestLeapBranding:
         assert "hil_blue.png" not in _EMAIL_WRAPPER_OPEN
 
     def test_email_header_has_leap_identity(self):
+        # Canonical email header (CLAUDE.md brand spec): navy band with LEAP™ +
+        # the "Leadership Energy Alignment Profile" descriptor.
         from app.services.email_service import _EMAIL_WRAPPER_OPEN
         assert "LEAP" in _EMAIL_WRAPPER_OPEN
         assert "Leadership Energy Alignment Profile" in _EMAIL_WRAPPER_OPEN
-        assert "How you lead today" in _EMAIL_WRAPPER_OPEN
 
     def test_email_footer_has_no_logo_images(self):
         from app.services.email_service import _EMAIL_WRAPPER_CLOSE

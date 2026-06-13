@@ -39,13 +39,14 @@ class TestCohortEnrollmentExistingTemplate:
         assert "html_body" in tmpl
 
     def test_template_subject_renders(self):
+        # Subject is LEAP-branded and carries the cohort name (post-rebrand it no
+        # longer interpolates platform_name).
         tmpl = DEFAULT_TEMPLATES["cohort_enrollment_existing"]
         rendered = _render(tmpl["subject"], {
             "cohort_name": "Batch 2026",
-            "platform_name": "Adizes India",
         })
         assert "Batch 2026" in rendered
-        assert "Adizes India" in rendered
+        assert "LEAP" in rendered
 
     def test_template_body_has_no_invite_link_placeholder(self):
         tmpl = DEFAULT_TEMPLATES["cohort_enrollment_existing"]

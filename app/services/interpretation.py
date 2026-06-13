@@ -1,7 +1,7 @@
 """
 Style Interpretation Service (v2)
 
-Detects dominant roles from 'Want' dimension (raw score > 33).
+Detects dominant roles from the 'Current State' (is) dimension (raw score > 33).
 Generates narrative content for all 5 PDF pages and the frontend results view.
 """
 
@@ -29,7 +29,7 @@ STYLE_DESCRIPTIONS = {
         "at_your_best": (
             "You are channelling decisive, results-focused energy. You set clear targets, "
             "move fast, and create momentum that others can follow. Your clarity of purpose "
-            "is contagious right now."
+            "is contagious right now. Your P dimension is firing on all cylinders."
         ),
         "friction_shows_up": (
             "You may be perceived as pushing too hard for results at the expense of process "
@@ -37,7 +37,7 @@ STYLE_DESCRIPTIONS = {
             "The P dimension is under pressure."
         ),
         "under_stress": (
-            "Dictator Trap — under prolonged stress you may become a domineering, go-it-alone "
+            "Dictator Trap (P - Stressor) — under prolonged stress you may become a domineering, go-it-alone "
             "bulldozer: bypassing others, dismissing input, and over-relying on your own execution."
         ),
     },
@@ -62,7 +62,7 @@ STYLE_DESCRIPTIONS = {
         "at_your_best": (
             "Your systematic and orderly nature is working at full capacity. You are "
             "creating reliability and precision that the team depends on. Structure that "
-            "seemed rigid is now the scaffold everyone is grateful for."
+            "seemed rigid is now the scaffold everyone is grateful for. Your A dimension is firing on all cylinders."
         ),
         "friction_shows_up": (
             "Resistance can surface when structure feels forced on others — or when lack of "
@@ -70,7 +70,7 @@ STYLE_DESCRIPTIONS = {
             "between expectation and reality is showing."
         ),
         "under_stress": (
-            "Perfectionist Trap — under prolonged stress you may become overly rigid, inflexible, "
+            "Perfectionist Trap (A - Stressor) — under prolonged stress you may become overly rigid, inflexible, "
             "and change-resistant: defending process for its own sake and blocking progress."
         ),
     },
@@ -95,7 +95,7 @@ STYLE_DESCRIPTIONS = {
         "at_your_best": (
             "Your creative, strategic radar is fully engaged. You are seeing opportunities "
             "others miss and generating ideas that challenge the status quo. Your energy "
-            "is infectious and people are following your lead."
+            "is infectious and people are following your lead. Your E dimension is firing on all cylinders."
         ),
         "friction_shows_up": (
             "Creative energy that isn't channelled can come across as distraction or "
@@ -103,7 +103,7 @@ STYLE_DESCRIPTIONS = {
             "the role needs it. The E dimension is under pressure."
         ),
         "under_stress": (
-            "Know-It-All Trap — under prolonged stress you may become impractical, chaotic, and "
+            "Know-It-All Trap (E - Stressor) — under prolonged stress you may become impractical, chaotic, and "
             "idea-without-delivery: starting fires, abandoning initiatives, and demoralising "
             "those tasked with execution."
         ),
@@ -129,7 +129,7 @@ STYLE_DESCRIPTIONS = {
         "at_your_best": (
             "Your empathy and listening are at their most effective. You are creating trust, "
             "resolving tensions, and holding the group together. The team is performing better "
-            "because you are in the room."
+            "because you are in the room. Your I dimension is firing on all cylinders."
         ),
         "friction_shows_up": (
             "Friction emerges when team cohesion is under stress — either from too much focus "
@@ -137,7 +137,7 @@ STYLE_DESCRIPTIONS = {
             "The I dimension is under pressure."
         ),
         "under_stress": (
-            "Harmony Trap — under prolonged stress you may become conflict-avoidant and "
+            "Harmony Trap (I - Stressor) — under prolonged stress you may become conflict-avoidant and "
             "politically spineless: giving vague answers, deferring to the loudest voice, "
             "and sacrificing honesty for the sake of harmony."
         ),
@@ -161,28 +161,28 @@ COMBINED_STYLES = {
 # direction: "high" = signed gap > 0 (first lens > second); "low" = signed < 0
 EARLY_WARNINGS = {
     "P": {
-        "execution_high":     "Strain from meeting execution demands beyond your current mode — watch for impatience or burnout.",
-        "execution_low":      "Effort leaking into P-behaviours the role doesn't require — redirect that energy intentionally.",
-        "authenticity_high":  "Sustained P-performance beyond your natural preference — fatigue builds slowly, look for delegation opportunities.",
-        "authenticity_low":   "P-instincts are underexpressed in current behaviour — frustration and loss of purpose may build.",
+        "execution_high":     "Your role is demanding more hands-on delivery than you're used to giving. Watch for impatience, a shorter fuse, or a creeping sense of burnout as you push to keep up.",
+        "execution_low":      "You're putting more drive into getting things done than the role actually needs. That extra push can spill over as restlessness — redirect it toward something that genuinely calls for your energy.",
+        "authenticity_high":  "You've been running in high-output mode for longer than feels natural to you. The fatigue builds slowly and quietly, so start looking for things to hand off before it catches up with you.",
+        "authenticity_low":   "You're holding back your natural drive for results. Over time this can feel like frustration or a loss of purpose — as if you're not doing the work you're built for.",
     },
     "A": {
-        "execution_high":     "Over-investing in structure beyond natural capacity — watch for rigidity or slowing decision-making.",
-        "execution_low":      "Under-delivering on process expectations — gaps in systems or quality may be emerging.",
-        "authenticity_high":  "Operating with more A-behaviour than feels natural — cognitive overhead; build templates to carry the load.",
-        "authenticity_low":   "Structure instincts suppressed — disorder or inefficiency may surface without you initially noticing.",
+        "execution_high":     "Your role is asking for more structure and process than feels natural right now. Watch for rigidity, over-checking, or decisions slowing down as you try to keep everything in order.",
+        "execution_low":      "You're delivering less process and rigour than the role expects. Small gaps in systems or quality may be starting to show — worth tightening before they grow.",
+        "authenticity_high":  "You're maintaining more order and discipline than comes naturally, and that carries a quiet mental cost. Build templates and checklists so the structure runs itself instead of leaning on you.",
+        "authenticity_low":   "Your instinct for order is being held back. Disorder or inefficiency may be creeping in around you without you noticing it at first.",
     },
     "E": {
-        "execution_high":     "Role demands innovation beyond current engagement level — idea drought or creative avoidance risk.",
-        "execution_low":      "Creative energy exceeds role need — restlessness or scattered priorities may be visible to others.",
-        "authenticity_high":  "Performing entrepreneurial behaviour without intrinsic energy — slow drain, protect your creative reserves.",
-        "authenticity_low":   "Entrepreneurial instincts underused — loss of strategic meaning or growing frustration with operational constraints.",
+        "execution_high":     "Your role needs more fresh thinking and initiative than you're currently bringing. Watch for an idea drought, or for quietly steering away from the creative parts of the work.",
+        "execution_low":      "You have more creative energy than the role can absorb right now. To others this can look like restlessness or scattered priorities — channel it into one clear project with a defined outcome.",
+        "authenticity_high":  "You're generating ideas because the role demands it, not because the spark is there. That slow drain is real, so protect your creative reserves and pace yourself.",
+        "authenticity_low":   "Your strategic, big-picture instincts are going unused. This can build into frustration with day-to-day constraints and a gradual loss of meaning in the work.",
     },
     "I": {
-        "execution_high":     "Role demands people investment beyond current behaviour — relationship debt accumulating.",
-        "execution_low":      "Over-investing in integration beyond role need — people-pleasing at the cost of results.",
-        "authenticity_high":  "More I-behaviour than feels natural — consensus-seeking becoming a drain; set relational limits.",
-        "authenticity_low":   "I-instincts suppressed — team connection weakening without you noticing until it becomes visible.",
+        "execution_high":     "Your role needs more investment in people and relationships than you're currently giving. Watch for relationship debt quietly building up as the pace crowds out genuine connection.",
+        "execution_low":      "You're investing more in harmony and relationships than the role calls for. Be careful this doesn't tip into people-pleasing at the expense of getting results.",
+        "authenticity_high":  "You're doing more consensus-building and smoothing-over than feels natural, and it's wearing you down. It's okay to set limits on how much you absorb on behalf of others.",
+        "authenticity_low":   "Your instinct to connect and support people is being held back. Team cohesion can weaken quietly until it suddenly becomes visible — keep an eye on the relationships around you.",
     },
 }
 
@@ -273,30 +273,6 @@ DAILY_FEEL = {
     },
 }
 
-REFLECTION_QUESTIONS = {
-    "P": [
-        "Where in the last month did you create momentum that others could follow? What made that possible?",
-        "What result are you currently pushing for that, honestly, someone else should own?",
-        "If you could change one thing about how your role measures success, what would it be?",
-    ],
-    "A": [
-        "Which system or process you've built are you most proud of — and is it still serving its purpose?",
-        "Where are you maintaining standards that the organisation no longer requires you to hold?",
-        "If you had to operate with 30% less process next quarter, what would you protect and what would you release?",
-    ],
-    "E": [
-        "Where in the last month did you feel most switched on? What were you doing?",
-        "What responsibility currently on your plate drains you most — and who else could own it?",
-        "If you could redesign your role with no constraints, what would you add first and remove first?",
-    ],
-    "I": [
-        "Which relationship at work most needs your investment right now — and what has been stopping you?",
-        "Where have you kept the peace when honest friction would have been more useful?",
-        "If your team described the environment you create, what would you want them to say — and what do you think they'd actually say?",
-    ],
-}
-
-
 def interpret(
     raw_scores: Dict[str, Dict[str, int]],
     profile: Dict[str, str],
@@ -314,13 +290,15 @@ def interpret(
     Returns:
         Dict with all fields for frontend display and PDF generation.
     """
-    want_scores = raw_scores["want"]
-    dominant = [r for r in ["P", "A", "E", "I"] if want_scores[r] > 33]
+    # Dominant PAEI code is derived from the Current State (is) lens — how the
+    # person actually behaves today — not from Intrinsic Preference (want).
+    is_scores = raw_scores["is"]
+    dominant = [r for r in ["P", "A", "E", "I"] if is_scores[r] > 33]
 
     if not dominant:
-        dominant = [max(want_scores, key=want_scores.get)]
+        dominant = [max(is_scores, key=is_scores.get)]
 
-    primary = max(dominant, key=lambda r: want_scores[r])
+    primary = max(dominant, key=lambda r: is_scores[r])
     desc = STYLE_DESCRIPTIONS[primary]
 
     combined_desc = None
@@ -378,7 +356,6 @@ def interpret(
         "early_warnings":      early_warnings,
         "executive_summary":    EXECUTIVE_SUMMARIES[primary].format(name=_first_name(user_name)),
         "daily_feel":           DAILY_FEEL,
-        "reflection_questions": REFLECTION_QUESTIONS[primary],
     }
 
 

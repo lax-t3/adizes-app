@@ -26,7 +26,7 @@ const ROLE_TINTS = {
 const GAP_TYPE_META = {
   execution: {
     label:      'Execution Gap',
-    formula:    'Role Expectations − Current State',
+    formula:    'Role Expectations VS Current State',
     lensA:      'should',
     lensALabel: 'Role Expectations',
     lensB:      'is',
@@ -34,7 +34,7 @@ const GAP_TYPE_META = {
   },
   engagement: {
     label:      'Engagement Gap',
-    formula:    'Role Expectations − Intrinsic Preference',
+    formula:    'Role Expectations VS Intrinsic Preference',
     lensA:      'should',
     lensALabel: 'Role Expectations',
     lensB:      'want',
@@ -42,7 +42,7 @@ const GAP_TYPE_META = {
   },
   authenticity: {
     label:      'Authenticity Gap',
-    formula:    'Current State − Intrinsic Preference',
+    formula:    'Current State VS Intrinsic Preference',
     lensA:      'is',
     lensALabel: 'Current State',
     lensB:      'want',

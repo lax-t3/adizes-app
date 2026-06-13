@@ -4,14 +4,16 @@ import pytest
 from app.services.interpretation import interpret
 
 
-def _scaled(want_overrides: dict = None):
+def _scaled(is_overrides: dict = None):
+    # Dominant PAEI code is derived from the Current State (is) lens, so test
+    # overrides are applied there.
     base = {
         "is":     {"P": 20, "A": 20, "E": 20, "I": 20},
         "should": {"P": 20, "A": 20, "E": 20, "I": 20},
         "want":   {"P": 20, "A": 20, "E": 20, "I": 20},
     }
-    if want_overrides:
-        base["want"].update(want_overrides)
+    if is_overrides:
+        base["is"].update(is_overrides)
     return base
 
 
@@ -56,6 +58,17 @@ class TestInterpret:
         assert result["combined_description"] is None or \
                len(result["combined_description"]) > 0
 
+    def test_dominant_uses_current_state_not_want(self):
+        # High score on the WANT lens must NOT drive dominance; the IS lens does.
+        scores = {
+            "is":     {"P": 20, "A": 45, "E": 20, "I": 20},
+            "should": {"P": 20, "A": 20, "E": 20, "I": 20},
+            "want":   {"P": 50, "A": 20, "E": 20, "I": 20},
+        }
+        result = interpret(scores, {})
+        assert result["dominant_roles"] == ["A"]
+        assert result["style_label"] == "Administrator"
+
 
 class TestInterpretNewFields:
     def test_executive_summary_present(self):
@@ -81,16 +94,11 @@ class TestInterpretNewFields:
                 assert gap_type in result["daily_feel"][role]
                 assert len(result["daily_feel"][role][gap_type]) > 20
 
-    def test_reflection_questions_present(self):
+    def test_reflection_questions_removed(self):
+        # Guided reflection questions were removed in favour of a Page 5 write-in
+        # layout — the field must no longer be emitted.
         result = interpret(_scaled({"E": 40}), {}, user_name="Bob")
-        assert "reflection_questions" in result
-        assert isinstance(result["reflection_questions"], list)
-        assert len(result["reflection_questions"]) == 3
-
-    def test_reflection_questions_e_content(self):
-        result = interpret(_scaled({"E": 40}), {}, user_name="Bob")
-        joined = " ".join(result["reflection_questions"])
-        assert len(joined) > 50
+        assert "reflection_questions" not in result
 
     def test_backward_compat_existing_keys_still_present(self):
         result = interpret(_scaled({"A": 40}), {}, user_name="Test")

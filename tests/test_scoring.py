@@ -88,8 +88,10 @@ class TestScoreAnswers:
 
     def test_min_raw_score_when_role_always_rank4(self):
         """Ranking P option rank 4 in all 12 Is questions → P(is) = 12."""
-        IS_INDICES = {0, 4, 7, 9, 10, 14, 19, 21, 23, 29, 33, 35}
-        p_opts = {0:"b", 4:"a", 7:"c", 9:"a", 10:"d", 14:"c", 19:"a", 21:"c", 23:"c", 29:"a", 33:"c", 35:"b"}
+        # Is questions and their P-option per the canonical SECTION_MAP / SCORING_KEY
+        # (Q26 is Is, not Q9 — corrected by migrations 013/014).
+        IS_INDICES = {0, 4, 7, 10, 14, 19, 21, 23, 26, 29, 33, 35}
+        p_opts = {0:"b", 4:"a", 7:"c", 10:"d", 14:"c", 19:"a", 21:"c", 23:"c", 26:"b", 29:"a", 33:"c", 35:"b"}
         answers = []
         for q in range(36):
             if q in IS_INDICES:
@@ -195,9 +197,9 @@ class TestDominanceFactor:
 
     def test_full_score_answers_with_dominance_total_132(self):
         """End-to-end: score_answers always returns raw totals = 132 per section."""
-        IS_INDICES = {0, 4, 7, 9, 10, 14, 19, 21, 23, 29, 33, 35}
-        # P option per Is question (from SCORING_KEY) — triggers P dominance boost
-        p_opts = {0:"b", 4:"a", 7:"c", 9:"a", 10:"d", 14:"c", 19:"a", 21:"c", 23:"c", 29:"a", 33:"c", 35:"b"}
+        # Is questions and their P-option per the canonical SECTION_MAP / SCORING_KEY.
+        IS_INDICES = {0, 4, 7, 10, 14, 19, 21, 23, 26, 29, 33, 35}
+        p_opts = {0:"b", 4:"a", 7:"c", 10:"d", 14:"c", 19:"a", 21:"c", 23:"c", 26:"b", 29:"a", 33:"c", 35:"b"}
         answers = []
         for q in range(36):
             if q in IS_INDICES:

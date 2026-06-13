@@ -11,10 +11,12 @@
   function pct(val) { return Math.round(val); }
   function signed(d) { return (d > 0 ? '+' : '') + d; }
 
+  // Severity uses universal red/orange/yellow bands (NOT PAEI role colours).
+  // `solid` is the band colour used for gap-intensity bars and accents.
   function severityBadge(sev) {
-    if (sev === 'high')   return { label: 'HIGH',     cls: 'sev-high',   color: '#991b1b', bg: '#fee2e2', border: '#fca5a5' };
-    if (sev === 'medium') return { label: 'MODERATE', cls: 'sev-medium', color: '#92400e', bg: '#fef9c3', border: '#fde68a' };
-    return                       { label: 'LOW',      cls: 'sev-low',    color: '#166534', bg: '#dcfce7', border: '#86efac' };
+    if (sev === 'high')   return { label: 'HIGH',     cls: 'sev-high',   color: '#991b1b', bg: '#fee2e2', border: '#fca5a5', solid: '#DC2626' };
+    if (sev === 'medium') return { label: 'MODERATE', cls: 'sev-medium', color: '#9a3412', bg: '#ffedd5', border: '#fdba74', solid: '#EA580C' };
+    return                       { label: 'LOW',      cls: 'sev-low',    color: '#854d0e', bg: '#fef9c3', border: '#fde047', solid: '#CA8A04' };
   }
 
   const dateStr = new Date(completed_at).toLocaleDateString('en-GB',
@@ -28,6 +30,8 @@
   const ROLE_FULL_NAMES = {
     P: 'Producer', A: 'Administrator', E: 'Entrepreneur', I: 'Integrator'
   };
+
+  const COACHING_URL = 'https://leap.turiyaskills.co/leap-coaching';
 %>
 
 <!-- ═══════════════════════════════════════════════════════════
@@ -42,10 +46,23 @@
     <span class="header-tagline">Leadership Energy Alignment Profile</span>
   </div>
 
-  <!-- Name + date + identity badge -->
+  <!-- Name + date + PAEI amplitude style code + identity badge -->
   <div class="snapshot-hero">
     <div class="snapshot-name"><%= user_name %></div>
     <div class="snapshot-date"><%= dateStr %></div>
+
+    <!-- PAEI amplitude style code — letter size ∝ Current State (is) score -->
+    <div class="style-code">
+      <% ROLES.forEach(function(r) {
+           const v     = scaled_scores.is[r] || 0;
+           const size  = (15 + (v / 100) * 29).toFixed(1);   // 15pt … 44pt
+           const isDom = (interpretation.dominant_roles || []).indexOf(r) !== -1;
+      %>
+      <span class="style-code-letter" style="font-size:<%- size %>pt;color:<%- ROLE_COLORS[r] %>;opacity:<%- isDom ? 1 : 0.5 %>;font-weight:<%- isDom ? 900 : 700 %>;"><%= r %></span>
+      <% }); %>
+    </div>
+    <div class="style-code-caption">Your Current-State energy amplitude — each letter's size reflects how strongly that style shows up in how you operate today.</div>
+
     <div class="identity-badge" style="background:<%- heroColor %>;"><%= interpretation.identity_line %></div>
   </div>
 
@@ -70,10 +87,11 @@
   <% if (topGap) {
        const nb    = severityBadge(topGap.severity);
        const color = ROLE_COLORS[topGap.role];
+       const sevColor = nb.solid;
   %>
   <div class="section-label">Your Biggest Energy Tension</div>
-  <div class="gap-card" style="border-color:<%- color %>44;border-left:3.5pt solid <%- color %>;">
-    <div class="gap-card-header" style="background:linear-gradient(90deg,<%- color %>0f 0%,white 100%);">
+  <div class="gap-card" style="border-color:<%- sevColor %>44;border-left:3.5pt solid <%- sevColor %>;">
+    <div class="gap-card-header" style="background:linear-gradient(90deg,<%- sevColor %>14 0%,white 100%);">
       <div class="gap-card-title-row">
         <div class="role-circle" style="background:<%- color %>;"><%= topGap.role %></div>
         <div class="gap-card-type-info">
@@ -82,12 +100,20 @@
         </div>
       </div>
       <div class="gap-sev-pill" style="color:<%- nb.color %>;background:<%- nb.bg %>;border-color:<%- nb.border %>;">
-        <%- nb.label %> &nbsp;<%- signed(topGap.gap_signed) %> pts
+        <%- nb.label %>
       </div>
     </div>
     <div class="gap-card-narrative"><%= topGap.narrative %></div>
   </div>
   <% } %>
+
+  <!-- Gap definitions box (D5) -->
+  <div class="gap-defs-box">
+    <div class="gap-defs-title">Understanding your three gaps</div>
+    <div class="gap-def"><strong>Execution Gap</strong> — the distance between what your role expects and how you behave today <span class="gap-def-formula">(Role Expectations VS Current State)</span>.</div>
+    <div class="gap-def"><strong>Engagement Gap</strong> — the distance between what your role expects and what naturally energises you <span class="gap-def-formula">(Role Expectations VS Intrinsic Preference)</span>.</div>
+    <div class="gap-def"><strong>Authenticity Gap</strong> — the distance between how you behave today and what naturally energises you <span class="gap-def-formula">(Current State VS Intrinsic Preference)</span>.</div>
+  </div>
 
   <div class="page-footer">
     <span>HILeadership | LEAP™</span>
@@ -155,7 +181,6 @@
   <div class="section-label" style="margin-top:18pt;">Top Energy Misalignments</div>
   <div class="top-gaps-row">
     <% topGaps.forEach(function(tg) {
-         if (tg.severity === 'low') return;
          const nb    = severityBadge(tg.severity);
          const color = ROLE_COLORS[tg.role];
     %>
@@ -163,7 +188,7 @@
       <div class="gap-pill-role" style="background:<%- color %>;"><%= tg.role %></div>
       <div class="gap-pill-body">
         <span class="gap-pill-type"><%= tg.meta.label %> — <%= ROLE_NAMES[tg.role] %></span>
-        <span class="gap-pill-meta" style="color:<%- nb.color %>;"><%- nb.label %> &nbsp;<%- signed(tg.gap_signed) %> pts</span>
+        <span class="gap-pill-meta" style="color:<%- nb.color %>;"><%- nb.label %></span>
       </div>
     </div>
     <% }); %>
@@ -197,14 +222,15 @@
        const nb    = severityBadge(tg.severity);
        const meta  = tg.meta;
        const color = ROLE_COLORS[tg.role];
+       const sevColor = nb.solid;
        const valA  = pct(scaled_scores[meta.lensA][tg.role]);
        const valB  = pct(scaled_scores[meta.lensB][tg.role]);
        const dailyFeel = interpretation.daily_feel &&
                          interpretation.daily_feel[tg.role] &&
                          interpretation.daily_feel[tg.role][tg.gap_type];
   %>
-  <div class="gap-card" style="border-color:<%- color %>44;border-left:3.5pt solid <%- color %>;">
-    <div class="gap-card-header" style="background:linear-gradient(90deg,<%- color %>0f 0%,white 100%);">
+  <div class="gap-card" style="border-color:<%- sevColor %>44;border-left:3.5pt solid <%- sevColor %>;">
+    <div class="gap-card-header" style="background:linear-gradient(90deg,<%- sevColor %>14 0%,white 100%);">
       <div class="gap-card-title-row">
         <div class="role-circle" style="background:<%- color %>;"><%= tg.role %></div>
         <div class="gap-card-type-info">
@@ -213,28 +239,28 @@
         </div>
       </div>
       <div class="gap-sev-pill" style="color:<%- nb.color %>;background:<%- nb.bg %>;border-color:<%- nb.border %>;">
-        <%- nb.label %> &nbsp;<%- signed(tg.gap_signed) %> pts
+        <%- nb.label %>
       </div>
     </div>
     <div class="gap-bars">
       <div class="gap-bar-row">
         <span class="gap-bar-label"><%= meta.lensALabel %></span>
         <div class="gap-bar-track">
-          <div class="gap-bar-fill" style="width:<%- valA %>%;background:<%- color %>;"></div>
+          <div class="gap-bar-fill" style="width:<%- valA %>%;background:<%- sevColor %>;"></div>
         </div>
         <span class="gap-bar-val"><%= valA %>%</span>
       </div>
       <div class="gap-bar-row">
         <span class="gap-bar-label"><%= meta.lensBLabel %></span>
         <div class="gap-bar-track">
-          <div class="gap-bar-fill" style="width:<%- valB %>%;background:<%- color %>;opacity:0.45;"></div>
+          <div class="gap-bar-fill" style="width:<%- valB %>%;background:<%- sevColor %>;opacity:0.45;"></div>
         </div>
         <span class="gap-bar-val"><%= valB %>%</span>
       </div>
     </div>
     <div class="gap-card-narrative"><%= tg.narrative %></div>
     <% if (dailyFeel) { %>
-    <div class="daily-feel-callout" style="border-left-color:<%- color %>;">
+    <div class="daily-feel-callout" style="border-left-color:<%- sevColor %>;">
       <div class="daily-feel-label">What this feels like day-to-day</div>
       <%= dailyFeel %>
     </div>
@@ -338,26 +364,18 @@
         <span class="timeline-chip chip-quarter">This Quarter</span>
       </td>
     </tr>
-    <!-- Role Design — Ongoing -->
-    <tr class="priority-row">
-      <td class="priority-num">5</td>
-      <td class="priority-stripe" style="background:#6b7280;"></td>
-      <td class="priority-label">
-        <div class="priority-role-circle" style="background:#6b7280;">R</div>
-        Role Design
-      </td>
-      <td class="priority-content">
-        <strong>Reshaping your role</strong>
-        Your Intrinsic Preference reveals the energy you find most natural. Look for ways to
-        redesign tasks, delegate, or negotiate responsibilities so your role draws more on what
-        energises you.
-        <div class="priority-action">Identify one responsibility that drains you and explore who could own it instead.</div>
-      </td>
-      <td style="width:52pt;text-align:right;vertical-align:top;padding-top:10pt;">
-        <span class="timeline-chip chip-ongoing">Ongoing</span>
-      </td>
-    </tr>
   </table>
+
+  <!-- Leveraging Your Strength — standalone block (D4) -->
+  <div class="strength-block">
+    <div class="strength-block-title">Leveraging Your Strength</div>
+    <p class="strength-block-body">
+      Your Intrinsic Preference reveals the energy you find most natural. Look for ways to
+      redesign tasks, delegate, or negotiate responsibilities so your role draws more on what
+      energises you.
+    </p>
+    <div class="strength-block-action">Identify one responsibility that drains you and explore who could own it instead.</div>
+  </div>
 
   <div style="margin-top:14pt;padding:10pt 13pt;background:#f9fafb;border-radius:6pt;border:1pt solid #e5e7eb;">
     <p style="font-size:8pt;color:#6b7280;line-height:1.7;">
@@ -388,7 +406,7 @@
 
   <!-- Stress Signature -->
   <div class="stress-signature">
-    <h3>Your Stress Signature</h3>
+    <h3>Your Current Stress Signature</h3>
     <% (interpretation.mismanagement_risks || []).forEach(function(risk) { %>
     <p><%= risk %></p>
     <% }); %>
@@ -408,15 +426,34 @@
   <% }); %>
   <% } %>
 
-  <!-- Guided Reflection -->
-  <div class="section-label" style="margin-top:18pt;">Guided Reflection</div>
-  <p class="reflection-intro">Set aside 10 minutes to write honest answers to these questions.</p>
-  <% (interpretation.reflection_questions || []).forEach(function(q, i) { %>
-  <div class="reflection-card" style="border-left-color:<%- heroColor %>;">
-    <div class="reflection-num"><%= i + 1 %></div>
-    <div class="reflection-q"><%= q %></div>
+  <!-- Key Insights & Commitments — write-in (D6) -->
+  <div class="section-label" style="margin-top:18pt;">Key Insights &amp; Commitments</div>
+  <p class="reflection-intro">Take a few moments to capture your reflections before moving on.</p>
+
+  <div class="writein-group">
+    <div class="writein-heading">My Top 3 Insights</div>
+    <% for (var i = 1; i <= 3; i++) { %>
+    <div class="writein-row"><span class="writein-num"><%= i %>.</span><span class="writein-line"></span></div>
+    <% } %>
   </div>
-  <% }); %>
+
+  <div class="writein-group">
+    <div class="writein-heading">My Next 3 Actions</div>
+    <% for (var j = 1; j <= 3; j++) { %>
+    <div class="writein-row"><span class="writein-num"><%= j %>.</span><span class="writein-line"></span></div>
+    <% } %>
+  </div>
+
+  <!-- Continue the Conversation (D7) -->
+  <div class="continue-block">
+    <div class="continue-title">Continue the Conversation</div>
+    <p class="continue-body">
+      Your LEAP report is designed to spark awareness and reflection. Many participants choose to
+      explore their results further with a certified LEAP coach who can help translate insights into
+      meaningful action.
+    </p>
+    <a class="continue-link" href="<%- COACHING_URL %>">Learn more about coaching and development options →</a>
+  </div>
 
   <div class="page-footer">
     <span>HILeadership | LEAP™</span>
