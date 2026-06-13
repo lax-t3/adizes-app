@@ -97,7 +97,7 @@ SECTION_META = [
     },
     {
         "name": "want",
-        "label": "Intrinsic Preference",
+        "label": "My Natural Preference",
         "description": (
             "Answer each question based on the ways of operating that feel "
             "most natural, energizing, and sustainable to you over time."

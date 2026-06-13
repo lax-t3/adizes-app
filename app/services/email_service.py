@@ -115,7 +115,7 @@ _DIMENSION_PILLS = """\
             </td>
             <td style="width:8px;"></td>
             <td align="center" style="padding:8px 10px;background-color:#2A9D8F;border-radius:4px;">
-              <span style="font-family:Arial,Helvetica,sans-serif;font-size:11px;font-weight:600;color:#ffffff;white-space:nowrap;">Intrinsic Preference (WANT)</span>
+              <span style="font-family:Arial,Helvetica,sans-serif;font-size:11px;font-weight:600;color:#ffffff;white-space:nowrap;">My Natural Preference (WANT)</span>
             </td>
           </tr>
         </table>

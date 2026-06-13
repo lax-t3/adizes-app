@@ -291,7 +291,7 @@ def interpret(
         Dict with all fields for frontend display and PDF generation.
     """
     # Dominant PAEI code is derived from the Current State (is) lens — how the
-    # person actually behaves today — not from Intrinsic Preference (want).
+    # person actually behaves today — not from My Natural Preference (want).
     is_scores = raw_scores["is"]
     dominant = [r for r in ["P", "A", "E", "I"] if is_scores[r] > 33]
 

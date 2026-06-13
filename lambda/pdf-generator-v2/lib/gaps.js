@@ -34,19 +34,19 @@ const GAP_TYPE_META = {
   },
   engagement: {
     label:      'Engagement Gap',
-    formula:    'Role Expectations VS Intrinsic Preference',
+    formula:    'Role Expectations VS My Natural Preference',
     lensA:      'should',
     lensALabel: 'Role Expectations',
     lensB:      'want',
-    lensBLabel: 'Intrinsic Preference',
+    lensBLabel: 'My Natural Preference',
   },
   authenticity: {
     label:      'Authenticity Gap',
-    formula:    'Current State VS Intrinsic Preference',
+    formula:    'Current State VS My Natural Preference',
     lensA:      'is',
     lensALabel: 'Current State',
     lensB:      'want',
-    lensBLabel: 'Intrinsic Preference',
+    lensBLabel: 'My Natural Preference',
   },
 };
 
@@ -191,7 +191,7 @@ function generateActionPathMessages(gaps, actionPath, scaledScores) {
       role:      protectRole,
       roleName:  ROLE_NAMES[protectRole],
       roleColor: ROLE_COLORS[protectRole],
-      description: `Your ${ROLE_NAMES[protectRole]} dimension shows the strongest alignment across Current State, Role Expectations, and Intrinsic Preference — this is your most stable foundation.`,
+      description: `Your ${ROLE_NAMES[protectRole]} dimension shows the strongest alignment across Current State, Role Expectations, and My Natural Preference — this is your most stable foundation.`,
       action: `Don't sacrifice your ${ROLE_NAMES[protectRole]} strength under pressure or in pursuit of closing other gaps.`,
     },
     complement: {

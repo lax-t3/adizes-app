@@ -111,8 +111,8 @@
   <div class="gap-defs-box">
     <div class="gap-defs-title">Understanding your three gaps</div>
     <div class="gap-def"><strong>Execution Gap</strong> — the distance between what your role expects and how you behave today <span class="gap-def-formula">(Role Expectations VS Current State)</span>.</div>
-    <div class="gap-def"><strong>Engagement Gap</strong> — the distance between what your role expects and what naturally energises you <span class="gap-def-formula">(Role Expectations VS Intrinsic Preference)</span>.</div>
-    <div class="gap-def"><strong>Authenticity Gap</strong> — the distance between how you behave today and what naturally energises you <span class="gap-def-formula">(Current State VS Intrinsic Preference)</span>.</div>
+    <div class="gap-def"><strong>Engagement Gap</strong> — the distance between what your role expects and what naturally energises you <span class="gap-def-formula">(Role Expectations VS My Natural Preference)</span>.</div>
+    <div class="gap-def"><strong>Authenticity Gap</strong> — the distance between how you behave today and what naturally energises you <span class="gap-def-formula">(Current State VS My Natural Preference)</span>.</div>
   </div>
 
   <div class="page-footer">
@@ -137,7 +137,7 @@
   <p style="font-size:8.5pt;color:#6b7280;margin-bottom:14pt;line-height:1.6;">
     Three lenses on the same person — <strong>Current State</strong> shows how you operate today,
     <strong>Role Expectations</strong> shows what your role demands,
-    <strong>Intrinsic Preference</strong> shows what naturally energises you.
+    <strong>My Natural Preference</strong> shows what naturally energises you.
   </p>
 
   <!-- 3×4 matrix -->
@@ -154,7 +154,7 @@
       <% }); %>
     </div>
 
-    <% [['is','Current State'], ['should','Role Expectations'], ['want','Intrinsic Preference']].forEach(function(pair) {
+    <% [['is','Current State'], ['should','Role Expectations'], ['want','My Natural Preference']].forEach(function(pair) {
          const lens = pair[0], lensLabel = pair[1];
          const rowOpacity = lens === 'want' ? '0.55' : '1';
     %>
@@ -215,7 +215,7 @@
   <h2 style="margin-bottom:4pt;">Your Three Gaps</h2>
   <p style="font-size:8.5pt;color:#6b7280;margin-bottom:8pt;line-height:1.55;">
     The 3 largest energy misalignments across your PAEI profile — where Current State,
-    Role Expectations, and Intrinsic Preference diverge most.
+    Role Expectations, and My Natural Preference diverge most.
   </p>
 
   <% topGaps.forEach(function(tg) {
@@ -370,7 +370,7 @@
   <div class="strength-block">
     <div class="strength-block-title">Leveraging Your Strength</div>
     <p class="strength-block-body">
-      Your Intrinsic Preference reveals the energy you find most natural. Look for ways to
+      Your My Natural Preference reveals the energy you find most natural. Look for ways to
       redesign tasks, delegate, or negotiate responsibilities so your role draws more on what
       energises you.
     </p>

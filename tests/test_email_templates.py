@@ -72,7 +72,7 @@ class TestLeapBranding:
         html = _enrolled_html()
         assert "Current State (IS)" in html
         assert "Role Expectations (SHOULD)" in html
-        assert "Intrinsic Preference (WANT)" in html
+        assert "My Natural Preference (WANT)" in html
 
     def test_enrolled_html_cta_label_unchanged(self):
         from app.services.email_service import _enrolled_html
@@ -90,7 +90,7 @@ class TestLeapBranding:
         html = _cohort_enrollment_existing_html()
         assert "Current State (IS)" in html
         assert "Role Expectations (SHOULD)" in html
-        assert "Intrinsic Preference (WANT)" in html
+        assert "My Natural Preference (WANT)" in html
 
     def test_cohort_enrollment_existing_uses_leap_branding(self):
         from app.services.email_service import _cohort_enrollment_existing_html
