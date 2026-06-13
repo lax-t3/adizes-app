@@ -18,12 +18,12 @@ FastAPI backend for the **LEAP™ — Leadership Energy Alignment Profile** plat
 
 ## Scoring Model (Adizes90 / LEAP™ — 132-scale ranking)
 
-Display labels: **Current State** (Is) · **Role Expectations** (Should) · **Intrinsic Preference** (Want).
+Display labels: **Current State** (Is) · **Role Expectations** (Should) · **My Natural Preference** (Want).
 Internal/DB keys remain `is` / `should` / `want` — the scoring engine and schema are unchanged.
 
 | Concept | Value |
 |---------|-------|
-| Sections | 3 (Is / Should / Want) — displayed as Current State / Role Expectations / Intrinsic Preference |
+| Sections | 3 (Is / Should / Want) — displayed as Current State / Role Expectations / My Natural Preference |
 | Questions per section | 12 (interleaved — NOT sequential Q0-Q11/Q12-Q23/Q24-Q35) |
 | Options per question | 4 (P, A, E, I — ranked 1st → 4th) |
 | Rank points | 1st = 5 · 2nd = 3 · 3rd = 2 · 4th = 1 |
