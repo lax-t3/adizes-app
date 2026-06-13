@@ -140,7 +140,7 @@ adizes-frontend/
                               #   bulk upload node_path troubleshooting; reporting tree setup guide.
                               #   Subtitle + footer attribution → LEAP™ (was "Adizes PAEI platform" / "AMSI").
       UserHelp.tsx            # User FAQ and dos/don'ts. Subtitle → "LEAP™ Assessment"; results description uses
-                              #   "Current State / Role Expectations / Intrinsic Preference"; footer attribution → LEAP™.
+                              #   "Current State / Role Expectations / My Natural Preference"; footer attribution → LEAP™.
       LeapLanding.tsx         # Public LEAP™ marketing page at /leap (no auth). Sections: Hero, Tension Cards
                               #   (Execution/Engagement/Authenticity Gap), Sample Insights, Why Different
                               #   (comparison table), What You Receive (5 deliverables), No Ideal Profiles,
