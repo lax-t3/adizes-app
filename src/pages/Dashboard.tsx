@@ -17,7 +17,7 @@ import { getResult, getMyAssessments, triggerGeneratePdf } from "@/api/results";
 import type { ResultResponse, CohortAssessmentHistory, TopGap } from "@/types/api";
 
 const SAMPLE_PDF_URL =
-  "https://adizes-pdf-reports.s3.ap-south-1.amazonaws.com/reports/f17b1f2c-0273-4b5d-88d2-e27b826d1738.pdf";
+  "https://leap-reports.turiyaskills.co/reports/f17b1f2c-0273-4b5d-88d2-e27b826d1738.pdf";
 
 function getTopGaps(result: ResultResponse): TopGap[] {
   const all: TopGap[] = [];

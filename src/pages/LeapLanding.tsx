@@ -2,7 +2,7 @@ import { ArrowRight, Zap, Target, Compass, TrendingUp, BarChart3, Shield } from 
 import { useNavigate } from "react-router-dom";
 
 const SAMPLE_PDF_URL =
-  "https://adizes-pdf-reports.s3.ap-south-1.amazonaws.com/reports/f17b1f2c-0273-4b5d-88d2-e27b826d1738.pdf";
+  "https://leap-reports.turiyaskills.co/reports/f17b1f2c-0273-4b5d-88d2-e27b826d1738.pdf";
 
 function HeroSection() {
   const navigate = useNavigate();
