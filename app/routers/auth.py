@@ -5,12 +5,14 @@ from app.schemas.auth import (
     CohortAssessmentHistory,
     ForgotPasswordRequest, ForgotPasswordResponse,
 )
-from app.database import supabase, supabase_admin
+from app.database import supabase, supabase_admin, list_all_auth_users
 from app.auth import get_current_user
 from app.config import settings
 from app.services.email_service import send_template_email, smtp_configured
 from pydantic import BaseModel
+import logging
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
@@ -174,9 +176,10 @@ def forgot_password(body: ForgotPasswordRequest):
     if not smtp_configured():
         raise HTTPException(status_code=400, detail="SMTP is not configured")
 
-    # supabase-py list_users() has no filter param — must iterate all users
+    # supabase-py list_users() has no filter param — must iterate ALL users
+    # (list_all_auth_users paginates; a single list_users() call misses page 2+).
     try:
-        all_users = supabase_admin.auth.admin.list_users()
+        all_users = list_all_auth_users()
         target = next((u for u in all_users if u.email == body.email), None)
     except Exception:
         target = None
@@ -197,14 +200,17 @@ def forgot_password(body: ForgotPasswordRequest):
             "options": {"redirect_to": f"{settings.frontend_url}/reset-password"},
         })
         user_name = (getattr(target, "user_metadata", None) or {}).get("name") or body.email
-        send_template_email("password_reset", body.email, {
+        sent = send_template_email("password_reset", body.email, {
             "user_name": user_name,
             "reset_link": lr.properties.action_link,
             "platform_name": "Adizes India",
             "platform_url": settings.frontend_url,
         })
-    except Exception:
-        pass  # Return "sent" regardless to avoid enumeration
+        if not sent:
+            logger.error(f"[forgot-password] reset email failed to send to {body.email}")
+    except Exception as e:
+        # Return "sent" regardless to avoid enumeration, but log the real cause.
+        logger.error(f"[forgot-password] failed for {body.email}: {e}")
 
     return ForgotPasswordResponse(status="sent")
 

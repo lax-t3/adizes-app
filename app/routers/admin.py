@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, UploadFile
 from typing import Optional
 from fastapi.responses import StreamingResponse
 from app.auth import require_admin
-from app.database import supabase_admin
+from app.database import supabase_admin, list_all_auth_users
 from app.schemas.admin import (
     CreateCohortRequest, CohortSummary, CohortDetailResponse,
     RespondentSummary, TeamScores, EnrollUserRequest, BulkEnrollRequest,
@@ -29,10 +29,29 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
+def _action_link(link_type: str, email: str, options: dict | None = None) -> str | None:
+    """Generate a Supabase action link (invite/recovery). Returns the tokenised
+    action_link, or None (logged) on failure.
+
+    Callers MUST treat None as "no usable link" and NOT fall back to a bare
+    frontend URL — sending an invite/activation email whose button points at the
+    homepage with no token leaves the recipient unable to set a password.
+    """
+    payload: dict = {"type": link_type, "email": email}
+    if options:
+        payload["options"] = options
+    try:
+        lr = supabase_admin.auth.admin.generate_link(payload)
+        return lr.properties.action_link
+    except Exception as e:
+        logger.error(f"[auth-link] generate_link({link_type}) failed for {email}: {e}")
+        return None
+
+
 def _get_auth_users_map() -> dict:
     """Fetch all auth users once and return {user_id: user_obj}."""
     try:
-        users = supabase_admin.auth.admin.list_users()
+        users = list_all_auth_users()
         return {str(u.id): u for u in users}
     except Exception:
         return {}
@@ -285,11 +304,11 @@ def _enroll_single_user(cohort_id: str, user_id: str, email: str,
         return
 
     if email_confirmed_at is None:
-        try:
-            lr = supabase_admin.auth.admin.generate_link({"type": "recovery", "email": email})
-            invite_link = lr.properties.action_link
-        except Exception:
-            invite_link = settings.frontend_url
+        invite_link = _action_link("recovery", email)
+        if not invite_link:
+            # No tokenised link — do NOT send an enrolment email with a dead button.
+            logger.error(f"[enroll] Skipped enrolment email for {email}: could not generate invite link")
+            return
         send_template_email("user_enrolled", email, {
             "user_name": display_name, "cohort_name": cohort_name,
             "platform_name": "Adizes India", "platform_url": settings.frontend_url,
@@ -317,7 +336,7 @@ def enroll_user(cohort_id: str, body: EnrollUserRequest, admin: dict = Depends(r
     if cohort.data.get("cohort_status", "active") != "active":
         raise HTTPException(status_code=409, detail="Cannot enrol into a completed or archived cohort.")
 
-    all_users = supabase_admin.auth.admin.list_users()
+    all_users = list_all_auth_users()
     target = next((u for u in all_users if u.email == body.email), None)
     invited_new = False
 
@@ -396,7 +415,7 @@ def bulk_enroll(cohort_id: str, body: BulkEnrollRequest, admin: dict = Depends(r
     cohort_name_for_bulk = cohort_name_row.data.get("name", "") if cohort_name_row.data else ""
 
     # Build email→user map from existing auth users
-    all_users = supabase_admin.auth.admin.list_users()
+    all_users = list_all_auth_users()
     email_to_user = {u.email: u for u in all_users if u.email}
 
     # Fetch existing cohort members to detect duplicates
@@ -447,16 +466,10 @@ def bulk_enroll(cohort_id: str, body: BulkEnrollRequest, admin: dict = Depends(r
                     pass
 
                 if not is_activated:
-                    try:
-                        link_data = {
-                            "type": "recovery",
-                            "email": email,
-                            "options": {"redirect_to": f"{settings.frontend_url}/register"},
-                        }
-                        lr = supabase_admin.auth.admin.generate_link(link_data)
-                        invite_link_val = lr.properties.action_link
-                    except Exception:
-                        pass
+                    invite_link_val = _action_link(
+                        "recovery", email,
+                        {"redirect_to": f"{settings.frontend_url}/register"},
+                    )
 
             uid = str(user.id)
             if uid in existing_ids:
@@ -483,7 +496,7 @@ def bulk_enroll(cohort_id: str, body: BulkEnrollRequest, admin: dict = Depends(r
                         "platform_name": "Adizes India",
                         "platform_url": settings.frontend_url,
                     })
-                else:
+                elif invite_link_val:
                     send_template_email("user_enrolled", email, {
                         "user_name": user_name_val,
                         "user_email": email,
@@ -492,6 +505,8 @@ def bulk_enroll(cohort_id: str, body: BulkEnrollRequest, admin: dict = Depends(r
                         "platform_name": "Adizes India",
                         "platform_url": settings.frontend_url,
                     })
+                else:
+                    logger.error(f"[bulk-enroll] Enrolled {email} but invite email skipped: no invite link")
             except Exception:
                 pass  # Non-fatal
 
@@ -542,41 +557,34 @@ def resend_enrollment_invite(cohort_id: str, user_id: str, admin: dict = Depends
 
     is_activated = getattr(auth_user, "email_confirmed_at", None) is not None
 
-    invite_link_val = settings.frontend_url
-    if not is_activated:
-        try:
-            lr = supabase_admin.auth.admin.generate_link({
-                "type": "recovery",
-                "email": email,
-                "options": {"redirect_to": f"{settings.frontend_url}/register"},
-            })
-            invite_link_val = lr.properties.action_link
-        except Exception:
-            pass
-
     if not smtp_configured():
         raise HTTPException(status_code=400, detail="SMTP is not configured. Please set up SMTP in Settings first.")
 
-    try:
-        if is_activated:
-            send_template_email("cohort_enrollment_existing", email, {
-                "user_name": user_name_val,
-                "user_email": email,
-                "cohort_name": cohort_name_val,
-                "platform_name": "Adizes India",
-                "platform_url": settings.frontend_url,
-            })
-        else:
-            send_template_email("user_enrolled", email, {
-                "user_name": user_name_val,
-                "user_email": email,
-                "cohort_name": cohort_name_val,
-                "invite_link": invite_link_val,
-                "platform_name": "Adizes India",
-                "platform_url": settings.frontend_url,
-            })
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to send email: {e}")
+    if is_activated:
+        sent = send_template_email("cohort_enrollment_existing", email, {
+            "user_name": user_name_val,
+            "user_email": email,
+            "cohort_name": cohort_name_val,
+            "platform_name": "Adizes India",
+            "platform_url": settings.frontend_url,
+        })
+    else:
+        invite_link_val = _action_link(
+            "recovery", email, {"redirect_to": f"{settings.frontend_url}/register"},
+        )
+        if not invite_link_val:
+            raise HTTPException(status_code=500, detail="Could not generate a valid invite link. Please try again.")
+        sent = send_template_email("user_enrolled", email, {
+            "user_name": user_name_val,
+            "user_email": email,
+            "cohort_name": cohort_name_val,
+            "invite_link": invite_link_val,
+            "platform_name": "Adizes India",
+            "platform_url": settings.frontend_url,
+        })
+
+    if not sent:
+        raise HTTPException(status_code=500, detail="Failed to send email. Check SMTP configuration and server logs.")
 
     return {"message": f"Enrollment invite resent to {email}"}
 
@@ -585,7 +593,7 @@ def resend_enrollment_invite(cohort_id: str, user_id: str, admin: dict = Depends
 def list_admin_users(admin: dict = Depends(require_admin)):
     """List all administrator accounts."""
     try:
-        all_users = supabase_admin.auth.admin.list_users()
+        all_users = list_all_auth_users()
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -637,20 +645,22 @@ def invite_admin(body: InviteAdminRequest, admin: dict = Depends(require_admin))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Invite created but could not set admin role: {e}")
 
-    # Fire-and-forget admin invite email via SMTP
-    try:
-        send_template_email("admin_invite", body.email, {
-            "admin_name": body.name or body.email,
-            "admin_email": body.email,
-            "invite_link": invite_link_val,
-            "platform_name": "Adizes India",
-            "platform_url": settings.frontend_url,
-        })
-    except Exception:
-        pass  # Non-fatal — link is still valid even if SMTP fails
+    # Send admin invite email via SMTP — report the real send status to the admin.
+    sent = send_template_email("admin_invite", body.email, {
+        "admin_name": body.name or body.email,
+        "admin_email": body.email,
+        "invite_link": invite_link_val,
+        "platform_name": "Adizes India",
+        "platform_url": settings.frontend_url,
+    })
 
     return {
-        "message": f"Invite email sent to {body.email}",
+        "message": (
+            f"Invite email sent to {body.email}"
+            if sent
+            else f"Admin account created for {body.email}, but the invite email failed to send — check SMTP settings/logs."
+        ),
+        "email_sent": sent,
         "user_id": user_id,
     }
 
@@ -667,35 +677,29 @@ def resend_invite(user_id: str, admin: dict = Depends(require_admin)):
     meta = getattr(auth_user, "user_metadata", None) or {}
     admin_name = meta.get("name", "") or email
 
-    # For existing invited users, type=invite fails ("already registered").
-    # type=recovery works for any existing user and redirects to /register.
-    invite_link_val = settings.frontend_url
-    try:
-        lr = supabase_admin.auth.admin.generate_link({
-            "type": "recovery",
-            "email": email,
-            "options": {"redirect_to": f"{settings.frontend_url}/register"},
-        })
-        invite_link_val = lr.properties.action_link
-    except Exception:
-        pass  # Fall back to platform URL
-
     if not smtp_configured():
         raise HTTPException(
             status_code=400,
             detail="SMTP is not configured. Please set up SMTP in Settings to resend invites.",
         )
 
-    try:
-        send_template_email("admin_invite", email, {
-            "admin_name": admin_name,
-            "admin_email": email,
-            "invite_link": invite_link_val,
-            "platform_name": "Adizes India",
-            "platform_url": settings.frontend_url,
-        })
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to send email: {e}")
+    # For existing invited users, type=invite fails ("already registered").
+    # type=recovery works for any existing user and redirects to /register.
+    invite_link_val = _action_link(
+        "recovery", email, {"redirect_to": f"{settings.frontend_url}/register"},
+    )
+    if not invite_link_val:
+        raise HTTPException(status_code=500, detail="Could not generate a valid invite link. Please try again.")
+
+    sent = send_template_email("admin_invite", email, {
+        "admin_name": admin_name,
+        "admin_email": email,
+        "invite_link": invite_link_val,
+        "platform_name": "Adizes India",
+        "platform_url": settings.frontend_url,
+    })
+    if not sent:
+        raise HTTPException(status_code=500, detail="Failed to send email. Check SMTP configuration and server logs.")
 
     return {"message": f"Invite resent to {email}"}
 
@@ -1137,7 +1141,7 @@ def _add_employee_to_node(
     """
     # Check if already in this org
     try:
-        existing_users = supabase_admin.auth.admin.list_users()
+        existing_users = list_all_auth_users()
         target = next((u for u in existing_users if u.email == email), None)
     except Exception:
         target = None
@@ -1162,15 +1166,10 @@ def _add_employee_to_node(
             raise HTTPException(status_code=400, detail=f"Could not create user: {e}")
 
     elif is_unactivated:
-        try:
-            lr = supabase_admin.auth.admin.generate_link({
-                "type": "recovery",
-                "email": email,
-                "options": {"redirect_to": f"{settings.frontend_url}/register"},
-            })
-            activation_url = lr.properties.action_link
-        except Exception:
-            activation_url = settings.frontend_url
+        # None on failure — guarded below so we never email a tokenless activation link.
+        activation_url = _action_link(
+            "recovery", email, {"redirect_to": f"{settings.frontend_url}/register"},
+        )
 
     user_id = str(target.id)
 
@@ -1204,17 +1203,17 @@ def _add_employee_to_node(
 
     emailed = False
     if (is_new or is_unactivated) and smtp_configured():
-        try:
-            send_template_email("org_welcome", email, {
+        if not activation_url:
+            # Link generation failed — don't email a tokenless activation button.
+            logger.error(f"[org] Welcome email skipped for {email}: no activation link")
+        else:
+            emailed = send_template_email("org_welcome", email, {
                 "user_name": name,
                 "org_name": org_name,
                 "platform_name": "Adizes India",
                 "platform_url": settings.frontend_url,
                 "activation_url": activation_url,
             })
-            emailed = True
-        except Exception as exc:
-            logger.error(f"[org] Welcome email failed for {email}: {exc}")
 
     return {"user_id": user_id, "created": is_new, "emailed": emailed}
 

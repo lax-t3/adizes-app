@@ -4,12 +4,14 @@ Reads config from app_settings.key='smtp' in Supabase.
 Reads templates from email_templates table.
 Falls back gracefully if SMTP not configured.
 """
-import smtplib, ssl, re
+import smtplib, ssl, re, logging
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.base import MIMEBase
 from email import encoders
 from app.database import supabase_admin
+
+logger = logging.getLogger(__name__)
 
 
 _EMAIL_WRAPPER_OPEN = """\
@@ -331,9 +333,14 @@ def send_email(
     html_body: str,
     attachments: list | None = None,
 ) -> bool:
-    """Send an email via configured SMTP. Returns True on success, False otherwise."""
+    """Send an email via configured SMTP. Returns True on success, False otherwise.
+
+    Never raises — SMTP failures are logged and reported via the return value so
+    callers can surface the real send status instead of assuming success.
+    """
     cfg = _get_smtp_settings()
     if not cfg or not cfg.get("host") or not cfg.get("from_email"):
+        logger.error(f"[email] SMTP not configured — cannot send '{subject}' to {to_email}")
         return False
 
     msg = MIMEMultipart("mixed")
@@ -359,19 +366,25 @@ def send_email(
     use_ssl = bool(cfg.get("use_ssl", False))
 
     context = ssl.create_default_context()
-    if use_ssl:
-        with smtplib.SMTP_SSL(host, port, context=context) as server:
-            if username:
-                server.login(username, password)
-            server.sendmail(cfg["from_email"], to_email, msg.as_bytes())
-    else:
-        with smtplib.SMTP(host, port, timeout=10) as server:
-            server.ehlo()
-            server.starttls(context=context)
-            server.ehlo()
-            if username:
-                server.login(username, password)
-            server.sendmail(cfg["from_email"], to_email, msg.as_bytes())
+    try:
+        if use_ssl:
+            with smtplib.SMTP_SSL(host, port, context=context, timeout=10) as server:
+                if username:
+                    server.login(username, password)
+                server.sendmail(cfg["from_email"], to_email, msg.as_bytes())
+        else:
+            with smtplib.SMTP(host, port, timeout=10) as server:
+                server.ehlo()
+                server.starttls(context=context)
+                server.ehlo()
+                if username:
+                    server.login(username, password)
+                server.sendmail(cfg["from_email"], to_email, msg.as_bytes())
+    except Exception as e:
+        logger.error(f"[email] SMTP send failed for '{subject}' to {to_email}: {e}")
+        return False
+
+    logger.info(f"[email] Sent '{subject}' to {to_email}")
     return True
 
 
@@ -381,13 +394,17 @@ def send_template_email(
     variables: dict,
     attachments: list | None = None,
 ) -> bool:
-    """Render a template and send via SMTP."""
+    """Render a template and send via SMTP. Returns True on success, False otherwise."""
     tmpl = _get_template(template_id)
     if not tmpl:
+        logger.error(f"[email] Template '{template_id}' not found — cannot send to {to_email}")
         return False
     subject = _render(tmpl.get("subject", ""), variables)
     html_body = _render(tmpl.get("html_body", ""), variables)
-    return send_email(to_email, subject, html_body, attachments)
+    ok = send_email(to_email, subject, html_body, attachments)
+    if not ok:
+        logger.error(f"[email] Template '{template_id}' failed to send to {to_email}")
+    return ok
 
 
 def smtp_configured() -> bool:
