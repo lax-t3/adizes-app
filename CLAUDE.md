@@ -332,8 +332,16 @@ export S3_BUCKET_NAME=adizes-pdf-reports
   `result.user_name` is falsy. Dashboard welcome: `user?.name || user?.email?.split('@')[0]`
   — email prefix fallback when `user.name` is empty string.
 - **EnergyMatrix component** is role-centric (4 sections, one per role) rather than lens-centric
-  (3 rows). Each role section shows Is / Should / Want bars with a gap badge when the max gap ≥ 10.
-  Want bars are dimmed (0.55 opacity) as the reference/background lens.
+  (3 rows). Each role section shows Is / Should / Want bars; Want bars are dimmed (0.55 opacity) as the
+  reference/background lens. **Gap badge (2026-06-13): aligned with the PDF report's named gaps + severity.**
+  It consumes the backend-computed `gaps: GapDetail[]` and surfaces the role's most significant of the three
+  gaps (Execution / Engagement / Authenticity) by name + severity, coloured with the report's universal
+  red/orange/yellow severity bands (`report.html` `severityBadge`: high `#991b1b`/`#fee2e2`, medium
+  `#9a3412`/`#ffedd5` — NOT PAEI role colours). `low` (< 6 on the 132-scale) is treated as aligned and not
+  flagged. Dashboard/Results/AdminRespondent pass `gaps`; the team-aggregate view (`AdminCohortDetail`) has no
+  per-role gaps and falls back to the legacy %-spread "Npt gap" flag (≥10 on the 0–100 display scale).
+  The earlier badge wrongly used `max(Execution,Authenticity)` on the % scale with a hard ≥10 threshold, so it
+  flagged different roles than the report.
 - Frontend calls FastAPI for ALL API calls (auth, assessment, results, admin)
 - FastAPI validates Supabase JWT on every protected endpoint
 - Local Supabase uses ES256 JWT; cloud Supabase uses HS256 — auth.py handles both
@@ -461,6 +469,19 @@ export S3_BUCKET_NAME=adizes-pdf-reports
   returns None on `generate_link` failure and the email is skipped — no more tokenless homepage "invite" links that
   left users unable to set a password. `list_all_auth_users()` in `database.py` paginates past GoTrue's first-page
   limit; all six `auth.admin.list_users()` enumeration sites now use it.
+- **Self-registration is auto-confirm — no email verification step** (2026-06-13): Supabase Auth
+  `mailer_autoconfirm` set to `true` (Management API `PATCH /config/auth`). New self-signups via
+  `/auth/register` get a session immediately and land on `/dashboard`. Previously `mailer_autoconfirm=false`
+  meant `supabase.auth.sign_up()` returned a user but **no session**, so the backend (`auth.py:56`) raised
+  HTTP 400 "Registration succeeded but email confirmation may be required." which `Register.tsx` rendered as a
+  scary red error — a mislabeled success that left users stuck (account created, can't log in). Disabling
+  confirmation removes the failure mode; admin enrolment (cohorts/orgs) was always a separate invite-link flow
+  and is unaffected, as are SES app emails (enrol/reset/coaching-lead). The 5 pre-existing unconfirmed accounts
+  were confirmed in bulk (`UPDATE auth.users SET email_confirmed_at = now() WHERE email_confirmed_at IS NULL`).
+  The `if not session → 400` guard stays as a harmless safety net (still reachable on duplicate-email signup).
+  **To revert:** set `mailer_autoconfirm=false` again — but then fix the UX (friendly "check your inbox" panel +
+  resend) rather than leaving the red error. Managing Auth config needs a Supabase PAT (`sbp_…`) + `curl`
+  (Cloudflare blocks the urllib UA). See [[leap-email-architecture]].
 
 ## Known Gotchas (Local Dev)
 
