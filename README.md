@@ -263,9 +263,9 @@ adizes-backend/
     services/
       scoring.py               # PAEI scoring engine (36-question key); SECTION_MAP holds correct interleaved indices; score_answers() accepts optional section_map from DB
       gap_analysis.py          # Gap calculator + severity classification
-      interpretation.py        # Dominant style + narrative + executive_summary (str),
-                               #   daily_feel (dict: {role: {gap_type: str}}),
-                               #   reflection_questions (list[str] — 3 prompts)
+      interpretation.py        # Dominant style (from Current State / `is`, raw > 33) + narrative,
+                               #   executive_summary (str), daily_feel (dict: {role: {gap_type: str}});
+                               #   stress labels tagged "(P - Stressor)"; plain-English early warnings
       pdf_service.py           # WeasyPrint HTML→PDF
       export_service.py        # CSV generation for admin
       email_service.py         # smtplib SMTP sending; template rendering;
@@ -476,14 +476,16 @@ from the returned `pdf_url` (redundant fallback). Both must use the **production
 
 | | v2 (LEAP™ — Leadership Energy Alignment Profile) | v1 (AMSI) |
 |---|---|---|
-| Pages | 5 | 9 |
-| Structure | Personal Snapshot · Energy Alignment Matrix · Your Three Gaps · Your Action Path · Stress Signature & Reflection | Cover + 8 content pages |
-| Primary visual | Lens-rows matrix (IS/SHD/WNT × P/A/E/I) + gap cards + daily-feel callouts | Radar chart |
+| Pages | 5 (fixed — spacing tuned so no page overflows) | 9 |
+| Structure | Personal Snapshot · Energy Alignment Matrix · Your Three Gaps · Suggested Focus Areas + "Leveraging Your Strength" · Current Stress Signature + "Key Insights & Commitments" write-in + "Continue the Conversation" | Cover + 8 content pages |
+| Primary visual | Page-1 PAEI amplitude style code (sized from Current State) + lens-rows matrix + gap cards with **severity-colored** (red/orange/yellow) bars + daily-feel callouts | Radar chart |
+| Dominance | Derived from **Current State (`is`)**, raw > 33 | — |
+| Gap formula | "X **VS** Y" | — |
 | Chart.js | No — pure HTML div bars | Yes |
-| New fields | `executive_summary`, `daily_feel`, `reflection_questions` from `interpretation.py` | — |
+| Interp fields | `executive_summary`, `daily_feel` from `interpretation.py` (`reflection_questions` removed 2026-06-13) | — |
 | Header | Solid navy `#1D3557` band, knockout HIL-Isotope logo, red accent stripe | — |
 | Lambda name | `adizes-pdf-generator-v2` | `adizes-pdf-generator` |
-| Last deployed | 2026-06-10 | — |
+| Last deployed | 2026-06-13 (HIL-review revision) | — |
 
 ### Deploy Lambda v2
 
