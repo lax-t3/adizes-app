@@ -363,7 +363,7 @@ def _build_identity_line(dominant: List[str], combined_desc: Optional[str]) -> s
     if combined_desc:
         prefix = combined_desc.split(" — ")[0].replace("The ", "")
         roles_str = "–".join(dominant[:2])
-        return f"{prefix} — {roles_str} Weighted"
+        return f"{prefix} — {roles_str} Dominant"
     elif len(dominant) == 1:
         desc = STYLE_DESCRIPTIONS[dominant[0]]
         return f"{desc['name']} — {desc['tagline']}"
