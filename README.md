@@ -145,6 +145,10 @@ adizes-frontend/
                               #   (Execution/Engagement/Authenticity Gap), Sample Insights, Why Different
                               #   (comparison table), What You Receive (5 deliverables), No Ideal Profiles,
                               #   Org Applications (7 use-case pills), Final CTA. CTAs navigate to "/" (login).
+      LeapCoaching.tsx        # Public LEAP™ Coaching page at /leap-coaching (no auth). Sections: Hero
+                              #   ("Turn Insight Into Action"), What Coaching Helps You Do (4), Coaching
+                              #   Options (3), Why a Certified LEAP Coach, Final CTA. CTAs → mailto:hello@hileadership.org.
+                              #   Linked from the PDF report's Page-5 "Continue the Conversation" block.
       PolicyPage.tsx          # Terms of Service, Privacy Policy, Refund Policy. "AMSI platform" → "LEAP™ platform" in Terms §1 and Refund §1.
     store/
       authStore.ts       # Zustand auth state (JWT, user, role)
@@ -164,6 +168,7 @@ adizes-frontend/
 |-------|-----------|------|-------|
 | `/` | `Landing` | Public | Login form; "Forgot password?" link; `?message=password-updated` success banner |
 | `/leap` | `LeapLanding` | Public | LEAP™ marketing landing page — no navbar, no auth required |
+| `/leap-coaching` | `LeapCoaching` | Public | LEAP™ Coaching marketing page; CTAs → `mailto:hello@hileadership.org`. Linked from the PDF report. |
 | `/register` | `Register` | Public | Self-registration **or** invite acceptance (auto-detected from URL hash) |
 | `/set-password` | `SetPassword` | Public | Redirect shim — forwards old email links to `/register` |
 | `/forgot-password` | `ForgotPassword` | Public | Email input → `POST /auth/forgot-password` → sent/not_activated/error states |
