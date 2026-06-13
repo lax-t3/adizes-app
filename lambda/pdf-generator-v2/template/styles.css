@@ -57,8 +57,8 @@ body {
   text-transform: uppercase;
   letter-spacing: 1.5pt;
   color: #9ca3af;
-  margin-bottom: 8pt;
-  margin-top: 16pt;
+  margin-bottom: 7pt;
+  margin-top: 11pt;
 }
 
 /* ── Headings ────────────────────────────────────────────────── */
@@ -224,7 +224,7 @@ p  { font-size: 9pt; color: #374151; line-height: 1.65; }
   border: 1pt solid #e5e7eb;
   border-radius: 8pt;
   overflow: hidden;
-  margin-bottom: 9pt;
+  margin-bottom: 7pt;
 }
 .gap-card-header {
   display: flex;
@@ -250,7 +250,7 @@ p  { font-size: 9pt; color: #374151; line-height: 1.65; }
   white-space: nowrap;
 }
 .gap-bars {
-  padding: 8pt 13pt;
+  padding: 6pt 13pt;
   background: #fafafa;
   border-top: 1pt solid #f3f4f6;
 }
@@ -285,10 +285,10 @@ p  { font-size: 9pt; color: #374151; line-height: 1.65; }
   flex-shrink: 0;
 }
 .gap-card-narrative {
-  padding: 7pt 13pt;
-  font-size: 8.5pt;
+  padding: 6pt 13pt;
+  font-size: 8pt;
   color: #374151;
-  line-height: 1.6;
+  line-height: 1.5;
   border-top: 1pt solid #f3f4f6;
 }
 .well-aligned-box {
@@ -323,12 +323,12 @@ p  { font-size: 9pt; color: #374151; line-height: 1.65; }
 .warning-card {
   background: #fff1f2;
   border-left: 3.5pt solid #f43f5e;
-  padding: 9pt 12pt;
+  padding: 6pt 11pt;
   border-radius: 0 6pt 6pt 0;
-  font-size: 9pt;
+  font-size: 8pt;
   color: #374151;
-  line-height: 1.55;
-  margin-bottom: 7pt;
+  line-height: 1.5;
+  margin-bottom: 5pt;
 }
 
 /* ════════════════════════════════════════════════════════════════
@@ -533,15 +533,15 @@ p  { font-size: 9pt; color: #374151; line-height: 1.65; }
 
 /* ── Daily-feel callout (per gap card) ───────────────────────── */
 .daily-feel-callout {
-  margin-top: 6pt;
-  padding: 6pt 10pt;
+  margin-top: 5pt;
+  padding: 5pt 9pt;
   background: #f0f4f8;
   border-radius: 4pt;
   border-left: 3pt solid currentColor;
-  font-size: 8pt;
+  font-size: 7.5pt;
   font-style: italic;
   color: #374151;
-  line-height: 1.5;
+  line-height: 1.45;
 }
 .daily-feel-label {
   font-style: normal;
@@ -615,18 +615,18 @@ p  { font-size: 9pt; color: #374151; line-height: 1.65; }
   background: #1D3557;
   color: white;
   border-radius: 6pt;
-  padding: 14pt 16pt;
-  margin-bottom: 16pt;
+  padding: 11pt 14pt;
+  margin-bottom: 11pt;
 }
 .stress-signature h3 {
   color: white;
-  font-size: 11pt;
-  margin-bottom: 8pt;
+  font-size: 10.5pt;
+  margin-bottom: 5pt;
 }
 .stress-signature p {
   color: rgba(255,255,255,0.88);
-  font-size: 9pt;
-  line-height: 1.7;
+  font-size: 8.5pt;
+  line-height: 1.6;
 }
 .stress-connection {
   margin-top: 8pt;
@@ -641,7 +641,7 @@ p  { font-size: 9pt; color: #374151; line-height: 1.65; }
 .reflection-intro {
   font-size: 8.5pt;
   color: #6b7280;
-  margin-bottom: 12pt;
+  margin-bottom: 7pt;
   font-style: italic;
 }
 .reflection-card {
@@ -744,18 +744,18 @@ p  { font-size: 9pt; color: #374151; line-height: 1.65; }
 }
 
 /* ── Key Insights & Commitments write-in (Page 5, D6) ────────── */
-.writein-group { margin-bottom: 14pt; }
+.writein-group { margin-bottom: 9pt; }
 .writein-heading {
-  font-size: 9.5pt;
+  font-size: 9pt;
   font-weight: 700;
   color: #1a1a1a;
-  margin-bottom: 9pt;
+  margin-bottom: 5pt;
 }
 .writein-row {
   display: flex;
   align-items: flex-end;
   gap: 8pt;
-  margin-bottom: 13pt;
+  margin-bottom: 9pt;
 }
 .writein-num {
   font-size: 9pt;
@@ -772,23 +772,23 @@ p  { font-size: 9pt; color: #374151; line-height: 1.65; }
 
 /* ── Continue the Conversation (Page 5, D7) ──────────────────── */
 .continue-block {
-  margin-top: 16pt;
-  padding: 14pt 16pt;
+  margin-top: 10pt;
+  padding: 11pt 14pt;
   background: #f8fafc;
   border: 1pt solid #d8e0ea;
   border-radius: 7pt;
 }
 .continue-title {
-  font-size: 11pt;
+  font-size: 10.5pt;
   font-weight: 800;
   color: #1D3557;
-  margin-bottom: 6pt;
+  margin-bottom: 5pt;
 }
 .continue-body {
-  font-size: 8.5pt;
+  font-size: 8pt;
   color: #374151;
-  line-height: 1.65;
-  margin-bottom: 9pt;
+  line-height: 1.6;
+  margin-bottom: 7pt;
 }
 .continue-link {
   font-size: 9pt;
