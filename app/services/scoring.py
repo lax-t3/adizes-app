@@ -119,14 +119,34 @@ def score_answers(answers: List[Dict], section_map: Dict[int, str] = None) -> Di
         s: {r: round(raw[s][r]) for r in ROLES} for s in SECTIONS
     }
 
-    display = {
-        s: {r: round(raw_int[s][r] / SECTION_TOTAL * 100) for r in ROLES}
-        for s in SECTIONS
-    }
+    # Largest-remainder rounding so each lens row sums to exactly 100%.
+    # (Independent per-role rounding can yield rows of 99 or 101 — an
+    #  "A"-type reader will spot percentages that don't add up.)
+    display = {s: _percent_to_100(raw_int[s]) for s in SECTIONS}
 
     profile = {s: _build_profile_string(raw_int[s]) for s in SECTIONS}
 
     return {"raw": raw_int, "display": display, "profile": profile}
+
+
+def _percent_to_100(scores: Dict[str, int]) -> Dict[str, int]:
+    """Convert a role→raw-score dict to integer percentages that sum to exactly 100.
+
+    Uses the largest-remainder (Hamilton) method: floor every value, then hand the
+    leftover points to the roles with the largest fractional parts. Ties break on
+    ROLES order (P, A, E, I) for deterministic output.
+    """
+    total = sum(scores[r] for r in ROLES)
+    if total == 0:
+        return {r: 0 for r in ROLES}
+    exact = {r: scores[r] / total * 100 for r in ROLES}
+    floored = {r: int(exact[r]) for r in ROLES}
+    leftover = 100 - sum(floored.values())
+    # Roles ranked by descending fractional remainder, stable on ROLES order.
+    ranked = sorted(ROLES, key=lambda r: (-(exact[r] - floored[r]), ROLES.index(r)))
+    for r in ranked[:leftover]:
+        floored[r] += 1
+    return floored
 
 
 def _apply_dominance_factor(

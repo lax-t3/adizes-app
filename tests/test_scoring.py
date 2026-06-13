@@ -61,14 +61,28 @@ class TestScoreAnswers:
             total = sum(result["raw"][section].values())
             assert total == 132, f"{section} total was {total}"
 
-    def test_display_sums_to_100_per_section(self):
-        """Display% values (rounded) must sum to approximately 100 per section."""
+    def test_display_sums_to_exactly_100_per_section(self):
+        """Display% values must sum to EXACTLY 100 per section (largest-remainder rounding)."""
         answers = _all_rank_answers({"a": 1, "b": 2, "c": 3, "d": 4})
         result = score_answers(answers)
         for section in ["is", "should", "want"]:
             total = sum(result["display"][section].values())
-            # Rounding may cause off-by-1
-            assert 98 <= total <= 102, f"{section} display total was {total}"
+            assert total == 100, f"{section} display total was {total}"
+
+    def test_display_sums_to_100_across_varied_rankings(self):
+        """Each lens row sums to exactly 100% for several distinct ranking patterns."""
+        patterns = [
+            {"a": 1, "b": 2, "c": 3, "d": 4},
+            {"a": 4, "b": 3, "c": 2, "d": 1},
+            {"a": 2, "b": 1, "c": 4, "d": 3},
+            {"a": 3, "b": 1, "c": 2, "d": 4},
+        ]
+        for pat in patterns:
+            result = score_answers(_all_rank_answers(pat))
+            for section in ["is", "should", "want"]:
+                assert sum(result["display"][section].values()) == 100, (
+                    f"pattern {pat} section {section} did not sum to 100"
+                )
 
     def test_max_raw_score_when_role_always_rank1(self):
         """Ranking P option rank 1 in all 12 Is questions → raw P(is) >= 60 (before possible boost)."""
@@ -104,13 +118,17 @@ class TestScoreAnswers:
         assert result["raw"]["is"]["P"] == 12
 
     def test_display_is_percentage_of_raw(self):
-        """display[section][role] ≈ round(raw[section][role] / 132 * 100)."""
+        """display[section][role] tracks round(raw/132*100) within ±1.
+
+        Largest-remainder rounding (so rows sum to exactly 100) can shift an
+        individual cell by 1 versus naive independent rounding.
+        """
         answers = _all_rank_answers({"a": 1, "b": 2, "c": 3, "d": 4})
         result = score_answers(answers)
         for section in ["is", "should", "want"]:
             for role in ["P", "A", "E", "I"]:
                 expected = round(result["raw"][section][role] / 132 * 100)
-                assert result["display"][section][role] == expected
+                assert abs(result["display"][section][role] - expected) <= 1
 
     def test_profile_strings_present_for_all_sections(self):
         answers = _all_rank_answers({"a": 1, "b": 2, "c": 3, "d": 4})
