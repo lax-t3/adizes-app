@@ -189,7 +189,7 @@ export function AdminRespondent() {
                     isDominant ? (
                       <Badge key={role} variant={role} className="text-lg px-2 py-0.5">{char}</Badge>
                     ) : (
-                      <Badge key={role} variant="outline" className="text-lg px-2 py-0.5 bg-gray-100" style={{ fontVariant: "small-caps" }}>{role}</Badge>
+                      <Badge key={role} variant="outline" className="text-lg px-2 py-0.5 bg-gray-100" style={{ fontVariant: "small-caps" }}>{char}</Badge>
                     )
                   )}
                 </div>

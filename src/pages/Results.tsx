@@ -148,7 +148,7 @@ export function Results() {
                   isDominant ? (
                     <Badge key={role} variant={role} className="text-xl px-3 py-1 shadow-sm">{char}</Badge>
                   ) : (
-                    <Badge key={role} variant="outline" className="text-xl px-3 py-1 bg-gray-800 text-gray-300 border-gray-600" style={{ fontVariant: "small-caps" }}>{role}</Badge>
+                    <Badge key={role} variant="outline" className="text-xl px-3 py-1 bg-gray-800 text-gray-300 border-gray-600" style={{ fontVariant: "small-caps" }}>{char}</Badge>
                   )
                 )}
               </div>
