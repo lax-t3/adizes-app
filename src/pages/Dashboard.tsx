@@ -166,8 +166,8 @@ function ResultsDashboard({ resultId }: { resultId: string }) {
                     {char}
                   </Badge>
                 ) : (
-                  <Badge key={role} variant="outline" className="text-lg px-3 py-1 bg-gray-800 text-gray-300 border-gray-600">
-                    {char}
+                  <Badge key={role} variant="outline" className="text-lg px-3 py-1 bg-gray-800 text-gray-300 border-gray-600" style={{ fontVariant: "small-caps" }}>
+                    {role}
                   </Badge>
                 )
               )}

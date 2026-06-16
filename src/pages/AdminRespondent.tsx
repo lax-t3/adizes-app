@@ -189,11 +189,11 @@ export function AdminRespondent() {
                     isDominant ? (
                       <Badge key={role} variant={role} className="text-lg px-2 py-0.5">{char}</Badge>
                     ) : (
-                      <Badge key={role} variant="outline" className="text-lg px-2 py-0.5 bg-gray-100">{char}</Badge>
+                      <Badge key={role} variant="outline" className="text-lg px-2 py-0.5 bg-gray-100" style={{ fontVariant: "small-caps" }}>{role}</Badge>
                     )
                   )}
                 </div>
-                <InfoTooltip text="PAEI profile from the 'Current State' dimension — how the respondent behaves today. CAPITAL = dominant role (above 33 out of 132 — its proportional share — is considered dominant). Lowercase = non-dominant. Role colours: P = red, A = navy, E = amber, I = teal." />
+                <InfoTooltip text="Your Current State Dominant Profile shows up in UPPERCASE letters." />
               </div>
               <div className="flex flex-col items-end gap-1">
                 {pdfUrl ? (

@@ -141,14 +141,14 @@ export function Results() {
             <div className="flex items-center gap-4 bg-gray-800/50 p-4 rounded-xl border border-gray-700 backdrop-blur-sm">
               <div className="flex items-center gap-1.5">
                 <span className="text-sm text-gray-400 font-medium uppercase tracking-wider">Dominant Style</span>
-                <InfoTooltip text="Your PAEI profile based on the 'Current State' (Is) dimension — how you behave today. A CAPITAL letter means that role's raw score exceeded 33 out of 132 (its proportional share). A lowercase letter means it scored 33 or below." />
+                <InfoTooltip text="Your Current State Dominant Profile shows up in UPPERCASE letters." />
               </div>
               <div className="flex gap-1.5">
                 {profileBadges.map(({ role, char, isDominant }) =>
                   isDominant ? (
                     <Badge key={role} variant={role} className="text-xl px-3 py-1 shadow-sm">{char}</Badge>
                   ) : (
-                    <Badge key={role} variant="outline" className="text-xl px-3 py-1 bg-gray-800 text-gray-300 border-gray-600">{char}</Badge>
+                    <Badge key={role} variant="outline" className="text-xl px-3 py-1 bg-gray-800 text-gray-300 border-gray-600" style={{ fontVariant: "small-caps" }}>{role}</Badge>
                   )
                 )}
               </div>
