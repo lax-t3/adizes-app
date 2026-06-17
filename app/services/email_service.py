@@ -148,38 +148,36 @@ def _build_template(recipient_var: str, body_rows: str) -> str:
 
 
 def _enrolled_html() -> str:
-    cta = _cta("{{invite_link}}", "Accept Invitation &amp; Set Password")
+    cta = _cta("{{invite_link}}", "Activate My Account")
     body = f"""
   <!-- Body -->
   <tr>
     <td style="padding:40px 48px 36px;" bgcolor="#ffffff">
       <p style="margin:0 0 20px;font-family:Georgia,'Times New Roman',serif;font-size:22px;color:#1a1a1a;font-weight:400;line-height:1.35;">Hello {{{{user_name}}}},</p>
       <p style="margin:0 0 16px;font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#444444;line-height:1.75;">You have been enrolled in the <strong style="color:#1a1a1a;">{{{{cohort_name}}}}</strong> cohort for <strong style="color:#1a1a1a;">LEAP&#8482; &#8212; Leadership Energy Alignment Profile</strong>.</p>
-      <p style="margin:0 0 32px;font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#444444;line-height:1.75;">Please click the button below to activate your account and set your password. This link is valid for <strong>24 hours</strong>.</p>
+      <p style="margin:0 0 32px;font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#444444;line-height:1.75;">Click the button below to activate your account. You will be taken to a secure page where you can set your password. This link is valid for <strong>24 hours</strong>.</p>
       {cta}
       {_DIMENSION_PILLS}
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:32px 0 24px;"><tr><td style="border-top:1px solid #e8e8e8;font-size:1px;line-height:1px;">&nbsp;</td></tr></table>
       <p style="margin:0 0 12px;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#666666;line-height:1.7;">Already have an account? Sign in at <a href="{{{{platform_url}}}}" style="color:#C8102E;text-decoration:none;">{{{{platform_url}}}}</a></p>
-      <p style="margin:0 0 6px;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#999999;line-height:1.6;">If the button above does not work, copy and paste this link into your browser:</p>
-      <p style="margin:0;font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#bbbbbb;word-break:break-all;">{{{{invite_link}}}}</p>
+      <p style="margin:0;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#999999;line-height:1.6;">If the button above does not work, please contact your administrator and ask them to resend your invite.</p>
     </td>
   </tr>"""
     return _build_template("user_email", body)
 
 
 def _admin_invite_html() -> str:
-    cta = _cta("{{invite_link}}", "Set Password &amp; Access Admin Panel")
+    cta = _cta("{{invite_link}}", "Activate Admin Account")
     body = f"""
   <!-- Body -->
   <tr>
     <td style="padding:40px 48px 36px;" bgcolor="#ffffff">
       <p style="margin:0 0 20px;font-family:Georgia,'Times New Roman',serif;font-size:22px;color:#1a1a1a;font-weight:400;line-height:1.35;">Hello {{{{admin_name}}}},</p>
       <p style="margin:0 0 16px;font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#444444;line-height:1.75;">You have been invited to join <strong style="color:#1a1a1a;">{{{{platform_name}}}}</strong> as an <strong style="color:#1a1a1a;">Administrator</strong>.</p>
-      <p style="margin:0 0 32px;font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#444444;line-height:1.75;">Click the button below to activate your administrator account and set your password. This link is valid for <strong>24 hours</strong>.</p>
+      <p style="margin:0 0 32px;font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#444444;line-height:1.75;">Click the button below to activate your administrator account. You will be taken to a secure page where you can set your password. This link is valid for <strong>24 hours</strong>.</p>
       {cta}
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:32px 0 24px;"><tr><td style="border-top:1px solid #e8e8e8;font-size:1px;line-height:1px;">&nbsp;</td></tr></table>
-      <p style="margin:0 0 6px;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#999999;line-height:1.6;">If the button above does not work, copy and paste this link into your browser:</p>
-      <p style="margin:0;font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#bbbbbb;word-break:break-all;">{{{{invite_link}}}}</p>
+      <p style="margin:0;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#999999;line-height:1.6;">If the button above does not work, please contact the platform administrator.</p>
     </td>
   </tr>"""
     return _build_template("admin_email", body)
@@ -230,7 +228,7 @@ def _cohort_enrollment_existing_html() -> str:
 
 
 def _org_welcome_html() -> str:
-    cta = _cta("{{activation_url}}", "Activate Your Account")
+    cta = _cta("{{activation_url}}", "Activate My Account")
     body = f"""
   <!-- Body -->
   <tr>
@@ -248,14 +246,14 @@ def _org_welcome_html() -> str:
 
 
 def _password_reset_html() -> str:
-    cta = _cta("{{reset_link}}", "Set New Password")
+    cta = _cta("{{reset_link}}", "Set My Password")
     body = f"""
   <!-- Body -->
   <tr>
     <td style="padding:40px 48px 36px;" bgcolor="#ffffff">
       <p style="margin:0 0 20px;font-family:Georgia,'Times New Roman',serif;font-size:22px;color:#1a1a1a;font-weight:400;line-height:1.35;">Hello {{{{user_name}}}},</p>
       <p style="margin:0 0 16px;font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#444444;line-height:1.75;">We received a request to reset the password for your account on <strong style="color:#1a1a1a;">{{{{platform_name}}}}</strong>.</p>
-      <p style="margin:0 0 32px;font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#444444;line-height:1.75;">Click the button below to set a new password. This link is valid for <strong>24 hours</strong>.</p>
+      <p style="margin:0 0 32px;font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#444444;line-height:1.75;">Click the button below to open your secure password reset page. This link is valid for <strong>24 hours</strong>.</p>
       {cta}
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:32px 0 24px;"><tr><td style="border-top:1px solid #e8e8e8;font-size:1px;line-height:1px;">&nbsp;</td></tr></table>
       <p style="margin:0;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#666666;line-height:1.75;">If you did not request a password reset, you can safely ignore this email. Your password will not be changed.</p>
