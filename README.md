@@ -278,7 +278,7 @@ adizes-backend/
       admin.py                 # Cohorts, members, bulk enroll, admin users, RespondentDetail,
                                #   Organisation, OrgNode, OrgEmployee schemas.
                                #   RespondentSummary includes `activated: bool` (True if
-                               #   email_confirmed_at is set in auth.users)
+                               #   last_sign_in_at is set in auth.users — canonical "can log in" signal)
       settings.py              # SmtpConfig, EmailTemplate CRUD
   migrations/
     001_initial_schema.sql              # Full DB schema + RLS policies
@@ -350,7 +350,7 @@ adizes-backend/
 | GET | `/admin/cohorts` | Admin | List all cohorts |
 | POST | `/admin/cohorts` | Admin | Create cohort |
 | DELETE | `/admin/cohorts/{id}` | Admin | Delete cohort — only if it has 0 enrolled members; returns 400 otherwise |
-| GET | `/admin/cohorts/{id}` | Admin | Cohort detail + team scores. Each respondent includes `activated: bool` (email confirmed) |
+| GET | `/admin/cohorts/{id}` | Admin | Cohort detail + team scores. Each respondent includes `activated: bool` (`last_sign_in_at` is set) |
 | PATCH | `/admin/cohorts/{id}/status` | Admin | Update cohort lifecycle status (`active` / `completed` / `archived`) |
 | POST | `/admin/cohorts/{id}/members` | Admin | Enroll user by email (auto-invites new users). Returns 409 if cohort is not `active`. |
 | POST | `/admin/cohorts/{id}/members/bulk` | Admin | Bulk enroll from list. Returns 409 if cohort is not `active`. |
@@ -414,31 +414,40 @@ Five built-in templates (stored in `app_settings` / `email_templates` tables, ed
 | `cohort_enrollment_existing` | Already-activated user enrolled into a cohort (dashboard link only) | `user_name`, `user_email`, `cohort_name`, `platform_name`, `platform_url` |
 | `admin_invite` | New admin account invited | `admin_name`, `admin_email`, `invite_link`, `platform_name`, `platform_url` |
 | `assessment_complete` | User submits assessment | `user_name`, `user_email`, `cohort_name`, `dominant_style`, `platform_name`, `platform_url` (+ PDF attachment) |
-| `org_welcome` | Employee added to an org node | `user_name`, `org_name`, `activation_link`, `platform_name`, `platform_url` |
+| `org_welcome` | Employee added to an org node | `user_name`, `org_name`, `activation_url`, `platform_name`, `platform_url` |
 | `password_reset` | Employee requests password reset via `/forgot-password` | `user_name`, `reset_link`, `platform_name`, `platform_url` |
 
 ### Enrollment email three-case logic
 
-All three cohort enrollment endpoints (`enroll_user`, `bulk_enroll`, `resend_enrollment_invite`) apply the same branching:
+All three cohort enrollment endpoints (`enroll_user`, `bulk_enroll`, `resend_enrollment_invite`) apply the same branching.
+The activation signal is `last_sign_in_at is not None` (canonical "user has a working password"). Do NOT use `email_confirmed_at` — it was bulk-set on 2026-06-13 and is permanently unreliable.
 
 | Case | Condition | Email sent |
 |------|-----------|-----------|
-| New user | No account existed | `user_enrolled` with `type=invite` link → redirects to `/register` |
-| Invited, not activated | Account exists, `email_confirmed_at is None` | `user_enrolled` with `type=recovery` link → redirects to `/register` |
-| Already activated | Account exists, `email_confirmed_at` set | `cohort_enrollment_existing` (dashboard link only) |
+| New user | No account existed | `user_enrolled` with `type=invite` link → `/activate` relay → `/register` |
+| Invited, not activated | Account exists, `last_sign_in_at is None` | `user_enrolled` with `type=recovery` link → `/activate` relay → `/register` |
+| Already activated | Account exists, `last_sign_in_at` set | `cohort_enrollment_existing` (dashboard link only) |
+
+### `/activate` relay page — scanner protection
+
+All action emails (enroll, admin-invite, org-welcome, password-reset) route through the frontend `/activate` relay page instead of linking directly to the Supabase verify URL. This prevents enterprise email security scanners (Microsoft Defender SafeLinks, Proofpoint, Mimecast) from consuming the one-time token before the user clicks.
+
+- `make_activate_url(action_link, label)` in `email_service.py` base64url-encodes the raw Supabase URL and returns `{frontend_url}/activate?link=<encoded>&label=<type>`
+- `_wrap_link(raw, label)` in `admin.py` wraps all call sites; passes `None` through so existing None-guards still fire
+- Labels: `activate` (cohort enroll), `admin-invite`, `org-welcome`, `reset-password`
 
 ### Org employee activation flow
 
-When an admin adds an employee to an org node, `_add_employee_to_node` sends `org_welcome` with a `generate_link(type="invite" or "recovery", redirect_to=/register)` activation link. After the employee sets their password, they are fully activated (`email_confirmed_at` set) and can use self-service password reset.
+When an admin adds an employee to an org node, `_add_employee_to_node` sends `org_welcome` with a `generate_link(type="invite" or "recovery", redirect_to=/register)` activation link, wrapped via `_wrap_link(..., "org-welcome")`. The email CTA routes through the `/activate` relay before reaching `/register`.
 
 ### Password reset flow
 
 `POST /auth/forgot-password` (public, no JWT):
 1. SMTP must be configured — returns 400 otherwise
-2. Searches all users linearly for the email (supabase-py has no filter on `list_users()`)
+2. Searches all users linearly for the email (`list_all_auth_users()` paginates past GoTrue's first-page limit)
 3. Unknown email → `{"status": "sent"}` (silent, anti-enumeration)
-4. Found, not activated → `{"status": "not_activated"}` (no email sent)
-5. Found, activated → `generate_link(type="recovery", redirect_to=/reset-password)` → sends `password_reset` email → `{"status": "sent"}`
+4. Found, not activated (`email_confirmed_at is None`) → `{"status": "not_activated"}` (no email sent)
+5. Found, activated → `generate_link(type="recovery", redirect_to=/reset-password)` → `make_activate_url(..., "reset-password")` → sends `password_reset` email → `{"status": "sent"}`
 
 ## Running Tests
 
