@@ -290,7 +290,7 @@ def get_cohort(cohort_id: str, admin: dict = Depends(require_admin)):
 
 
 def _enroll_single_user(cohort_id: str, user_id: str, email: str,
-                        name: str | None, email_confirmed_at) -> None:
+                        name: str | None, can_log_in: bool) -> None:
     """Insert cohort_members row and send appropriate enrolment email."""
     supabase_admin.table("cohort_members").insert(
         {"cohort_id": cohort_id, "user_id": user_id}
@@ -303,20 +303,22 @@ def _enroll_single_user(cohort_id: str, user_id: str, email: str,
     if not smtp_configured():
         return
 
-    if email_confirmed_at is None:
-        invite_link = _action_link("recovery", email)
+    if not can_log_in:
+        invite_link = _action_link("recovery", email, {"redirect_to": f"{settings.frontend_url}/register"})
         if not invite_link:
             # No tokenised link — do NOT send an enrolment email with a dead button.
             logger.error(f"[enroll] Skipped enrolment email for {email}: could not generate invite link")
             return
         send_template_email("user_enrolled", email, {
             "user_name": display_name, "cohort_name": cohort_name,
+            "user_email": email,
             "platform_name": settings.platform_name, "platform_url": settings.frontend_url,
             "invite_link": invite_link,
         })
     else:
         send_template_email("cohort_enrollment_existing", email, {
             "user_name": display_name, "cohort_name": cohort_name,
+            "user_email": email,
             "platform_name": settings.platform_name, "platform_url": settings.frontend_url,
         })
 
@@ -366,15 +368,18 @@ def enroll_user(cohort_id: str, body: EnrollUserRequest, admin: dict = Depends(r
     if existing.data:
         raise HTTPException(status_code=409, detail="User is already a member of this cohort")
 
-    # Determine email_confirmed_at for new vs existing users
+    # Determine whether the user can already log in (has previously signed in).
+    # Use last_sign_in_at rather than email_confirmed_at: auto-confirm and bulk-confirm
+    # ops can set email_confirmed_at on users who have never set a password, making
+    # email_confirmed_at an unreliable proxy for "can log in".
     if invited_new:
-        email_confirmed_at = None
+        can_log_in = False
     else:
         try:
             fetched = supabase_admin.auth.admin.get_user_by_id(str(target.id)).user
-            email_confirmed_at = getattr(fetched, "email_confirmed_at", None)
+            can_log_in = getattr(fetched, "last_sign_in_at", None) is not None
         except Exception:
-            email_confirmed_at = None
+            can_log_in = False
 
     meta = getattr(target, "user_metadata", None) or {}
     user_name_val = meta.get("name", "") or None
@@ -383,7 +388,7 @@ def enroll_user(cohort_id: str, body: EnrollUserRequest, admin: dict = Depends(r
         _enroll_single_user(
             cohort_id=cohort_id, user_id=str(target.id),
             email=body.email, name=user_name_val,
-            email_confirmed_at=email_confirmed_at,
+            can_log_in=can_log_in,
         )
     except Exception:
         pass  # Non-fatal — enrollment succeeded regardless
@@ -456,12 +461,14 @@ def bulk_enroll(cohort_id: str, body: BulkEnrollRequest, admin: dict = Depends(r
                     failed.append({"email": email, "reason": f"Could not invite user: {e}"})
                     continue
 
-            # Determine activation state for existing users
+            # Determine whether user can already log in (has previously signed in).
+            # last_sign_in_at is the reliable signal — email_confirmed_at can be set by
+            # auto-confirm or bulk-confirm even for users who have never set a password.
             is_activated = False
             if not invited_new:
                 try:
                     fetched = supabase_admin.auth.admin.get_user_by_id(str(user.id)).user
-                    is_activated = getattr(fetched, "email_confirmed_at", None) is not None
+                    is_activated = getattr(fetched, "last_sign_in_at", None) is not None
                 except Exception:
                     pass
 
@@ -555,7 +562,7 @@ def resend_enrollment_invite(cohort_id: str, user_id: str, admin: dict = Depends
     meta = getattr(auth_user, "user_metadata", None) or {}
     user_name_val = meta.get("name", "") or email
 
-    is_activated = getattr(auth_user, "email_confirmed_at", None) is not None
+    is_activated = getattr(auth_user, "last_sign_in_at", None) is not None
 
     if not smtp_configured():
         raise HTTPException(status_code=400, detail="SMTP is not configured. Please set up SMTP in Settings first.")
