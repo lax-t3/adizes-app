@@ -15,16 +15,25 @@ logger = logging.getLogger(__name__)
 
 
 def make_activate_url(action_link: str, label: str) -> str:
-    """Wrap a Supabase one-time action link in the /activate relay page.
+    """Store the Supabase one-time action link server-side and return an opaque relay URL.
 
-    Email security scanners (Microsoft Defender, Proofpoint, etc.) pre-fetch
-    URLs in emails. Pointing them at our /activate page returns HTML — no OTP
-    consumed. The user's browser then clicks the button, JS runs, and the
-    request goes to Supabase's /verify endpoint to exchange the token.
+    Phase 1 (base64 in URL) failed because sophisticated scanners (e-consystems /
+    Microsoft Defender SafeLinks) decode base64 URL parameters and pre-fetch the
+    underlying Supabase /verify URL, consuming the OTP before the user clicks.
+
+    Phase 2 (this implementation): the Supabase URL is stored in the relay_tokens
+    table keyed by a UUID. The email contains only /activate?key=<uuid> — the scanner
+    cannot derive the Supabase URL from the opaque UUID. The user's browser POSTs the
+    UUID to /auth/relay-link (scanners don't issue JSON POST requests), receives the
+    URL, and navigates to it.
     """
     from app.config import settings
-    encoded = base64.urlsafe_b64encode(action_link.encode()).decode().rstrip("=")
-    return f"{settings.frontend_url}/activate?link={encoded}&label={label}"
+    result = supabase_admin.table("relay_tokens").insert({
+        "supabase_url": action_link,
+        "label": label,
+    }).execute()
+    token_id = result.data[0]["id"]
+    return f"{settings.frontend_url}/activate?key={token_id}&label={label}"
 
 
 _EMAIL_WRAPPER_OPEN = """\

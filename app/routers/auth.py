@@ -10,6 +10,7 @@ from app.auth import get_current_user
 from app.config import settings
 from app.services.email_service import send_template_email, smtp_configured, make_activate_url
 from pydantic import BaseModel
+from datetime import datetime, timezone
 import logging
 
 logger = logging.getLogger(__name__)
@@ -161,6 +162,46 @@ def change_password(body: ChangePasswordRequest, current_user: dict = Depends(ge
         raise HTTPException(status_code=400, detail=str(e))
 
     return {"message": "Password updated successfully"}
+
+
+# ─── Relay Link ───────────────────────────────────────────────────────────────
+
+class RelayLinkRequest(BaseModel):
+    key: str
+
+
+@router.post("/relay-link")
+def relay_link(body: RelayLinkRequest):
+    """Exchange an opaque relay token key for the underlying Supabase verify URL.
+
+    Called by the /activate frontend page when the user clicks the button.
+    Scanners only issue GET/HEAD requests — they will never POST JSON here,
+    so the Supabase URL stays hidden until a real user clicks the button.
+    Single-use: marks the token as used after the first valid exchange.
+    """
+    try:
+        result = supabase_admin.table("relay_tokens").select("*").eq("id", body.key).execute()
+    except Exception as e:
+        logger.error(f"[relay-link] DB lookup failed for key={body.key}: {e}")
+        raise HTTPException(status_code=500, detail="Failed to look up relay token")
+
+    if not result.data:
+        raise HTTPException(status_code=404, detail="Invalid or expired relay token")
+
+    token = result.data[0]
+
+    if token["used"]:
+        raise HTTPException(status_code=410, detail="This link has already been used")
+
+    expires_str = token["expires_at"]
+    expires_at = datetime.fromisoformat(expires_str.replace("Z", "+00:00"))
+    if datetime.now(timezone.utc) > expires_at:
+        raise HTTPException(status_code=410, detail="This link has expired")
+
+    # Mark used — prevents replay if scanner ever learns to POST
+    supabase_admin.table("relay_tokens").update({"used": True}).eq("id", body.key).execute()
+
+    return {"url": token["supabase_url"], "label": token["label"]}
 
 
 # ─── Forgot Password ──────────────────────────────────────────────────────────
