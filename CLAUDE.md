@@ -504,6 +504,21 @@ export S3_BUCKET_NAME=adizes-pdf-reports
   The badge must receive **lowercase** input (the `char` variable from `profile.is.split("")`) — `font-variant:
   small-caps` only converts lowercase glyphs to smaller uppercase; passing an uppercase character has zero
   visual effect. Tooltip text: "Your Current State Dominant Profile shows up in UPPERCASE letters."
+- **`/activate` relay page protects OTP tokens from enterprise email scanners** (2026-06-17): Enterprise email
+  security gateways (Microsoft Defender SafeLinks, Proofpoint, Mimecast) auto-fetch every URL in an incoming
+  email to check for malicious content. Supabase issues one-time-use tokens; a scanner that follows the verify
+  URL consumes the token before the user clicks, causing "Link expired". Fix: all action emails now link to
+  `{frontend_url}/activate?link=<base64url-encoded-supabase-url>&label=<type>` instead of the raw Supabase
+  verify URL. The `/activate` page renders static HTML (scanner gets this, no token consumed). The user clicks
+  the button on the relay page; JS runs `window.location.href = decoded` — token consumed only in user's browser.
+  Implementation: `make_activate_url(action_link, label)` in `email_service.py` base64url-encodes the raw link;
+  `_wrap_link(raw, label)` in `admin.py` wraps all 9 call sites (returning `None` unchanged so existing None-guards
+  still fire); `auth.py` `forgot_password` wraps the recovery link directly. Labels: `activate` (cohort enroll),
+  `admin-invite`, `org-welcome`, `reset-password`. Frontend: `Activate.tsx` decodes + shows a branded card
+  per label with the primary CTA button + scanner-error footer note. `ResetPassword.tsx` detects
+  `#error=access_denied` in the hash and shows an actionable scanner-error message with a "Request a new reset
+  link" fallback. If a user still gets "Link expired" after the relay page, admin uses "Resend Invite" to issue
+  a fresh token. Email CTA labels match what the relay page displays (e.g. "Activate My Account", "Set My Password").
 
 ## Known Gotchas (Local Dev)
 
