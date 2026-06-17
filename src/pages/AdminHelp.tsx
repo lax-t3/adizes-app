@@ -106,7 +106,7 @@ const adminFAQs: FAQItem[] = [
       "Open the cohort and check the user's Account badge in the member list.",
       "If it shows amber 'Invite Pending', they have not activated yet — click the Resend Invite button next to their name.",
       "Ask the user to check their spam/junk folder.",
-      "The invite link is valid for 1 hour from the time it is sent. If the user does not act within that time, resend it again.",
+      "The invite link is valid for 24 hours from the time it is sent. If the user does not act within that time, resend it again.",
       "If the badge already shows green 'Active', the user has successfully set their password and the issue is likely a login problem rather than an invite problem.",
     ],
   },
@@ -185,7 +185,7 @@ const userFAQs: FAQItem[] = [
   },
   {
     q: "My invite link says it has expired or is invalid. What should I do?",
-    a: "The invitation link can only be used once and is valid for 1 hour after it is sent. If it has expired or you accidentally closed the browser before completing registration, contact your administrator and ask them to resend the invite. A new link will be sent to your email.",
+    a: "The invitation link can only be used once and is valid for 24 hours after it is sent. If it has expired or you accidentally closed the browser before completing registration, contact your administrator and ask them to resend the invite. A new link will be sent to your email.",
   },
   {
     q: "How do I take the assessment?",
@@ -249,7 +249,7 @@ const employeeActivationFAQs: FAQItem[] = [
     q: "How does self-service password reset work for employees?",
     a: [
       "Activated employees can reset their own password by clicking 'Forgot password?' on the login page.",
-      "They enter their email address. If their account is activated, a reset link is sent to their inbox (valid for 1 hour).",
+      "They enter their email address. If their account is activated, a reset link is sent to their inbox (valid for 24 hours).",
       "If their account is still in 'Pending' status, the page will tell them to activate their account first using their welcome email.",
       "Admins do not need to be involved in this process.",
     ],

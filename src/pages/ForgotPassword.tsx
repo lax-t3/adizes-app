@@ -63,7 +63,7 @@ export function ForgotPassword() {
 
               {result === 'sent' && (
                 <div role="alert" className="rounded-md bg-green-50 border border-green-200 px-4 py-3 text-sm text-green-700">
-                  Reset link sent. Check your inbox — the link expires in 1 hour.
+                  Reset link sent. Check your inbox — the link expires in 24 hours.
                 </div>
               )}
               {result === 'not_activated' && (

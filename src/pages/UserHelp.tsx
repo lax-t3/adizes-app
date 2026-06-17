@@ -69,7 +69,7 @@ const assessmentGuide: FAQItem[] = [
   },
   {
     q: "My invite link says it has expired or is invalid.",
-    a: "The invitation link is valid for 1 hour and can only be used once. If it has expired, or you accidentally closed the browser before finishing, contact your administrator and ask them to resend the invite. A fresh link will be sent to your email.",
+    a: "The invitation link is valid for 24 hours and can only be used once. If it has expired, or you accidentally closed the browser before finishing, contact your administrator and ask them to resend the invite. A fresh link will be sent to your email.",
   },
   {
     q: "How do I start the assessment?",
