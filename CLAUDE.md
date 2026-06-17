@@ -2,7 +2,7 @@
 
 ## What This Is
 Assessment platform for the **LEAP™ — Leadership Energy Alignment Profile**, powered by the Adizes PAEI framework.
-Users take a 36-question assessment across 3 dimensions (Current State / Role Expectations / Intrinsic Preference),
+Users take a 36-question assessment across 3 dimensions (Current State / Role Expectations / My Natural Preference),
 view a PAEI alignment dashboard, and download a full PDF report.
 
 > **Rebrand note (2026-05-27):** The platform was previously branded "Adizes PAEI Management Style Indicator (AMSI)".
@@ -62,7 +62,7 @@ Implementation plan: `docs/plans/2026-03-10-adizes-backend-implementation.md`
 
 The individual PAEI self-assessment — sometimes called "Adizes90" internally, publicly branded as **LEAP™**.
 
-Display labels (frontend + PDF): **Current State** (Is) · **Role Expectations** (Should) · **Intrinsic Preference** (Want).
+Display labels (frontend + PDF): **Current State** (Is) · **Role Expectations** (Should) · **My Natural Preference** (Want).
 Internal/DB keys: `is` / `should` / `want` — unchanged across all scoring, DB, and API code.
 
 - **36 questions** = 12 per section × 3 sections (Is / Should / Want)
@@ -283,8 +283,16 @@ export S3_BUCKET_NAME=adizes-pdf-reports
   - Page 5 — Stress Signature & next steps: **"Your Current Stress Signature"** narrative (stress labels tagged e.g. "Dictator Trap (P - Stressor)") + plain-English Early Warning Signs; **"Key Insights & Commitments"** write-in (My Top 3 Insights + My Next 3 Actions, blank lines — replaces the old guided-reflection questions); **"Continue the Conversation"** block linking to the `/leap-coaching` landing page.
   - **Pagination:** the report is **exactly 5 A4 pages** — Page 3/5 spacing is tuned so content never overflows into header-less pages (verified via local Chrome render at the Lambda's margins).
   **Header band (all pages):** solid navy `#1D3557` band, `rgba(255,255,255,0.15)` circle containing HIL-Isotope logo (`filter: brightness(0) invert(1)` knockout), "LEAP™" bold white left, page name right, `border-bottom: 3pt solid #C8102E` red accent stripe.
-  **Sample PDF URL:** `https://adizes-pdf-reports.s3.ap-south-1.amazonaws.com/reports/f17b1f2c-0273-4b5d-88d2-e27b826d1738.pdf`
+  **Sample PDF URL:** `https://leap-reports.turiyaskills.co/reports/f17b1f2c-0273-4b5d-88d2-e27b826d1738.pdf`
   (used on Dashboard "View Sample Report" button and `/leap` landing page CTA).
+- **Report URLs use the custom domain `leap-reports.turiyaskills.co`** (2026-06-13). PDFs still live in the
+  `adizes-pdf-reports` S3 bucket; the domain is a **Cloudflare-proxied CNAME** → a tiny **Cloudflare Worker**
+  (`leap-reports.turiyaskills.co/*`) that re-fetches from `adizes-pdf-reports.s3.ap-south-1.amazonaws.com`
+  (the Worker is needed because Cloudflare Pro can't override the origin Host header, and S3 selects the bucket
+  by Host). The Lambda builds the URL from env `PDF_PUBLIC_BASE_URL=https://leap-reports.turiyaskills.co`
+  (falls back to the raw S3 URL if unset — `index.js`). Existing rows were repointed by migration
+  `017_pdf_url_custom_domain.sql` (string-replace of the host). To revert: clear `PDF_PUBLIC_BASE_URL` on the
+  Lambda + reverse-replace the host in `assessments.pdf_url`.
 - **Lambda invocation is synchronous (`RequestResponse`)**: backend calls Lambda and waits for the
   response. Lambda generates PDF → uploads to S3 → patches Supabase directly. Backend also patches
   Supabase from the returned `pdf_url` as a redundant safety net. Previously was fire-and-forget
@@ -324,8 +332,16 @@ export S3_BUCKET_NAME=adizes-pdf-reports
   `result.user_name` is falsy. Dashboard welcome: `user?.name || user?.email?.split('@')[0]`
   — email prefix fallback when `user.name` is empty string.
 - **EnergyMatrix component** is role-centric (4 sections, one per role) rather than lens-centric
-  (3 rows). Each role section shows Is / Should / Want bars with a gap badge when the max gap ≥ 10.
-  Want bars are dimmed (0.55 opacity) as the reference/background lens.
+  (3 rows). Each role section shows Is / Should / Want bars; Want bars are dimmed (0.55 opacity) as the
+  reference/background lens. **Gap badge (2026-06-13): aligned with the PDF report's named gaps + severity.**
+  It consumes the backend-computed `gaps: GapDetail[]` and surfaces the role's most significant of the three
+  gaps (Execution / Engagement / Authenticity) by name + severity, coloured with the report's universal
+  red/orange/yellow severity bands (`report.html` `severityBadge`: high `#991b1b`/`#fee2e2`, medium
+  `#9a3412`/`#ffedd5` — NOT PAEI role colours). `low` (< 6 on the 132-scale) is treated as aligned and not
+  flagged. Dashboard/Results/AdminRespondent pass `gaps`; the team-aggregate view (`AdminCohortDetail`) has no
+  per-role gaps and falls back to the legacy %-spread "Npt gap" flag (≥10 on the 0–100 display scale).
+  The earlier badge wrongly used `max(Execution,Authenticity)` on the % scale with a hard ≥10 threshold, so it
+  flagged different roles than the report.
 - Frontend calls FastAPI for ALL API calls (auth, assessment, results, admin)
 - FastAPI validates Supabase JWT on every protected endpoint
 - Local Supabase uses ES256 JWT; cloud Supabase uses HS256 — auth.py handles both
@@ -338,8 +354,14 @@ export S3_BUCKET_NAME=adizes-pdf-reports
   scope to this pair. Frontend passes `?cohort_id=<uuid>` on `/assessment` and the assessment
   store carries `cohortId` through to `submitAssessment(cohort_id, answers)`.
 - **Enrollment email — three cases**: `enroll_user` / `bulk_enroll` / `resend_enrollment_invite`
-  check `email_confirmed_at`: new/unactivated users get `user_enrolled` (invite/recovery link);
-  already-activated users get `cohort_enrollment_existing` (dashboard link only).
+  check `last_sign_in_at` (not `email_confirmed_at`): users who have **never logged in** get
+  `user_enrolled` (recovery link → `/register` activate mode, valid 24 h); users who have logged in
+  at least once get `cohort_enrollment_existing` (dashboard link only). `email_confirmed_at` is
+  unreliable as an "activated" signal after `mailer_autoconfirm=true` + bulk-confirm SQL was run
+  — every pending user got `email_confirmed_at` set even without logging in, causing them to receive
+  the wrong email. `last_sign_in_at is not None` is the canonical "user has a working password" check.
+  The `_enroll_single_user` internal helper takes a `can_log_in: bool` param; all callers compute it
+  as `getattr(auth_user, "last_sign_in_at", None) is not None`.
 - **Organisation module** (migration 007): four tables — `organizations`, `org_nodes`, `org_employees`,
   `cohort_organizations`. Orgs are independent of cohorts until explicitly linked. Employees are added
   to org nodes and receive `org_welcome` emails with activation links (`redirect_to=/register`). After
@@ -393,11 +415,12 @@ export S3_BUCKET_NAME=adizes-pdf-reports
   (2) `assessment.py` — `get_questions()` reads `section` column from DB; `submit_assessment()` fetches
   `section_map` from DB and passes it to `score_answers()`; (3) `scoring.py` — `SECTION_MAP` constant
   updated, `score_answers()` accepts optional `section_map` param (defaults to `SECTION_MAP`).
-- **Cohort member activation status** (added 2026-05-26): `GET /admin/cohorts/{id}` returns `activated: bool`
-  per respondent — `True` if `email_confirmed_at` is set in `auth.users`, `False` if the user never clicked
-  the invite link. Frontend `AdminCohortDetail` shows green "Active" / amber "Invite Pending" badge per row.
-  "Resend Invite" button now appears for all unactivated members (`!r.activated`), not just `pending` ones.
-  No migration needed — pure read from the existing `auth.users` object already fetched in `get_cohort`.
+- **Cohort member activation status** (updated 2026-06-17): `GET /admin/cohorts/{id}` returns `activated: bool`
+  per respondent — `True` if `last_sign_in_at` is set in `auth.users` (user has logged in at least once),
+  `False` otherwise. Frontend `AdminCohortDetail` shows green "Active" / amber "Invite Pending" badge per row.
+  Same signal used in org employee list/detail status. "Resend Invite" correctly identifies pending users via
+  `last_sign_in_at is None`. **Do not use `email_confirmed_at`** — it was bulk-set to `now()` for all users
+  on 2026-06-13, making it permanently unreliable as an activation gate.
 - **Assessment navigation UX** (added 2026-05-26): Three problems fixed in `Assessment.tsx` + `assessmentStore.ts`:
   (1) Submit failure now shows a persistent amber panel with clickable "Jump to: Question N" buttons for each
   incomplete question — panel auto-updates as questions are answered (`hasTriedSubmit` state gates first display).
@@ -414,14 +437,14 @@ export S3_BUCKET_NAME=adizes-pdf-reports
   two-column LEAP split layout with decorative sample matrix and insight card; Assessment "Before You Begin"
   LEAP prose card replaces YouTube embed; LEAP™ replaces AMSI in sticky assessment header; ranking instruction
   callout updated to "most/least applicable" framing; "Begin Section" → "Begin Questions".
-  Backend: `SECTION_META` labels "Is"→"Current State", "Should"→"Role Expectations", "Want"→"Intrinsic Preference".
+  Backend: `SECTION_META` labels "Is"→"Current State", "Should"→"Role Expectations", "Want"→"My Natural Preference".
   PDF Lambda v2: all 5 page headers rebranded to LEAP™; page 1 matrix redesigned to lens-rows layout;
   full 5-page report redesigned 2026-06-10 (see "PDF Lambda v2 report identity" key decision above).
   New public `/leap` landing page (no auth) with hero, tension cards, sample insights, comparison table, and CTA.
   Lambda ECR redeployed with redesigned template (2026-06-10).
   Remaining AMSI strings cleaned up (2026-05-27, commit `b4de9c1`): Landing.tsx h1 "management style" → "leadership
   alignment" + LEAP™ tagline description; UserHelp.tsx subtitle → "LEAP™ Assessment", results description uses
-  "Current State / Role Expectations / Intrinsic Preference", footer attribution → LEAP™; AdminHelp.tsx subtitle +
+  "Current State / Role Expectations / My Natural Preference", footer attribution → LEAP™; AdminHelp.tsx subtitle +
   footer attribution → LEAP™; PolicyPage.tsx Terms §1 + Refund §1 "AMSI platform" → "LEAP™ platform".
 - **PDF interpretation fields** (added 2026-06-10): `interpretation.py` returns `executive_summary` (str — 2-sentence
   narrative) and `daily_feel` (dict — keyed `{role: {gap_type: str}}`, used in gap-card callouts on page 3).
@@ -453,6 +476,34 @@ export S3_BUCKET_NAME=adizes-pdf-reports
   returns None on `generate_link` failure and the email is skipped — no more tokenless homepage "invite" links that
   left users unable to set a password. `list_all_auth_users()` in `database.py` paginates past GoTrue's first-page
   limit; all six `auth.admin.list_users()` enumeration sites now use it.
+- **Self-registration is auto-confirm — no email verification step** (2026-06-13): Supabase Auth
+  `mailer_autoconfirm` set to `true` (Management API `PATCH /config/auth`). New self-signups via
+  `/auth/register` get a session immediately and land on `/dashboard`. Previously `mailer_autoconfirm=false`
+  meant `supabase.auth.sign_up()` returned a user but **no session**, so the backend (`auth.py:56`) raised
+  HTTP 400 "Registration succeeded but email confirmation may be required." which `Register.tsx` rendered as a
+  scary red error — a mislabeled success that left users stuck (account created, can't log in). Disabling
+  confirmation removes the failure mode; admin enrolment (cohorts/orgs) was always a separate invite-link flow
+  and is unaffected, as are SES app emails (enrol/reset/coaching-lead). The 5 pre-existing unconfirmed accounts
+  were confirmed in bulk (`UPDATE auth.users SET email_confirmed_at = now() WHERE email_confirmed_at IS NULL`).
+  The `if not session → 400` guard stays as a harmless safety net (still reachable on duplicate-email signup).
+  **To revert:** set `mailer_autoconfirm=false` again — but then fix the UX (friendly "check your inbox" panel +
+  resend) rather than leaving the red error. Managing Auth config needs a Supabase PAT (`sbp_…`) + `curl`
+  (Cloudflare blocks the urllib UA). See [[leap-email-architecture]].
+- **`last_sign_in_at` is the canonical "can log in" signal** (2026-06-17): Use `last_sign_in_at is not None`
+  to determine whether a user has an active password and can log in. `email_confirmed_at` is NOT reliable
+  after `mailer_autoconfirm=true` was set and a bulk confirm (`UPDATE auth.users SET email_confirmed_at = now()`)
+  was run — all previously pending users have `email_confirmed_at` set even though they never set a password.
+  Affected code: `_enroll_single_user` (`can_log_in` param), `get_cohort` (activated badge),
+  `enroll_from_org` (enrollment email routing), org employee list/detail status fields.
+- **OTP / recovery link expiry is 24 hours** (set 2026-06-13): `mailer_otp_exp=86400` via Management API.
+  All three activation/reset email templates (`user_enrolled`, `admin_invite`, `password_reset`) correctly
+  say "24 hours" as of 2026-06-17. `org_welcome` already said "24 hours". If OTP expiry is changed again,
+  update all four templates in `email_service.py`.
+- **Profile badge small-caps for non-dominant roles** (2026-06-17): Non-dominant PAEI letters are displayed
+  with `style={{ fontVariant: "small-caps" }}` in `AdminRespondent.tsx`, `Results.tsx`, and `Dashboard.tsx`.
+  The badge must receive **lowercase** input (the `char` variable from `profile.is.split("")`) — `font-variant:
+  small-caps` only converts lowercase glyphs to smaller uppercase; passing an uppercase character has zero
+  visual effect. Tooltip text: "Your Current State Dominant Profile shows up in UPPERCASE letters."
 
 ## Known Gotchas (Local Dev)
 
@@ -473,6 +524,12 @@ baked in at build time. After editing any `.py` file:
 docker compose up --build -d
 ```
 Symptom: code fix works in isolation but API still returns old behavior.
+Symptom 2: Settings page shows fewer email templates than expected (e.g. 3 instead of 5) —
+`TEMPLATE_IDS` in `settings.py` was extended but the container is stale. Confirm with:
+```bash
+docker exec adizes-backend python3 -c "from app.routers.settings import TEMPLATE_IDS; print(TEMPLATE_IDS)"
+```
+If the list is short, rebuild the image with `docker compose up --build -d`.
 
 ### JWT algorithm: python-jose JWKError ≠ JWTError
 Local Supabase signs tokens with ES256. `python-jose` raises `JWKError` (not
