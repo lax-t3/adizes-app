@@ -11,7 +11,7 @@ from app.schemas.admin import (
 )
 from app.config import settings
 from app.services.export_service import generate_cohort_csv
-from app.services.email_service import send_template_email, smtp_configured
+from app.services.email_service import send_template_email, smtp_configured, make_activate_url
 import uuid
 import io
 from app.schemas.org import (
@@ -46,6 +46,15 @@ def _action_link(link_type: str, email: str, options: dict | None = None) -> str
     except Exception as e:
         logger.error(f"[auth-link] generate_link({link_type}) failed for {email}: {e}")
         return None
+
+
+def _wrap_link(raw: str | None, label: str) -> str | None:
+    """Wrap a raw Supabase action link in the /activate relay page.
+    Passes None through unchanged so callers' None-guards still fire.
+    """
+    if raw is None:
+        return None
+    return make_activate_url(raw, label)
 
 
 def _get_auth_users_map() -> dict:
@@ -304,7 +313,10 @@ def _enroll_single_user(cohort_id: str, user_id: str, email: str,
         return
 
     if not can_log_in:
-        invite_link = _action_link("recovery", email, {"redirect_to": f"{settings.frontend_url}/register"})
+        invite_link = _wrap_link(
+            _action_link("recovery", email, {"redirect_to": f"{settings.frontend_url}/register"}),
+            "activate",
+        )
         if not invite_link:
             # No tokenised link — do NOT send an enrolment email with a dead button.
             logger.error(f"[enroll] Skipped enrolment email for {email}: could not generate invite link")
@@ -353,7 +365,7 @@ def enroll_user(cohort_id: str, body: EnrollUserRequest, admin: dict = Depends(r
                 "options": {"redirect_to": f"{settings.frontend_url}/register"},
             })
             target = lr.user
-            invite_link_val = lr.properties.action_link
+            invite_link_val = _wrap_link(lr.properties.action_link, "activate")
             invited_new = True
         except Exception as e:
             raise HTTPException(status_code=400, detail=f"Could not invite user: {e}")
@@ -454,7 +466,7 @@ def bulk_enroll(cohort_id: str, body: BulkEnrollRequest, admin: dict = Depends(r
                         link_data["options"]["data"] = {"name": entry.name}
                     lr = supabase_admin.auth.admin.generate_link(link_data)
                     user = lr.user
-                    invite_link_val = lr.properties.action_link
+                    invite_link_val = _wrap_link(lr.properties.action_link, "activate")
                     email_to_user[email] = user   # cache so duplicates in the sheet are caught
                     invited_new = True
                 except Exception as e:
@@ -473,9 +485,9 @@ def bulk_enroll(cohort_id: str, body: BulkEnrollRequest, admin: dict = Depends(r
                     pass
 
                 if not is_activated:
-                    invite_link_val = _action_link(
-                        "recovery", email,
-                        {"redirect_to": f"{settings.frontend_url}/register"},
+                    invite_link_val = _wrap_link(
+                        _action_link("recovery", email, {"redirect_to": f"{settings.frontend_url}/register"}),
+                        "activate",
                     )
 
             uid = str(user.id)
@@ -576,8 +588,9 @@ def resend_enrollment_invite(cohort_id: str, user_id: str, admin: dict = Depends
             "platform_url": settings.frontend_url,
         })
     else:
-        invite_link_val = _action_link(
-            "recovery", email, {"redirect_to": f"{settings.frontend_url}/register"},
+        invite_link_val = _wrap_link(
+            _action_link("recovery", email, {"redirect_to": f"{settings.frontend_url}/register"}),
+            "activate",
         )
         if not invite_link_val:
             raise HTTPException(status_code=500, detail="Could not generate a valid invite link. Please try again.")
@@ -639,7 +652,7 @@ def invite_admin(body: InviteAdminRequest, admin: dict = Depends(require_admin))
                 "redirect_to": f"{settings.frontend_url}/register",
             },
         })
-        invite_link_val = lr.properties.action_link
+        invite_link_val = _wrap_link(lr.properties.action_link, "admin-invite")
         user_id = str(lr.user.id)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -692,8 +705,9 @@ def resend_invite(user_id: str, admin: dict = Depends(require_admin)):
 
     # For existing invited users, type=invite fails ("already registered").
     # type=recovery works for any existing user and redirects to /register.
-    invite_link_val = _action_link(
-        "recovery", email, {"redirect_to": f"{settings.frontend_url}/register"},
+    invite_link_val = _wrap_link(
+        _action_link("recovery", email, {"redirect_to": f"{settings.frontend_url}/register"}),
+        "admin-invite",
     )
     if not invite_link_val:
         raise HTTPException(status_code=500, detail="Could not generate a valid invite link. Please try again.")
@@ -1167,15 +1181,16 @@ def _add_employee_to_node(
                     "redirect_to": f"{settings.frontend_url}/register",
                 },
             })
-            activation_url = lr.properties.action_link
+            activation_url = _wrap_link(lr.properties.action_link, "org-welcome")
             target = supabase_admin.auth.admin.get_user_by_id(lr.user.id).user
         except Exception as e:
             raise HTTPException(status_code=400, detail=f"Could not create user: {e}")
 
     elif is_unactivated:
         # None on failure — guarded below so we never email a tokenless activation link.
-        activation_url = _action_link(
-            "recovery", email, {"redirect_to": f"{settings.frontend_url}/register"},
+        activation_url = _wrap_link(
+            _action_link("recovery", email, {"redirect_to": f"{settings.frontend_url}/register"}),
+            "org-welcome",
         )
 
     user_id = str(target.id)

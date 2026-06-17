@@ -8,7 +8,7 @@ from app.schemas.auth import (
 from app.database import supabase, supabase_admin, list_all_auth_users
 from app.auth import get_current_user
 from app.config import settings
-from app.services.email_service import send_template_email, smtp_configured
+from app.services.email_service import send_template_email, smtp_configured, make_activate_url
 from pydantic import BaseModel
 import logging
 
@@ -203,7 +203,7 @@ def forgot_password(body: ForgotPasswordRequest):
         sent = send_template_email("password_reset", body.email, {
             "user_name": user_name,
             "user_email": body.email,
-            "reset_link": lr.properties.action_link,
+            "reset_link": make_activate_url(lr.properties.action_link, "reset-password"),
             "platform_name": settings.platform_name,
             "platform_url": settings.frontend_url,
         })

@@ -4,7 +4,7 @@ Reads config from app_settings.key='smtp' in Supabase.
 Reads templates from email_templates table.
 Falls back gracefully if SMTP not configured.
 """
-import smtplib, ssl, re, logging
+import smtplib, ssl, re, logging, base64
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.base import MIMEBase
@@ -12,6 +12,19 @@ from email import encoders
 from app.database import supabase_admin
 
 logger = logging.getLogger(__name__)
+
+
+def make_activate_url(action_link: str, label: str) -> str:
+    """Wrap a Supabase one-time action link in the /activate relay page.
+
+    Email security scanners (Microsoft Defender, Proofpoint, etc.) pre-fetch
+    URLs in emails. Pointing them at our /activate page returns HTML — no OTP
+    consumed. The user's browser then clicks the button, JS runs, and the
+    request goes to Supabase's /verify endpoint to exchange the token.
+    """
+    from app.config import settings
+    encoded = base64.urlsafe_b64encode(action_link.encode()).decode().rstrip("=")
+    return f"{settings.frontend_url}/activate?link={encoded}&label={label}"
 
 
 _EMAIL_WRAPPER_OPEN = """\
