@@ -263,7 +263,7 @@ def get_cohort(cohort_id: str, admin: dict = Depends(require_admin)):
             all_scaled.append(a["scaled_scores"])
 
         activated = (
-            getattr(auth_user, "email_confirmed_at", None) is not None
+            getattr(auth_user, "last_sign_in_at", None) is not None
             if auth_user else False
         )
 
@@ -1078,7 +1078,7 @@ def list_node_employees(
         u = auth_users.get(e["user_id"])
         name = e.get("name") or (u.user_metadata or {}).get("name", "") if u else e.get("name", "")
         email = u.email if u else ""
-        status_str = "active" if (u and u.email_confirmed_at) else "pending"
+        status_str = "active" if (u and u.last_sign_in_at) else "pending"
         result.append(OrgEmployeeSummary(
             id=e["id"], user_id=e["user_id"], name=name, email=email,
             last_name=e.get("last_name"), middle_name=e.get("middle_name"),
@@ -1155,7 +1155,7 @@ def _add_employee_to_node(
 
     activation_url = settings.frontend_url
     is_new = target is None
-    is_unactivated = target is not None and target.email_confirmed_at is None
+    is_unactivated = target is not None and target.last_sign_in_at is None
 
     if is_new:
         try:
@@ -1417,7 +1417,7 @@ def update_employee(
         dob=str(row["dob"]) if row.get("dob") else None,
         emp_date=str(row["emp_date"]) if row.get("emp_date") else None,
         head_of_dept=bool(row.get("head_of_dept", False)),
-        status="active" if (u and u.email_confirmed_at) else "pending",
+        status="active" if (u and u.last_sign_in_at) else "pending",
         node_id=row["node_id"],
         joined_at=str(row["joined_at"]),
     )
@@ -1556,7 +1556,7 @@ def enroll_from_org(cohort_id: str, body: EnrollFromOrgRequest, admin: dict = De
                 continue
             _enroll_single_user(cohort_id=cohort_id, user_id=user_id,
                                 email=u.email, name=None,
-                                email_confirmed_at=u.email_confirmed_at)
+                                can_log_in=u.last_sign_in_at is not None)
             enrolled += 1
         except Exception as e:
             logger.error(f"[enroll-from-org] Failed for user {user_id}: {e}")
