@@ -25,6 +25,7 @@ import { UserHelp } from "./pages/UserHelp";
 import { SetPassword } from "./pages/SetPassword";
 import { ForgotPassword } from "./pages/ForgotPassword";
 import { ResetPassword } from "./pages/ResetPassword";
+import { Activate } from "./pages/Activate";
 import { PolicyPage } from "./pages/PolicyPage";
 import { LeapLanding } from "./pages/LeapLanding";
 import { LeapCoaching } from "./pages/LeapCoaching";
@@ -83,6 +84,7 @@ export default function App() {
         <Route path="/set-password" element={<SetPassword />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/activate" element={<Activate />} />
         <Route path="/terms" element={<PolicyPage slug="terms" />} />
         <Route path="/privacy" element={<PolicyPage slug="privacy" />} />
         <Route path="/refund" element={<PolicyPage slug="refund" />} />
