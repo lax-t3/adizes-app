@@ -1,10 +1,13 @@
+import { useState } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { motion } from 'motion/react';
 import { Footer } from '@/components/layout/Footer';
+import { relayLink } from '@/api/auth';
 
-// base64url → plain string, tolerant of missing padding
+// base64url → plain string — kept for backwards compat with old-format ?link= emails
+// (those expire within 24 h; new emails use opaque ?key= instead)
 function decodeLink(encoded: string): string | null {
   try {
     const padded = encoded + '='.repeat((4 - (encoded.length % 4)) % 4);
@@ -51,13 +54,40 @@ const LABEL_CONFIG: Record<string, LabelConfig> = {
 
 export function Activate() {
   const [searchParams] = useSearchParams();
-  const encoded = searchParams.get('link') ?? '';
-  const label   = searchParams.get('label') ?? 'activate';
-  const decoded = decodeLink(encoded);
-  const config  = LABEL_CONFIG[label] ?? LABEL_CONFIG['activate'];
+  const relayKey     = searchParams.get('key');         // new: opaque UUID
+  const encoded      = searchParams.get('link') ?? '';  // old: base64url (backwards compat)
+  const label        = searchParams.get('label') ?? 'activate';
+  const config       = LABEL_CONFIG[label] ?? LABEL_CONFIG['activate'];
 
-  const handleContinue = () => {
-    if (decoded) window.location.href = decoded;
+  // Legacy decoded URL — only used when no ?key= is present
+  const legacyDecoded = relayKey ? null : decodeLink(encoded);
+
+  const [loading, setLoading] = useState(false);
+  const [expired, setExpired] = useState(false);
+
+  const isValid = !!relayKey || !!legacyDecoded;
+
+  const handleContinue = async () => {
+    if (loading) return;
+
+    if (relayKey) {
+      // New flow: POST to backend to exchange opaque key for Supabase URL.
+      // Scanners issue only GET/HEAD — they will never reach this code path.
+      setLoading(true);
+      try {
+        const { url } = await relayLink(relayKey);
+        window.location.href = url;
+      } catch {
+        setLoading(false);
+        setExpired(true);
+      }
+      return;
+    }
+
+    // Legacy flow: navigate directly (old-format emails, expires within 24 h)
+    if (legacyDecoded) {
+      window.location.href = legacyDecoded;
+    }
   };
 
   return (
@@ -78,15 +108,45 @@ export function Activate() {
         </div>
 
         <Card className="shadow-lg border-t-4 border-t-primary">
-          {decoded ? (
+          {expired ? (
+            <>
+              <CardHeader>
+                <CardTitle className="text-2xl font-display">Link expired</CardTitle>
+                <CardDescription>
+                  Your organisation's email security software scanned this link before
+                  you clicked it, which used up the one-time token.
+                  Please request a new link — it only takes a few seconds.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {config.fallback ? (
+                  <Link
+                    to={config.fallback.href}
+                    className="text-sm font-medium text-primary hover:underline"
+                  >
+                    {config.fallback.text} →
+                  </Link>
+                ) : (
+                  <p className="text-sm text-gray-500">
+                    Contact your administrator to resend the invite.
+                  </p>
+                )}
+              </CardContent>
+            </>
+          ) : isValid ? (
             <>
               <CardHeader>
                 <CardTitle className="text-2xl font-display">{config.title}</CardTitle>
                 <CardDescription>{config.description}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                <Button size="lg" className="w-full" onClick={handleContinue}>
-                  {config.button} →
+                <Button
+                  size="lg"
+                  className="w-full"
+                  onClick={handleContinue}
+                  disabled={loading}
+                >
+                  {loading ? 'Opening…' : `${config.button} →`}
                 </Button>
 
                 <div className="border-t border-gray-100 pt-4 text-center space-y-2">

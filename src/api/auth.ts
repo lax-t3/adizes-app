@@ -57,3 +57,16 @@ export async function forgotPassword(email: string): Promise<{ status: 'sent' | 
   );
   return data;
 }
+
+/**
+ * Exchange an opaque relay token key for the underlying Supabase verify URL.
+ * Called by /activate page on button click — scanners never POST here.
+ * Throws on 404 (invalid key) or 410 (used/expired).
+ */
+export async function relayLink(key: string): Promise<{ url: string; label: string }> {
+  const { data } = await apiClient.post<{ url: string; label: string }>(
+    '/auth/relay-link',
+    { key }
+  );
+  return data;
+}
