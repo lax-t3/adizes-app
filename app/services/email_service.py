@@ -142,7 +142,7 @@ def _enrolled_html() -> str:
     <td style="padding:40px 48px 36px;" bgcolor="#ffffff">
       <p style="margin:0 0 20px;font-family:Georgia,'Times New Roman',serif;font-size:22px;color:#1a1a1a;font-weight:400;line-height:1.35;">Hello {{{{user_name}}}},</p>
       <p style="margin:0 0 16px;font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#444444;line-height:1.75;">You have been enrolled in the <strong style="color:#1a1a1a;">{{{{cohort_name}}}}</strong> cohort for <strong style="color:#1a1a1a;">LEAP&#8482; &#8212; Leadership Energy Alignment Profile</strong>.</p>
-      <p style="margin:0 0 32px;font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#444444;line-height:1.75;">Please click the button below to activate your account and set your password. This link is valid for <strong>1 hour</strong>.</p>
+      <p style="margin:0 0 32px;font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#444444;line-height:1.75;">Please click the button below to activate your account and set your password. This link is valid for <strong>24 hours</strong>.</p>
       {cta}
       {_DIMENSION_PILLS}
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:32px 0 24px;"><tr><td style="border-top:1px solid #e8e8e8;font-size:1px;line-height:1px;">&nbsp;</td></tr></table>
@@ -162,7 +162,7 @@ def _admin_invite_html() -> str:
     <td style="padding:40px 48px 36px;" bgcolor="#ffffff">
       <p style="margin:0 0 20px;font-family:Georgia,'Times New Roman',serif;font-size:22px;color:#1a1a1a;font-weight:400;line-height:1.35;">Hello {{{{admin_name}}}},</p>
       <p style="margin:0 0 16px;font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#444444;line-height:1.75;">You have been invited to join <strong style="color:#1a1a1a;">{{{{platform_name}}}}</strong> as an <strong style="color:#1a1a1a;">Administrator</strong>.</p>
-      <p style="margin:0 0 32px;font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#444444;line-height:1.75;">Click the button below to activate your administrator account and set your password. This link is valid for <strong>1 hour</strong>.</p>
+      <p style="margin:0 0 32px;font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#444444;line-height:1.75;">Click the button below to activate your administrator account and set your password. This link is valid for <strong>24 hours</strong>.</p>
       {cta}
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:32px 0 24px;"><tr><td style="border-top:1px solid #e8e8e8;font-size:1px;line-height:1px;">&nbsp;</td></tr></table>
       <p style="margin:0 0 6px;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#999999;line-height:1.6;">If the button above does not work, copy and paste this link into your browser:</p>
@@ -242,7 +242,7 @@ def _password_reset_html() -> str:
     <td style="padding:40px 48px 36px;" bgcolor="#ffffff">
       <p style="margin:0 0 20px;font-family:Georgia,'Times New Roman',serif;font-size:22px;color:#1a1a1a;font-weight:400;line-height:1.35;">Hello {{{{user_name}}}},</p>
       <p style="margin:0 0 16px;font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#444444;line-height:1.75;">We received a request to reset the password for your account on <strong style="color:#1a1a1a;">{{{{platform_name}}}}</strong>.</p>
-      <p style="margin:0 0 32px;font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#444444;line-height:1.75;">Click the button below to set a new password. This link is valid for <strong>1 hour</strong>.</p>
+      <p style="margin:0 0 32px;font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#444444;line-height:1.75;">Click the button below to set a new password. This link is valid for <strong>24 hours</strong>.</p>
       {cta}
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:32px 0 24px;"><tr><td style="border-top:1px solid #e8e8e8;font-size:1px;line-height:1px;">&nbsp;</td></tr></table>
       <p style="margin:0;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#666666;line-height:1.75;">If you did not request a password reset, you can safely ignore this email. Your password will not be changed.</p>
