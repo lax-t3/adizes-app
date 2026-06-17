@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { setPassword } from '@/api/auth';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/Card';
@@ -6,24 +6,63 @@ import { Button } from '@/components/ui/Button';
 import { motion } from 'motion/react';
 import { Footer } from '@/components/layout/Footer';
 
-function parseResetToken(): string | null {
+interface ParsedHash {
+  token: string | null;
+  scannerError: boolean;
+}
+
+function parseResetHash(): ParsedHash {
   const params = new URLSearchParams(window.location.hash.slice(1));
   const token = params.get('access_token');
-  const type = params.get('type');
-  if (token && type === 'recovery') return token;
-  return null;
+  const type  = params.get('type');
+  const error = params.get('error') ?? '';
+
+  if (token && type === 'recovery') return { token, scannerError: false };
+
+  // Supabase sends error=access_denied when the OTP is already used —
+  // the most common cause is an email security scanner pre-fetching the link.
+  const scannerError = error === 'access_denied' || error.includes('otp');
+  return { token: null, scannerError };
 }
 
 export function ResetPassword() {
-  const [token] = useState<string | null>(() => parseResetToken());
+  const [parsed, setParsed]   = useState<ParsedHash>(() => parseResetHash());
+  const [ready, setReady]     = useState(false);
   const [password, setPasswordValue] = useState('');
   const [confirm, setConfirm] = useState('');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const navigate = useNavigate();
+  const [error, setError]     = useState('');
+  const navigate              = useNavigate();
 
-  // Expired / invalid token — show error state immediately
-  if (!token) {
+  // Re-parse once after mount — guards against any async hash population.
+  useEffect(() => {
+    const result = parseResetHash();
+    setParsed(result);
+    setReady(true);
+  }, []);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!parsed.token) return;
+    if (password !== confirm) { setError('Passwords do not match.'); return; }
+    if (password.length < 8)  { setError('Password must be at least 8 characters.'); return; }
+    setError('');
+    setLoading(true);
+    try {
+      await setPassword(parsed.token, password);
+      navigate('/?message=password-updated', { replace: true });
+    } catch (err: unknown) {
+      const detail = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail ?? '';
+      setError(detail || 'Failed to set password. The link may have expired.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Brief loading state while the useEffect re-parse runs.
+  if (!ready) return null;
+
+  if (!parsed.token) {
     return (
       <div className="flex min-h-screen flex-col bg-gray-50 items-center justify-center p-6">
         <motion.div
@@ -38,7 +77,11 @@ export function ResetPassword() {
           <Card className="shadow-lg border-t-4 border-t-primary">
             <CardHeader>
               <CardTitle className="text-2xl font-display">Link expired</CardTitle>
-              <CardDescription>This password reset link has expired or is invalid.</CardDescription>
+              <CardDescription>
+                {parsed.scannerError
+                  ? 'Your organisation\'s email security software scanned this link before you clicked it, which used up the one-time token. Please request a new link — it only takes a few seconds.'
+                  : 'This password reset link has expired or has already been used.'}
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <Link
@@ -56,29 +99,6 @@ export function ResetPassword() {
       </div>
     );
   }
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (password !== confirm) {
-      setError('Passwords do not match.');
-      return;
-    }
-    if (password.length < 8) {
-      setError('Password must be at least 8 characters.');
-      return;
-    }
-    setError('');
-    setLoading(true);
-    try {
-      await setPassword(token, password);
-      navigate('/?message=password-updated', { replace: true });
-    } catch (err: unknown) {
-      const detail = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail ?? '';
-      setError(detail || 'Failed to set password. The link may have expired.');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   return (
     <div className="flex min-h-screen flex-col bg-gray-50 items-center justify-center p-6">
