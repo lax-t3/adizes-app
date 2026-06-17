@@ -101,7 +101,13 @@ adizes-frontend/
       Register.tsx            # Self-registration (Normal mode) + invite acceptance (Activate mode)
       SetPassword.tsx         # Redirect shim → /register (for old invite email links)
       ForgotPassword.tsx      # Forgot-password flow: email input → sent/not_activated/error states
-      ResetPassword.tsx       # Reset-password flow: reads recovery token from URL hash → set new password
+      ResetPassword.tsx       # Reset-password flow: reads recovery token from URL hash → set new password.
+                              #   Detects scanner-consumed OTP (#error=access_denied or otp in error) and
+                              #   shows actionable "email scanner" message with link to /forgot-password.
+      Activate.tsx            # Relay page — sits between action emails and the target page.
+                              #   Decodes base64url ?link= param, shows branded card per ?label=
+                              #   (activate / reset-password / admin-invite / org-welcome).
+                              #   Scanner sees static HTML; user clicks button → JS navigates to decoded URL.
       Dashboard.tsx           # LEAP™ results tabs + My LEAP Profiles list; all "Begin LEAP Assessment" CTAs pass ?cohort_id=
                               #   Header: "Discover Your Leadership Alignment". Tabs: "Alignment Overview" / "My LEAP Profiles".
                               #   Empty state: two-column LEAP split layout with dot-grid, sample alignment matrix, sample insight card, 3 value cards.
@@ -169,10 +175,11 @@ adizes-frontend/
 | `/` | `Landing` | Public | Login form; "Forgot password?" link; `?message=password-updated` success banner |
 | `/leap` | `LeapLanding` | Public | LEAP™ marketing landing page — no navbar, no auth required |
 | `/leap-coaching` | `LeapCoaching` | Public | LEAP™ Coaching marketing page; CTAs → `mailto:hello@hileadership.org`. Linked from the PDF report. |
+| `/activate` | `Activate` | Public | Relay page between action emails and target page; decodes base64url `?link=` + `?label=`; button navigates user's browser to the decoded Supabase verify URL |
 | `/register` | `Register` | Public | Self-registration **or** invite acceptance (auto-detected from URL hash) |
 | `/set-password` | `SetPassword` | Public | Redirect shim — forwards old email links to `/register` |
 | `/forgot-password` | `ForgotPassword` | Public | Email input → `POST /auth/forgot-password` → sent/not_activated/error states |
-| `/reset-password` | `ResetPassword` | Public | Reads `#access_token=...&type=recovery` from hash; set new password |
+| `/reset-password` | `ResetPassword` | Public | Reads `#access_token=...&type=recovery` from hash; set new password. Detects scanner-consumed OTP and shows specific error with `/forgot-password` fallback. |
 | `/dashboard` | `Dashboard` | JWT | LEAP™ alignment overview + My LEAP Profiles tab |
 | `/assessment?cohort_id=<uuid>` | `Assessment` | JWT | 36-question LEAP™ flow. `cohort_id` query param required — redirects to `/dashboard` if missing. |
 | `/results/:id` | `Results` | JWT | Full results + PDF |
@@ -187,17 +194,30 @@ adizes-frontend/
 
 ## Invite / Activate Account Flow
 
-Two independent activation paths both land on `/register`:
+All invitation emails now route through the `/activate` relay page before reaching `/register`.
+This protects one-time Supabase tokens from being consumed by enterprise email security scanners
+(Microsoft Defender SafeLinks, Proofpoint, Mimecast) that auto-fetch email links.
 
-**Cohort direct enrolment** — admin enrolls user into a cohort:
+**Full flow:**
 ```
-/register#access_token=<token>&type=invite
+Invitation email  →  /activate?link=<base64url>&label=activate
+                          ↓  user clicks "Activate my account →"
+                      /register#access_token=<token>&type=invite
+                          ↓  user fills name + password, submits
+                      Dashboard
 ```
 
-**Org employee activation** — admin adds employee to an org node:
+Two independent activation paths both land on `/register` (via the relay):
+
+**Cohort direct enrolment** — admin enrolls user into a cohort (`label=activate`):
 ```
-/register#access_token=<token>&type=invite   (new user)
-/register#access_token=<token>&type=recovery  (previously invited, not activated)
+/activate?link=<encoded /register#access_token=<token>&type=invite>&label=activate
+```
+
+**Org employee activation** — admin adds employee to an org node (`label=org-welcome`):
+```
+/activate?link=<encoded /register#access_token=<token>&type=invite>&label=org-welcome    (new user)
+/activate?link=<encoded /register#access_token=<token>&type=recovery>&label=org-welcome  (previously invited, not activated)
 ```
 
 `Register.tsx` detects the hash on mount and switches to **Activate mode**:
@@ -209,18 +229,37 @@ Two independent activation paths both land on `/register`:
 
 Old invite links pointing to `/set-password` still work — `SetPassword.tsx` is a redirect shim that forwards them to `/register` with the hash intact.
 
+If the relay page button shows "Link expired", the admin uses **Resend Invite** to issue a fresh token.
+
 ## Forgot Password / Reset Password Flow
 
+All password reset emails now route through the `/activate` relay page to protect the one-time token
+from enterprise email scanners.
+
+**Full flow:**
+```
+/forgot-password  →  POST /auth/forgot-password
+                          ↓  email sent
+Reset email  →  /activate?link=<base64url>&label=reset-password
+                    ↓  user clicks "Set my password →"
+                /reset-password#access_token=<token>&type=recovery
+                    ↓  user enters new password, submits
+                /?message=password-updated
+```
+
+Step-by-step:
 1. User clicks **"Forgot password?"** on login page → `/forgot-password`
 2. Enters email → `POST /auth/forgot-password`
    - Not activated → amber "activate your account first" message (no email sent)
    - Activated / unknown → green "check your inbox" message
-3. Email contains a Supabase recovery link → redirects to `/reset-password#access_token=...&type=recovery`
-4. `ResetPassword.tsx` reads the token from the hash, validates `type === "recovery"`
+3. Email contains a button linking to `/activate?link=<encoded>&label=reset-password`
+4. User clicks relay page button → browser navigates to `/reset-password#access_token=...&type=recovery`
+5. `ResetPassword.tsx` reads the token from the hash, validates `type === "recovery"`
+   - `#error=access_denied` or OTP error in hash → shows scanner-error message + "Request a new reset link →" fallback to `/forgot-password`
    - Invalid / missing token → shows "Link expired" error with link back to `/forgot-password`
-5. User sets new password → `POST /auth/set-password` (Bearer: recovery token)
-6. On success → `navigate('/?message=password-updated', { replace: true })`
-7. Landing.tsx shows green "Your password has been updated" banner; URL param cleared immediately
+6. User sets new password → `POST /auth/set-password` (Bearer: recovery token)
+7. On success → `navigate('/?message=password-updated', { replace: true })`
+8. Landing.tsx shows green "Your password has been updated" banner; URL param cleared immediately
 
 ## Organisation Onboarding Flow
 
