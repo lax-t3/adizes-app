@@ -487,6 +487,18 @@ export S3_BUCKET_NAME=adizes-pdf-reports
     stress traps (no frontend code change). Tests: `tests/test_interpretation.py` covers the is→want split.
   - **Scoring math was NOT changed** — each lens row already sums to exactly 100% via `_percent_to_100()`
     (Hamilton largest-remainder). Verified during this review.
+  - **Historical data regenerated:** all **53 completed assessments** were recomputed from their stored
+    `answers` (recipe = `score_answers(answers, db_section_map)` → `compute_gaps` → `interpret`), their
+    `assessments` rows re-PATCHed (raw/scaled scores, profile, gaps, interpretation), and PDFs regenerated
+    via `adizes-pdf-generator-v2`. Reason: existing PDFs are static S3 files generated at submission — a
+    Lambda/template change does NOT rewrite them; they must be re-invoked. Verified all 53 → exactly 5 pages
+    + contain the new sections.
+  - **Pagination gotcha:** the Lambda's Linux Chromium (`@sparticuz/chromium`) renders **~1.5 lines taller**
+    than local macOS Chrome, so "verified 5 pages locally" is NOT sufficient — page 1 ("Getting the Most"
+    box) and page 5 (stress list + energies graphic + continue block) overflowed to a header-less 6th page
+    in production for real data. Fixed by compressing both pages with comfortable headroom and re-verifying
+    against the **deployed Lambda** (download each PDF, `pdfinfo | grep Pages`), not just local render.
+    Always page-count-sweep the real Lambda output after any report-template change.
 - **Supabase Auth SMTP → SES** (fixed 2026-06-13): Supabase Auth had **no custom SMTP** (`smtp_host=null`), so its
   own emails (self-registration confirmation) used the built-in mailer capped at `rate_limit_email_sent=2`/hr →
   silent drops → "confirmation email not coming" + "password not recognized". Fixed via Management API
