@@ -463,6 +463,30 @@ export S3_BUCKET_NAME=adizes-pdf-reports
   wrong stored scores; all 12 completed assessments were recomputed from their stored `answers` rows and PDFs
   regenerated. Recompute recipe = `score_answers(answers, db_section_map)` → `compute_gaps` → `interpret`, then
   invoke `adizes-pdf-generator-v2` per assessment.
+- **LEAP report revision — 18 Jul 2026** (see `HIL_Adizes_India/docs/Leap report fixes-18jul26.docx`).
+  Four report changes + one scoring-logic change, deployed 2026-07-18 (Lambda v2 + backend):
+  - **Page 1:** the gap-definitions box was replaced by a **"Getting the Most from Your LEAP Report"**
+    orientation box (dev-tool framing + the three perspectives). Page-1 spacing was tightened
+    (`exec-summary`, `meaning-card`, `snapshot-hero`, `style-code-caption`, `intro-box`) so the report
+    **stays exactly 5 A4 pages** — verified via local Chrome render at the Lambda's margins.
+  - **Page 2:** the "Top Energy Misalignments" pills were replaced by **"Clarifying the Three Perspectives"**
+    + **"Understanding the Three Gaps"** prose (the three gap definitions effectively moved P1 → P2).
+  - **Page 5:** added an **"Understanding Your Leadership Energy"** intro before the Stress Signature; the
+    "Key Insights & Commitments" write-in was replaced by a **"The Four Leadership Energies"** graphic,
+    rebuilt in HTML/CSS with the canonical PAEI palette (role circle + "Creates Results/Stability/
+    Possibility/Cohesion" cards — NOT the raster PNG from the doc). New CSS classes: `intro-box*`,
+    `matrix-note`, `gap-explain*`, `matrix-footnote`, `stress-intro`, `energies-*`, `energy-*`.
+  - **Stress signature is now WANT-driven** (`interpretation.py`): `mismanagement_risks` and the new
+    `stress_roles` field are derived from the **My Natural Preference (want)** lens (`want > 33`, fallback
+    to highest), not the Current State (is) lens — the naturally-preferred energies are the ones most
+    likely to over-express under pressure. **Identity, amplitude, executive summary, at-your-best/friction,
+    and dominance stay is-based** (see the "Dominant PAEI code is derived from Current State" decision above).
+    The Page-5 stress-connection sentence now names the want-dominant energies. `stress_roles` reaches the
+    Lambda via `_build_pdf_payload` (raw `interp` dict); it is dropped from the frontend API response
+    (not in the `Interpretation` schema). Frontend Results/Dashboard/AdminRespondent now show want-based
+    stress traps (no frontend code change). Tests: `tests/test_interpretation.py` covers the is→want split.
+  - **Scoring math was NOT changed** — each lens row already sums to exactly 100% via `_percent_to_100()`
+    (Hamilton largest-remainder). Verified during this review.
 - **Supabase Auth SMTP → SES** (fixed 2026-06-13): Supabase Auth had **no custom SMTP** (`smtp_host=null`), so its
   own emails (self-registration confirmation) used the built-in mailer capped at `rate_limit_email_sent=2`/hr →
   silent drops → "confirmation email not coming" + "password not recognized". Fixed via Management API
