@@ -2,6 +2,9 @@
 Style Interpretation Service (v2)
 
 Detects dominant roles from the 'Current State' (is) dimension (raw score > 33).
+Stress-signature traps are detected separately from the 'My Natural Preference'
+(want) dimension (raw score > 33) — the naturally-preferred energies are the ones
+most likely to over-express and tip into their stress traps under pressure.
 Generates narrative content for all 5 PDF pages and the frontend results view.
 """
 
@@ -308,7 +311,18 @@ def interpret(
 
     identity_line = _build_identity_line(dominant, combined_desc)
 
-    mismanagement_risks = [STYLE_DESCRIPTIONS[r]["under_stress"] for r in dominant]
+    # Stress-signature traps are derived from the My Natural Preference (want)
+    # lens — not the Current State (is) lens that drives identity/dominance.
+    # These naturally-preferred energies are the ones most likely to be
+    # over-expressed and tip into their stress traps under prolonged pressure
+    # (HIL review 2026-07-18). Identity, amplitude, and executive summary all
+    # remain is-based; only the stress signature switches to want.
+    want_scores = raw_scores["want"]
+    stress_roles = [r for r in ["P", "A", "E", "I"] if want_scores[r] > 33]
+    if not stress_roles:
+        stress_roles = [max(want_scores, key=want_scores.get)]
+
+    mismanagement_risks = [STYLE_DESCRIPTIONS[r]["under_stress"] for r in stress_roles]
 
     # Pages 3-4 content (requires gaps)
     at_your_best     = desc["at_your_best"]
@@ -343,6 +357,7 @@ def interpret(
 
     return {
         "dominant_roles":     dominant,
+        "stress_roles":       stress_roles,
         "identity_line":      identity_line,
         "style_label":        desc["name"],
         "style_tagline":      desc["tagline"],

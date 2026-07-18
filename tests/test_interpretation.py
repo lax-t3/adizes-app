@@ -4,9 +4,11 @@ import pytest
 from app.services.interpretation import interpret
 
 
-def _scaled(is_overrides: dict = None):
+def _scaled(is_overrides: dict = None, want_overrides: dict = None):
     # Dominant PAEI code is derived from the Current State (is) lens, so test
-    # overrides are applied there.
+    # overrides are applied there. Stress-signature traps are derived from the
+    # Want lens (see test_stress_signature_uses_want_not_is), so a separate
+    # want_overrides is available.
     base = {
         "is":     {"P": 20, "A": 20, "E": 20, "I": 20},
         "should": {"P": 20, "A": 20, "E": 20, "I": 20},
@@ -14,6 +16,8 @@ def _scaled(is_overrides: dict = None):
     }
     if is_overrides:
         base["is"].update(is_overrides)
+    if want_overrides:
+        base["want"].update(want_overrides)
     return base
 
 
@@ -44,8 +48,32 @@ class TestInterpret:
             assert key in result
 
     def test_mismanagement_risk_for_P(self):
-        result = interpret(_scaled({"P": 45}), {})
+        # Stress traps are Want-driven: a high Want-P surfaces the Dictator Trap.
+        result = interpret(_scaled(want_overrides={"P": 45}), {})
         assert any("Dictator Trap" in r for r in result["mismanagement_risks"])
+
+    def test_stress_signature_uses_want_not_is(self):
+        # Per HIL review 2026-07-18: stress-signature items are picked from the
+        # Want-dominant elements (the energies most likely to be over-expressed
+        # and become liabilities under pressure), NOT the Current State (is) lens.
+        scores = {
+            "is":     {"P": 45, "A": 20, "E": 20, "I": 20},   # IS-dominant = P
+            "should": {"P": 20, "A": 20, "E": 20, "I": 20},
+            "want":   {"P": 20, "A": 20, "E": 45, "I": 20},   # WANT-dominant = E
+        }
+        result = interpret(scores, {})
+        # Dominance (identity) stays IS-based …
+        assert result["dominant_roles"] == ["P"]
+        assert result["style_label"] == "Producer"
+        # … but the stress signature reflects the Want-dominant role (E).
+        assert result["stress_roles"] == ["E"]
+        assert any("Know-It-All Trap" in r for r in result["mismanagement_risks"])
+        assert not any("Dictator Trap" in r for r in result["mismanagement_risks"])
+
+    def test_stress_roles_fallback_to_highest_want(self):
+        # No Want score above threshold → fall back to the single highest Want.
+        result = interpret(_scaled(want_overrides={"I": 30, "A": 28}), {})
+        assert result["stress_roles"] == ["I"]
 
     def test_combined_description_for_dual_dominant(self):
         result = interpret(_scaled({"E": 40, "I": 38}), {})

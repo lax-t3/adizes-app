@@ -31,6 +31,11 @@
     P: 'Producer', A: 'Administrator', E: 'Entrepreneur', I: 'Integrator'
   };
 
+  // Stress-signature is Want-driven (the naturally-preferred energies most likely
+  // to over-express under pressure). Falls back to is-dominance for older payloads.
+  const stressRoles     = interpretation.stress_roles || interpretation.dominant_roles || ['A'];
+  const stressRoleNames = stressRoles.map(function(r){ return ROLE_FULL_NAMES[r] || r; });
+
   const COACHING_URL = 'https://leap.turiyaskills.co/leap-coaching';
 %>
 
@@ -72,7 +77,7 @@
   <% } %>
 
   <!-- At-your-best / friction two-column -->
-  <div class="meaning-grid" style="margin-bottom:14pt;">
+  <div class="meaning-grid" style="margin-bottom:10pt;">
     <div class="meaning-card best">
       <h3>✓ When you are at your best</h3>
       <p><%= interpretation.at_your_best %></p>
@@ -107,12 +112,30 @@
   </div>
   <% } %>
 
-  <!-- Gap definitions box (D5) -->
-  <div class="gap-defs-box">
-    <div class="gap-defs-title">Understanding your three gaps</div>
-    <div class="gap-def"><strong>Execution Gap</strong> — the distance between what your role expects and how you behave today <span class="gap-def-formula">(Role Expectations VS Current State)</span>.</div>
-    <div class="gap-def"><strong>Engagement Gap</strong> — the distance between what your role expects and what naturally energises you <span class="gap-def-formula">(Role Expectations VS My Natural Preference)</span>.</div>
-    <div class="gap-def"><strong>Authenticity Gap</strong> — the distance between how you behave today and what naturally energises you <span class="gap-def-formula">(Current State VS My Natural Preference)</span>.</div>
+  <!-- Getting the Most from Your LEAP Report (orientation) -->
+  <div class="intro-box">
+    <div class="intro-box-title">Getting the Most from Your LEAP Report</div>
+    <p class="intro-box-p">
+      LEAP is a leadership development tool designed to increase self-awareness — not to
+      place you in a box or label your leadership style. Rather than measuring personality,
+      LEAP compares three perspectives of your leadership:
+    </p>
+    <div class="intro-persp">
+      <div class="intro-persp-item"><span class="intro-persp-name">Current State</span> — How you are leading today.</div>
+      <div class="intro-persp-item"><span class="intro-persp-name">Role Expectations</span> — The leadership energy your current role requires.</div>
+      <div class="intro-persp-item"><span class="intro-persp-name">Natural Preference</span> — The leadership energy that comes most naturally to you.</div>
+    </div>
+    <p class="intro-box-p">
+      Leadership effectiveness is not about expressing one element more than another. Different
+      roles require different combinations of leadership energy. The most effective leaders
+      understand their natural strengths, recognize when adaptation is needed, and intentionally
+      develop the flexibility to meet the demands of the situation.
+    </p>
+    <p class="intro-box-p" style="margin-bottom:0;">
+      As you progress through this report, you'll discover where these three perspectives are
+      aligned, where they differ, and the practical actions that can help you lead with greater
+      effectiveness, authenticity, and sustainable energy.
+    </p>
   </div>
 
   <div class="page-footer">
@@ -177,22 +200,48 @@
     <% }); %>
   </div>
 
-  <!-- Misalignment pills -->
-  <div class="section-label" style="margin-top:18pt;">Top Energy Misalignments</div>
-  <div class="top-gaps-row">
-    <% topGaps.forEach(function(tg) {
-         const nb    = severityBadge(tg.severity);
-         const color = ROLE_COLORS[tg.role];
-    %>
-    <div class="gap-pill">
-      <div class="gap-pill-role" style="background:<%- color %>;"><%= tg.role %></div>
-      <div class="gap-pill-body">
-        <span class="gap-pill-type"><%= tg.meta.label %> — <%= ROLE_NAMES[tg.role] %></span>
-        <span class="gap-pill-meta" style="color:<%- nb.color %>;"><%- nb.label %></span>
-      </div>
+  <!-- Clarifying the Three Perspectives -->
+  <div class="section-label" style="margin-top:18pt;">Clarifying the Three Perspectives</div>
+  <p class="matrix-note">
+    <strong>Current State, Role Expectations, and Natural Preference.</strong>
+    These three perspectives were introduced on the previous page. Here, they are brought
+    together to help you compare how your leadership energy shows up across your current
+    behaviour, your role's demands, and what comes most naturally to you.
+  </p>
+  <p class="matrix-note">
+    There are no "good" or "bad" profiles. Different roles require different combinations of
+    leadership energy. The goal is not to maximize any one dimension, but to understand where
+    your leadership energy is aligned and where conscious adaptation may be required.
+  </p>
+
+  <!-- Understanding the Three Gaps -->
+  <div class="section-label" style="margin-top:14pt;">Understanding the Three Gaps</div>
+  <p class="matrix-note">Your report compares these three perspectives in three important ways:</p>
+  <div class="gap-explain-list">
+    <div class="gap-explain">
+      <div class="gap-explain-name">Execution Gap</div>
+      <div class="gap-explain-pair">Role Expectations ↔ Current State</div>
+      <div class="gap-explain-desc">Shows how closely your current behaviour aligns with what your role requires.</div>
     </div>
-    <% }); %>
+    <div class="gap-explain">
+      <div class="gap-explain-name">Engagement Gap</div>
+      <div class="gap-explain-pair">Role Expectations ↔ Natural Preference</div>
+      <div class="gap-explain-desc">Shows how naturally your role draws upon the leadership energy that motivates you.</div>
+    </div>
+    <div class="gap-explain">
+      <div class="gap-explain-name">Authenticity Gap</div>
+      <div class="gap-explain-pair">Current State ↔ Natural Preference</div>
+      <div class="gap-explain-desc">Shows how much adaptation you are making between how you naturally prefer to lead and how you are currently leading.</div>
+    </div>
   </div>
+  <p class="matrix-note">
+    Gaps are not inherently good or bad. What matters is understanding where they support your
+    effectiveness and where they may begin to drain your energy over time.
+  </p>
+  <p class="matrix-footnote">
+    The following page explores your three most significant gaps in detail and explains what
+    they may mean in your day-to-day leadership.
+  </p>
 
   <div class="page-footer">
     <span>HILeadership | LEAP™</span>
@@ -404,16 +453,24 @@
     <span class="header-tagline">Stress Signature &amp; Reflection</span>
   </div>
 
+  <!-- Understanding Your Leadership Energy (intro to Stress Signature) -->
+  <div class="section-label">Understanding Your Leadership Energy</div>
+  <p class="stress-intro">
+    Every leadership energy brings unique strengths. Under prolonged pressure, those same
+    strengths can become liabilities. Your Stress Signature highlights the patterns to watch for.
+  </p>
+
   <!-- Stress Signature -->
   <div class="stress-signature">
     <h3>Your Current Stress Signature</h3>
     <% (interpretation.mismanagement_risks || []).forEach(function(risk) { %>
     <p><%= risk %></p>
     <% }); %>
-    <% if (topGap) { %>
+    <% if (stressRoleNames.length) { %>
     <div class="stress-connection">
-      Under sustained pressure, this <%= ROLE_FULL_NAMES[dominantRole] || dominantRole %>-dominant profile
-      tends toward the pattern above — a direct expression of the tension identified on Page 3.
+      Under sustained pressure, the energies you most naturally prefer — <%= stressRoleNames.join(' and ') %> —
+      are the ones most likely to over-express and tip into the patterns above. These are the
+      signatures to watch for first.
     </div>
     <% } %>
   </div>
@@ -426,22 +483,34 @@
   <% }); %>
   <% } %>
 
-  <!-- Key Insights & Commitments — write-in (D6) -->
-  <div class="section-label">Key Insights &amp; Commitments</div>
-  <p class="reflection-intro">Take a few moments to capture your reflections before moving on.</p>
-
-  <div class="writein-group">
-    <div class="writein-heading">My Top 3 Insights</div>
-    <% for (var i = 1; i <= 3; i++) { %>
-    <div class="writein-row"><span class="writein-num"><%= i %>.</span><span class="writein-line"></span></div>
-    <% } %>
-  </div>
-
-  <div class="writein-group">
-    <div class="writein-heading">My Next 3 Actions</div>
-    <% for (var j = 1; j <= 3; j++) { %>
-    <div class="writein-row"><span class="writein-num"><%= j %>.</span><span class="writein-line"></span></div>
-    <% } %>
+  <!-- The Four Leadership Energies (PAEI palette) -->
+  <div class="energies-block">
+    <div class="energies-title">The Four Leadership Energies</div>
+    <div class="energies-subtitle">
+      LEAP is based on the PAEI™ framework. Every leader uses all four energies —
+      each in different ways and to different degrees.
+    </div>
+    <div class="energies-grid">
+      <% [
+        ['P','Producer','Creates Results','Drives action, executes plans, and delivers outcomes.'],
+        ['A','Administrator','Creates Stability','Builds systems and structure, ensures consistency, and maintains quality.'],
+        ['E','Entrepreneur','Creates Possibility','Creates new ideas, drives innovation, and seeks opportunities for the future.'],
+        ['I','Integrator','Creates Cohesion','Builds trust, fosters collaboration, and strengthens relationships across the organization.']
+      ].forEach(function(e) {
+           const color = ROLE_COLORS[e[0]];
+           const tint  = ROLE_TINTS[e[0]];
+      %>
+      <div class="energy-card" style="border-color:<%- color %>40;">
+        <div class="energy-card-top" style="background:<%- tint %>;">
+          <div class="energy-circle" style="background:<%- color %>;"><%= e[0] %></div>
+        </div>
+        <div class="energy-role" style="color:<%- color %>;"><%= e[1] %></div>
+        <div class="energy-rule" style="background:<%- color %>;"></div>
+        <div class="energy-headline"><%= e[2] %></div>
+        <div class="energy-desc"><%= e[3] %></div>
+      </div>
+      <% }); %>
+    </div>
   </div>
 
   <!-- Continue the Conversation (D7) -->
